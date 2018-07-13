@@ -44,7 +44,7 @@ Plugin 'gmarik/Vundle.vim'
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
 filetype plugin indent on    " required
-"To use powershell inside the vim editor.
+"To use powerline inside the vim editor.
     set  rtp+=/usr/local/lib/python3.4/dist-packages/powerline/bindings/vim/
     set laststatus=2
     set t_Co=256
@@ -106,8 +106,6 @@ au BufNewFile,BufRead *.js, *.html, *.css
 "    endif 
 "switching bet black and white solarized theme bg with f5..
 "    call togglebg#map("<F5>")
-"Hiding .pyc in Nerdtree.
-    let NERDTreeIgnore=['\.pyc$', '\~$'] "ignore files in NERDTree
 
 "Enabel neocomplete autocomplete feature by default.
     let g:neocomplete#enable_at_startup = 1
@@ -151,6 +149,10 @@ let NERDTreeAutoDeleteBuffer = 1
 "Make it prettier.
 DTreeMinimalUI = 1
 let NERDTreeDirArrows = 1
+
+"Hiding .pyc in Nerdtree.
+    let NERDTreeIgnore=['\.pyc$', '\~$'] "ignore files in NERDTree
+
 
 "....................END..............
 "write the file quick cmd.
