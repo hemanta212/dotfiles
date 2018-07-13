@@ -125,3 +125,51 @@ EOF
 "Key mapping for VIM.
 inoremap kj <esc>
 cnoremap kj <esc> 
+
+
+set nowrap       "Don't wrap lines
+set linebreak    "Wrap lines at convenient points
+
+" Move normally between wrapped lines
+nmap j gj
+nmap k gk
+
+"......NERDTree Setup...............
+"Open directly to curently working file by \v
+nnoremap <silent> <Leader>v :NERDTreeFind<CR>
+
+"close after selecting one file to open.
+let NERDTreeQuitOnOpen = 1
+
+"Automaticlaly close tab if only nerdtree isopen
+autocmd bufenter * if (winnr(“$”) == 1 && exists(“b:NERDTreeType”) &&
+b:NERDTreeType == “primary”) | q | endif
+
+"Delete the buffer of file you delleted.
+let NERDTreeAutoDeleteBuffer = 1
+
+"Make it prettier.
+DTreeMinimalUI = 1
+let NERDTreeDirArrows = 1
+
+"....................END..............
+"write the file quick cmd.
+nmap <Leader>s :write<Enter>
+"quit quickly without writing.
+nmap <Leader>q :q!<Enter>
+"save and quit.
+nmap <Leader>w :wq!<Enter>
+
+"Remove highlight in search.
+nmap <Leader>h :nohl
+
+"Open NERDTree quick.
+nmap <Leader>n :NERDTree<Enter>
+
+"Resize things straight forward.
+nmap < <C-w>< 
+nmap > <C-w>>
+nmap + <C-w>+
+nmap - <C-w>-
+
+
