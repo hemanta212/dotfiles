@@ -144,11 +144,6 @@ let NERDTreeQuitOnOpen = 1
 "autocmd bufenter * if (winnr(“$”) == 1 && exists(“b:NERDTreeType”) &&
 "b:NERDTreeType == “primary”) | q | endif
 
-
-
-
-
-
 "Delete the buffer of file you delleted.
 let NERDTreeAutoDeleteBuffer = 1
 
@@ -182,3 +177,6 @@ imap html<Tab> <esc>:r /dotfiles/webtemp/html.html<Enter>12j8li
 "Autocomplete for HTML (buitin)
 autocmd FileType html set omnifunc=htmlcomplete#CompleteTags
 
+"......//////////////EMMET////////////////////
+".........................................
+"Map <C-y> to dt ok boss?
