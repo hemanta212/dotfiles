@@ -41,18 +41,120 @@ Plugin 'gmarik/Vundle.vim'
 "Autocomplettion plugin by Neo.
     Plugin 'shougo/neocomplete.vim'
 "Autocomplete by Valloric. Use one bet neo and valloric's.
-	  Plugin 'Valloric/YouCompleteMe'
+"	  Plugin 'Valloric/YouCompleteMe'
 "plugin for theme Zenburn for CLI and another for GUI.(its logic is below).
     Plugin 'jnurmine/Zenburn'
     Plugin 'altercation/vim-colors-solarized'
 "emmet plugin for html css and js etc
     Plugin 'mattn/emmet-vim'
 "Enable the powerline (basic file info at buttom. (  :) My dream!!)
-   Plugin 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
+"   Plugin 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
 "
+
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
 filetype plugin indent on    " required
+"--------------------
+"
+"////////---------/////////////-----------------///////////////
+".....................................................................
+"/////////////////SIMPLE PYTHON SETUP WITHOUT PLUGINS.////////////////////////
+"" enable syntax highlighting
+" syntax enable
+"
+"" show line numbers
+" set number
+"
+"" set tabs to have 4 spaces
+" set ts=4
+"
+"" indent when moving to the next line while writing code
+"set autoindent
+"
+"" expand tabs into spaces
+"set expandtab
+"
+"" when using the >> or << commands, shift lines by 4 spaces
+"set shiftwidth=4
+"
+"" show a visual line under the cursor's current line
+"set cursorline
+"
+"" show the matching part of the pair for [] {} and ()
+"set showmatch
+"
+"" enable all Python syntax highlighting features
+"let python_highlight_all = 1
+"
+
+
+
+
+""-------------------------------------
+"".......//////Python Programming//......
+"--------------------------------------
+
+"Manage Auto identation acc to PEP-8
+au BufNewFile,BufRead *.py
+    \ set tabstop=4 |
+    \ set softtabstop=4 |
+    \ set shiftwidth=4 |
+    \ set textwidth=79 |
+    \ set expandtab |
+    \ set autoindent |
+    \ set fileformat=unix 
+
+"Identation for HTML, CSS and JS
+au BufNewFile,BufRead *.js, *.html, *.css
+    \ set tabstop=2|
+    \ set softtabstop=2|
+    \ set shiftwidth=2|
+
+"Activate syntax highlight and make code pretty.
+    let python_highlight_all=1
+    syntax on
+
+"Enabel neocomplete autocomplete feature by default.
+    let g:neocomplete#enable_at_startup = 1
+
+"python with virtualenv support
+py << EOF
+import os
+import sys
+if 'VIRTUAL_ENV' in os.environ:
+  project_base_dir = os.environ['VIRTUAL_ENV']
+  activate_this = os.path.join(project_base_dir, 'bin/activate_this.py')
+  execfile(activate_this, dict(__file__=activate_this))
+EOF
+
+
+    
+"Manage custom folding for python using simply fold.
+"installing simply fold will automatically override vim default foldign
+"written above but if you want to show docstring use.
+let g:SimpylFold_docstring_preview=1
+
+"Manage the autopopping pydoc.
+"If you prefer the Omni-Completion tip window to close when a selection is
+"made, these lines close it on movement in insert mode or when leaving
+"insert mode
+autocmd CursorMovedI * if pumvisible() == 0|pclose|endif
+autocmd InsertLeave * if pumvisible() == 0|pclose|endif
+
+
+"run python file from <F6>.
+"map <F6> <Esc>:w<CR>:!clear;python3 %<CR>
+nnoremap <buffer> <Leader>r :exec '!python3' shellescape(@%, 1)<Enter>
+"Run python Script from vim using the f6 button in a new window.
+"imap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
+"nmap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
+
+"save and run together
+imap <F6> <Esc><Leader>s<Leader>r 
+nmap <F6> <Leader>s<Leader>r
+
+"////////---------/////////////-----------------///////////////
+".....................................................................
 "--------------------
 " General Settings
 "--------------------
@@ -63,6 +165,8 @@ set ar				" auto read when file is changed from outside
 set nu				" show line numbers
 " auto reload vimrc when editing it
 autocmd! bufwritepost .vimrc source ~/.vimrc
+
+"auto reload file.
 
 syntax on			" syntax highlight
 set hlsearch		" search highlighting
@@ -104,19 +208,19 @@ nmap + <C-w>+
 nmap - <C-w>-
 "Tabs to spaces *tab insert spaces*
 set expandtab
-
+set ts=2
 "Remap esc to kj
 imap kj <esc>
 cnoremap kj <esc> 
 nmap kj <esc>
-
+    
 set nowrap       "Don't wrap lines
 set linebreak    "Wrap lines at convenient points
 
 " Move normally between wrapped lines
 nmap j gj
 nmap k gk
-
+  
 "write the file quick cmd.
 nmap <Leader>s :write<Enter>
 "quit quickly without writing.
@@ -127,22 +231,23 @@ nmap <Leader>w :wq!<Enter>
 "Remove highlight in search.
 nmap <Leader>h :nohl<Enter>
 
-...///////.....////////........////
-.........Graphics................
-..///////.......//////.//////./////
+
+"...///////.....////////........////
+".........Graphics................
+"..///////.......//////.//////./////
 
 
 "1. terminal color settings
-if has("gui_running")	" GUI color and font settings
-	set guifont=Courier:h18
-	set background=dark 
-	set t_Co=256		" 256 color mode
-	set cursorline	" highlight current line
-	highlight CursorLine  guibg=#003853 ctermbg=24  gui=none cterm=none
-	colors moria
-else
-	colors evening
-endif
+"if has("gui_running")	" GUI color and font settings
+"	set guifont=Courier:h18
+"	set background=dark 
+"	set t_Co=256		" 256 color mode
+"	set cursorline	" highlight current line
+"	highlight CursorLine  guibg=#003853 ctermbg=24  gui=none cterm=none
+"	colors moria
+"else
+"	colors evening
+"endif
 
 "..........OR..........
 "Choose which theme to use with logic.
@@ -176,106 +281,8 @@ fun! HasPaste()
 	endif
 endfun
 
-"3. Setup powerline in vim. first install powerline by pip install
-"powerline-status and do pip show powerline-status to get its path.
-"replace the path below by that path shown by pip.
-"To use powerline inside the vim editor.
-    set  rtp+=/usr/local/lib/python3.6/dist-packages/powerline/bindings/vim/
-    set laststatus=2
-    set t_Co=256
 
-"-------------------------------------
-".......//////Python Programming//......
-"--------------------------------------
-
-"Manage Auto identation acc to PEP-8
-au BufNewFile,BufRead *.py
-    \ set tabstop=4 |
-    \ set softtabstop=4 |
-    \ set shiftwidth=4 |
-    \ set textwidth=79 |
-    \ set expandtab |
-    \ set autoindent |
-    \ set fileformat=unix 
-
-"Identation for HTML, CSS and JS
-au BufNewFile,BufRead *.js, *.html, *.css
-    \ set tabstop=2
-    \ set softtabstop=2
-    \ set shiftwidth=2
-
-"Activate syntax highlight and make code pretty.
-    let python_highlight_all=1
-    syntax on
-
-"Enabel neocomplete autocomplete feature by default.
-    let g:neocomplete#enable_at_startup = 1
-
-"enable youcomplete at startup.(!!only use one bet neocomplete and
-"youcompleteme ok boss?>)
-let g:ycm_autoclose_preview_window_after_completion=1
-map <leader>g  :YcmCompleter GoToDefinitionElseDeclaration<CR>
-"I am not sure about below cmd will work. Its for statrting youicompletme
-"automatially when viim starts.
-"let g:youcompleteme#enable_at_startup = 1
-"python with virtualenv support
-py << EOF
-import os
-import sys
-if 'VIRTUAL_ENV' in os.environ:
-  project_base_dir = os.environ['VIRTUAL_ENV']
-  activate_this = os.path.join(project_base_dir, 'bin/activate_this.py')
-  execfile(activate_this, dict(__file__=activate_this))
-EOF
-
-"Manage custom folding for python using simply fold.
-"installing simply fold will automatically override vim default foldign
-"written above but if you want to show docstring use.
-let g:SimpylFold_docstring_preview=1
-
-"run python file from <F6>.
-map <F6> <Esc>:w<CR>:!clear;python3 %<CR>
-
-"Manage the autopopping pydoc.
-"If you prefer the Omni-Completion tip window to close when a selection is
-"made, these lines close it on movement in insert mode or when leaving
-"insert mode
-autocmd CursorMovedI * if pumvisible() == 0|pclose|endif
-autocmd InsertLeave * if pumvisible() == 0|pclose|endif
-
-
-"////////---------/////////////-----------------///////////////
-".....................................................................
-"/////////////////SIMPLE PYTHON SETUP WITHOUT PLUGINS.////////////////////////
-" enable syntax highlighting
-" syntax enable
-"
-" " show line numbers
-" set number
-"
-" " set tabs to have 4 spaces
-" set ts=4
-"
-" " indent when moving to the next line while writing code
-" set autoindent
-"
-" " expand tabs into spaces
-" set expandtab
-"
-" " when using the >> or << commands, shift lines by 4 spaces
-" set shiftwidth=4
-"
-" " show a visual line under the cursor's current line
-" set cursorline
-"
-" " show the matching part of the pair for [] {} and ()
-" set showmatch
-"
-" " enable all Python syntax highlighting features
-" let python_highlight_all = 1
-
-
-......OTHER SETUPS of Plugin.......
+"......OTHER SETUPS of Plugin.......
 "------------------------------
 
 "...............................
@@ -306,8 +313,46 @@ nmap <Leader>n :NERDTree<Enter>
 "Hide .pyc file in nerdtree.
     let NERDTreeIgnore=['\.pyc$', '\~$'] "ignore files in NERDTree
 
+"start nerdtree automatucally if no file js specjfisd or dir is opened.
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists("s:std_in") | exe 'NERDTree' argv()[0] | wincmd p | ene | endif
+
+"
+
+
+"/////////////////////////////////////////////////////////
+".....................NEoplete vim ////////////////////
+"....................................................
+
+"<TAB>: completion.
+ inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
+"<C-h>, <BS>: close popup and delete backword char.
+ inoremap <expr><C-h> neocomplete#smart_close_popup()."\<C-h>"
+ inoremap <expr><BS> neocomplete#smart_close_popup()."\<C-h>"
+ inoremap <expr><C-y>  neocomplete#close_popup()
+ inoremap <expr><C-e>  neocomplete#cancel_popup()
+
+"///////////////////////////////////////////////////////////////
+"....................Powerline .....................
+"/////////////////////////////////////////
+"To use powerline inside the vim editor.
+"    set  rtp+=/usr/local/lib/python3.4/dist-packages/powerline/bindings/vim/
+"    set laststatus=2
+"    set t_Co=256
+
+
+"......//////////////EMMET////////////////////
+".........................................
+"Map <C-y> to dt ok boss?
+let g:user_emmet_leader_key='dt'
+
+
+"Get templates by keyword & tab
+imap html<Tab> <esc>:r /dotfiles/webtemp/html.html<Enter>12j8li
+
+
 "....................END..............
 "///////////////////////////////////
-"LASTLY >>>>>>>>>
-"Add this to ~/.inputrc to use vim in shell.
-"set editing-mode vi
+

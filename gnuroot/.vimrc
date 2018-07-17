@@ -180,3 +180,4 @@ autocmd FileType html set omnifunc=htmlcomplete#CompleteTags
 "......//////////////EMMET////////////////////
 ".........................................
 "Map <C-y> to dt ok boss?
+let g:user_emmet_leader_key='dt'
