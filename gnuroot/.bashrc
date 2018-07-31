@@ -57,15 +57,35 @@ lpy (){
         cd /lpy/
         jn
 }
-
-
-
-
-
-
-
-
-
+vwake(){
+    source bin/activate
+}
+cenv () {
+        virtualenv $1 
+        cd $1
+        vwake
+        cd $2
+}
+sbash () {
+      source ~/.bashrc
+}
+upvrc () {
+      cp ~/.vimrc /dotfiles/gnuroot/ 
+      cd /dotfiles/
+      git add -A && git commit -m "added configs to my vimrc of gnuroot"
+}
+upbash () {
+      cp ~/.bashrc /dotfiles/gnuroot/
+      cd /dotfiles/
+      git add -A && git commit -m "added configs to my bashrc of gnuroot"
+}
+dpbash() {
+        cp /dotfiles/gnuroot/.bashrc ~/
+        
+}
+dpvrc () {
+        cp /dotfiles/gnuroot/.vimrc ~/
+}
 
 
 
