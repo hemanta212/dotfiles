@@ -50,7 +50,12 @@ Plugin 'gmarik/Vundle.vim'
 "Enable the powerline (basic file info at buttom. (  :) My dream!!)
    Plugin 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
 "
-" All of your Plugins must be added before the following line
+"emmet plugin for html css and js etc
+    Plugin 'mattn/emmet-vim'
+"plugin for cheat.sh
+    Plugin 'dbeniamine/cheat.sh-vim'
+
+ All of your Plugins must be added before the following line
 call vundle#end()            " required
 filetype plugin indent on    " required
 "--------------------

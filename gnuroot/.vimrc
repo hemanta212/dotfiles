@@ -190,7 +190,7 @@ set foldmethod=indent
 set foldlevel=99
 
 " Enable folding with the spacebar
-nnoremap <space> za
+"nnoremap <space> za
 "NOTE:THis folding may be bad use custom folding for your programming language
 "like simplyfold plugin for python.
 
