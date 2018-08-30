@@ -1,10 +1,6 @@
 # /////////////-----------------MY Aliases (hemanta sharma).......///////////////
 #/////////////////////////////////////////////////////////////////////////////////
 
-alias ohtml='cd /sdcard/my_projects/html_projects/ %% ls'
-alias vhtml='cd /sdcard/my_projects/html_projects/ %% vim'
-alias opy='cd /sdcard/my_projects/python_projects/ %% ls'
-alias vpy='cd /sdcard/my_projects/python_projects/ %% vim'
 alias jn='jupyter notebook --allow-root'
 
 #///////////..............MY functions/////////////////////
@@ -41,6 +37,11 @@ ov () {
     o $1 $2 
     v $1 $2
 } 
+# open dump folder for testing purposers practice etc
+pyplay (){
+    
+    vim /sdcard/my_projects/dumps/$1
+}
 home () {
 	cd ~
 	cd ../
@@ -87,10 +88,20 @@ dpvrc () {
         cp /dotfiles/gnuroot/.vimrc ~/
 }
 
+clone() {
+        cd /~/sdcard/
+        git clone https://github.com/%1/$2
+}
+        
+sd (){
+        cd /~/sdcard/
 
-
-
-
+}
+updotfiles () {
+        cd /dotfiles/
+        git pull origin master
+        git push origin master
+}
 function extract {
  if [ -z "$1" ]; then
 	     # display usage if no parameters given
