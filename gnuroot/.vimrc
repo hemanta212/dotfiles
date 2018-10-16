@@ -52,6 +52,10 @@ Plugin 'gmarik/Vundle.vim'
 "plugin for cheat.sh
     Plugin 'dbeniamine/cheat.sh-vim'
 
+" Terminal Vim with 256 colors colorscheme
+Plugin 'fisadev/fisa-vim-colorscheme'
+
+
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
 filetype plugin indent on    " required
@@ -235,8 +239,14 @@ nmap <Leader>h :nohl<Enter>
 
 "...///////.....////////........////
 ".........Graphics................
-"..///////.......//////.//////./////
-
+"
+" use 256 colors when possible
+if (&term =~? 'mlterm\|xterm\|xterm-256\|screen-256') || has('nvim')
+    let &t_Co = 256
+    colorscheme fisa
+else
+    colorscheme delek
+endif
 
 "1. terminal color settings
 "if has("gui_running")	" GUI color and font settings
