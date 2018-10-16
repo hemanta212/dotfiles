@@ -1,6 +1,9 @@
 # /////////////-----------------MY Aliases (hemanta sharma).......///////////////
-#/////////////////////////////////////////////////////////////////////////////////
-
+#///////////////////TO use powerline //////////////////////////////////////////////////////////////
+#powerline-daemon -q
+###POWERLINE_BASH_CONTINUATION=1
+##POWERLINE_BASH_SELECT=1
+#. /usr/local/lib/python3.4/dist-packages/powerline/bindings/bash/powerline.sh
 alias jn='jupyter notebook --allow-root'
 
 #///////////..............MY functions/////////////////////
@@ -27,7 +30,7 @@ d (){
 
 cv (){
 	c $1 $2
-	v $1 $2	
+	v $1 $2
 }
 
 co (){
@@ -35,12 +38,12 @@ co (){
 	o $1 $2
 }
 ov () {
-    o $1 $2 
+    o $1 $2
     v $1 $2
-} 
+}
 home () {
 	cd ~
-	 
+
 }
 
 vbash (){
@@ -58,7 +61,7 @@ vwake(){
     source bin/activate
 }
 cenv () {
-        virtualenv $1 
+        virtualenv $1
         cd $1
         vwake
         mkdir $2
@@ -68,7 +71,7 @@ sbash () {
       source ~/.bashrc
 }
 upvrc () {
-      cp ~/.vimrc /dotfiles/gnuroot/ 
+      cp ~/.vimrc /dotfiles/gnuroot/
       cd /dotfiles/
       git add -A && git commit -m "added configs to my vimrc of gnuroot"
 }
@@ -79,7 +82,7 @@ upbash () {
 }
 dpbash() {
         cp /dotfiles/gnuroot/.bashrc ~/
-        
+
 }
 dpvrc () {
         cp /dotfiles/gnuroot/.vimrc ~/
@@ -100,7 +103,7 @@ function extract {
 														    do
 																	      if [ -f "$n" ] ; then
 																					          case "${n%,}" in
-																											            *.tar.bz2|*.tar.gz|*.tar.xz|*.tbz2|*.tgz|*.txz|*.tar) 
+																											            *.tar.bz2|*.tar.gz|*.tar.xz|*.tbz2|*.tgz|*.txz|*.tar)
 																																		                         tar xvf "$n"       ;;
 																																														             *.lzma)      unlzma ./"$n"      ;;
 																																																				             *.bz2)       bunzip2 ./"$n"     ;;

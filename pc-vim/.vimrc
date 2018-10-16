@@ -103,7 +103,7 @@ au BufNewFile,BufRead *.py
     \ set textwidth=79 |
     \ set expandtab |
     \ set autoindent |
-    \ set fileformat=unix 
+    \ set fileformat=unix
 
 "Identation for HTML, CSS and JS
 au BufNewFile,BufRead *.js, *.html, *.css
@@ -134,7 +134,7 @@ if 'VIRTUAL_ENV' in os.environ:
 EOF
 
 
-    
+
 "Manage custom folding for python using simply fold.
 "installing simply fold will automatically override vim default foldign
 "written above but if you want to show docstring use.
@@ -156,7 +156,7 @@ nnoremap <buffer> <Leader>r :exec '!python3' shellescape(@%, 1)<Enter>
 "nmap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
 
 "save and run together
-imap <F5> <Esc><Leader>s<Leader>r 
+imap <F5> <Esc><Leader>s<Leader>r
 nmap <F5> <Leader>s<Leader>r
 
 "////////---------/////////////-----------------///////////////
@@ -208,7 +208,7 @@ au BufRead,BufNewFile *.py,*.pyw,*.c,*.h match BadWhitespace /\s\+$/
 set encoding=utf-8
 
 "Resize things straight forward.
-nmap < <C-w>< 
+nmap < <C-w><
 nmap > <C-w>>
 nmap + <C-w>+
 nmap - <C-w>-
@@ -217,16 +217,16 @@ set expandtab
 set ts=2
 "Remap esc to kj
 imap kj <esc>
-cnoremap kj <esc> 
+cnoremap kj <esc>
 nmap kj <esc>
-    
+
 set nowrap       "Don't wrap lines
 set linebreak    "Wrap lines at convenient points
 
 " Move normally between wrapped lines
 nmap j gj
 nmap k gk
-  
+
 "write the file quick cmd.
 nmap <Leader>s :write<Enter>
 "quit quickly without writing.
@@ -246,7 +246,7 @@ nmap <Leader>h :nohl<Enter>
 "1. terminal color settings
 "if has("gui_running")	" GUI color and font settings
 "	set guifont=Courier:h18
-"	set background=dark 
+"	set background=dark
 "	set t_Co=256		" 256 color mode
 "	set cursorline	" highlight current line
 "	highlight CursorLine  guibg=#003853 ctermbg=24  gui=none cterm=none
@@ -262,16 +262,16 @@ nmap <Leader>h :nohl<Enter>
 "       colorscheme solarized
 "    else
 "       colorscheme zenburn
-"    endif 
+"    endif
 "switching bet black and white solarized theme bg with f5..
 "    call togglebg#map("<F5>")
 
 "2. Built in Status bar(if powerline is not good for you.)
 " status line
 set laststatus=2
-set statusline=\ %{HasPaste()}%<%-15.25(%f%)%m%r%h\ %w\ \ 
-set statusline+=\ \ \ [%{&ff}/%Y] 
-set statusline+=\ \ \ %<%20.30(%{hostname()}:%{CurDir()}%)\ 
+set statusline=\ %{HasPaste()}%<%-15.25(%f%)%m%r%h\ %w\ \
+set statusline+=\ \ \ [%{&ff}/%Y]
+set statusline+=\ \ \ %<%20.30(%{hostname()}:%{CurDir()}%)\
 set statusline+=%=%-10.(%l,%c%V%)\ %p%%/%L
 
 fun! CurDir()
@@ -343,6 +343,9 @@ autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists("s:std_in
 "///////////////////////////////////////////////////////////////
 "....................Powerline .....................
 "/////////////////////////////////////////
+"Setup powerline in vim. first install powerline by pip install
+ "powerline-status and do pip show powerline-status to get its path.
+"replace the path below by that path shown by pip.
 "To use powerline inside the vim editor.
 "    set  rtp+=/usr/local/lib/python3.4/dist-packages/powerline/bindings/vim/
 "    set laststatus=2
@@ -361,4 +364,7 @@ imap html<Tab> <esc>:r /dotfiles/webtemp/html.html<Enter>12j8li
 
 "....................END..............
 "///////////////////////////////////
+"LASTLY >>>>>>>>>
+"Add this to ~/.inputrc to use vim in shell.
+"set editing-mode vi
 

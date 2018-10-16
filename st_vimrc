@@ -49,9 +49,6 @@ Plugin 'gmarik/Vundle.vim'
     Plugin 'mattn/emmet-vim'
 "Enable the powerline (basic file info at buttom. (  :) My dream!!)
    Plugin 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
-"
-"emmet plugin for html css and js etc
-    Plugin 'mattn/emmet-vim'
 "plugin for cheat.sh
     Plugin 'dbeniamine/cheat.sh-vim'
 
@@ -103,7 +100,7 @@ au BufRead,BufNewFile *.py,*.pyw,*.c,*.h match BadWhitespace /\s\+$/
 set encoding=utf-8
 
 "Resize things straight forward.
-nmap < <C-w>< 
+nmap < <C-w><
 nmap > <C-w>>
 nmap + <C-w>+
 nmap - <C-w>-
@@ -112,7 +109,7 @@ set expandtab
 
 "Remap esc to kj
 imap kj <esc>
-cnoremap kj <esc> 
+cnoremap kj <esc>
 nmap kj <esc>
 
 set nowrap       "Don't wrap lines
@@ -140,7 +137,7 @@ nmap <Leader>h :nohl<Enter>
 "1. terminal color settings
 if has("gui_running")	" GUI color and font settings
 	set guifont=Courier:h18
-	set background=dark 
+	set background=dark
 	set t_Co=256		" 256 color mode
 	set cursorline	" highlight current line
 	highlight CursorLine  guibg=#003853 ctermbg=24  gui=none cterm=none
@@ -156,16 +153,16 @@ endif
 "       colorscheme solarized
 "    else
 "       colorscheme zenburn
-"    endif 
+"    endif
 "switching bet black and white solarized theme bg with f5..
 "    call togglebg#map("<F5>")
 
 "2. Built in Status bar(if powerline is not good for you.)
 " status line
 set laststatus=2
-set statusline=\ %{HasPaste()}%<%-15.25(%f%)%m%r%h\ %w\ \ 
-set statusline+=\ \ \ [%{&ff}/%Y] 
-set statusline+=\ \ \ %<%20.30(%{hostname()}:%{CurDir()}%)\ 
+set statusline=\ %{HasPaste()}%<%-15.25(%f%)%m%r%h\ %w\ \
+set statusline+=\ \ \ [%{&ff}/%Y]
+set statusline+=\ \ \ %<%20.30(%{hostname()}:%{CurDir()}%)\
 set statusline+=%=%-10.(%l,%c%V%)\ %p%%/%L
 
 fun! CurDir()
@@ -181,13 +178,7 @@ fun! HasPaste()
 	endif
 endfun
 
-"3. Setup powerline in vim. first install powerline by pip install
-"powerline-status and do pip show powerline-status to get its path.
-"replace the path below by that path shown by pip.
-"To use powerline inside the vim editor.
-    set  rtp+=/usr/local/lib/python3.6/dist-packages/powerline/bindings/vim/
-    set laststatus=2
-    set t_Co=256
+
 
 "-------------------------------------
 ".......//////Python Programming//......
@@ -201,7 +192,7 @@ au BufNewFile,BufRead *.py
     \ set textwidth=79 |
     \ set expandtab |
     \ set autoindent |
-    \ set fileformat=unix 
+    \ set fileformat=unix
 
 "Identation for HTML, CSS and JS
 au BufNewFile,BufRead *.js, *.html, *.css
@@ -238,8 +229,6 @@ EOF
 "written above but if you want to show docstring use.
 let g:SimpylFold_docstring_preview=1
 
-"run python file from <F6>.
-map <F6> <Esc>:w<CR>:!clear;python3 %<CR>
 
 "Manage the autopopping pydoc.
 "If you prefer the Omni-Completion tip window to close when a selection is
@@ -247,6 +236,17 @@ map <F6> <Esc>:w<CR>:!clear;python3 %<CR>
 "insert mode
 autocmd CursorMovedI * if pumvisible() == 0|pclose|endif
 autocmd InsertLeave * if pumvisible() == 0|pclose|endif
+
+"run python file from <F6>.
+"map <F6> <Esc>:w<CR>:!clear;python3 %<CR>
+nnoremap <buffer> <Leader>r :exec '!python3' shellescape(@%, 1)<Enter>
+"Run python Script from vim using the f6 button in a new window.
+"imap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
+"nmap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
+
+"save and run together
+imap <F5> <Esc><Leader>s<Leader>r
+nmap <F5> <Leader>s<Leader>r
 
 
 "////////---------/////////////-----------------///////////////
@@ -310,6 +310,48 @@ nmap <Leader>n :NERDTree<Enter>
 
 "Hide .pyc file in nerdtree.
     let NERDTreeIgnore=['\.pyc$', '\~$'] "ignore files in NERDTree
+
+"start nerdtree automatucally if no file js specjfisd or dir is opened.
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists("s:std_in") | exe 'NERDTree' argv()[0] | wincmd p | ene | endif
+
+
+"/////////////////////////////////////////////////////////
+"............if you wanna use.........NEoplete vim ////////////////////
+"....................................................
+
+"<TAB>: completion.
+"inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
+"<C-h>, <BS>: close popup and delete backword char.
+" inoremap <expr><C-h> neocomplete#smart_close_popup()."\<C-h>"
+" inoremap <expr><BS> neocomplete#smart_close_popup()."\<C-h>"
+" inoremap <expr><C-y>  neocomplete#close_popup()
+" inoremap <expr><C-e>  neocomplete#cancel_popup()
+
+"///////////////////////////////////////////////////////////////
+"....................Powerline .....................
+"/////////////////////////////////////////
+"3. Setup powerline in vim. first install powerline by pip install
+"powerline-status and do pip show powerline-status to get its path.
+"replace the path below by that path shown by pip.
+"To use powerline inside the vim editor.
+
+"may cause error due to another python version "
+    set  rtp+=/usr/local/lib/python3.6/dist-packages/powerline/bindings/vim/
+    set laststatus=2
+    set t_Co=256
+
+"......//////////////EMMET////////////////////
+".........................................
+"Map <C-y> to dt ok boss?
+let g:user_emmet_leader_key='dt'
+
+
+"Get templates by keyword & tab
+imap html<Tab> <esc>:r /dotfiles/webtemp/html.html<Enter>12j8li
+
 
 "....................END..............
 "///////////////////////////////////
