@@ -358,3 +358,118 @@ let g:airline#extensions#whitespace#enabled = 0
 "let g:airline_symbols.branch = '⭠'
 "let g:airline_symbols.readonly = '⭤'
 "let g:airline_symbols.linenr = '⭡'
+
+"////////////////////////////////MY SETUP////////////////
+"//////////////////////////////////////////////////////////////
+"//////////////////////////////////////////////////////////////
+" General Settings
+"--------------------
+"set bs=indent,eol,start	" allow backspacing over everything in insert mode
+"set history=100		" keep 100 lines of command line history
+"set ruler			" show the cursor position all the time
+"set ar				" auto read when file is changed from outside
+"set nu				" show line numbers
+" auto reload vimrc when editing it
+autocmd! bufwritepost .vimrc source ~/.vimrc
+
+"auto reload file.
+
+syntax on			" syntax highlight
+set hlsearch		" search highlighting
+set clipboard=unnamed	" yank to the system register (*) by default
+set showmatch		" Cursor shows matching ) and }
+set showmode		" Show current mode
+
+"Telling vim where to split the screen when called :vs and :sp.
+"set splitbelow
+"set splitright
+
+"split navigations
+nnoremap <C-J> <C-W><C-J>
+nnoremap <C-K> <C-W><C-K>
+nnoremap <C-L> <C-W><C-L>
+nnoremap <C-H> <C-W><C-H>
+
+"Flagging Unnecessary Whitespace
+"highlight BadWhitespace ctermbg=red guibg=darkred
+"au BufRead,BufNewFile *.py,*.pyw,*.c,*.h match BadWhitespace /\s\+$/
+
+"Add utf-8 support default.
+"set encoding=utf-8
+
+"Resize things straight forward.
+nmap < <C-w>< 
+nmap > <C-w>>
+nmap + <C-w>+
+nmap - <C-w>-
+"Tabs to spaces *tab insert spaces*
+set expandtab
+set ts=2
+"Remap esc to kj
+imap kj <esc>
+cnoremap kj <esc> 
+nmap kj <esc>
+    
+"set nowrap       "Don't wrap lines
+"set linebreak    "Wrap lines at convenient points
+
+" Move normally between wrapped lines
+nmap j gj
+nmap k gk
+  
+"write the file quick cmd.
+nmap <Leader>s :write<Enter>
+"quit quickly without writing.
+nmap <Leader>q :q!<Enter>
+"save and quit.
+nmap <Leader>w :wq!<Enter>
+
+"Remove highlight in search.
+nmap <Leader>h :nohl<Enter>
+
+
+
+"...............................
+"-------NERDTree by scroollose.-------
+"////////////////////////////////////
+"......NERDTree Setup...............
+"Open directly to curently working file by \v
+nnoremap <silent> <Leader>v :NERDTreeFind<CR>
+
+"close after selecting one file to open.
+let NERDTreeQuitOnOpen = 1
+
+"Automaticlaly close tab if only nerdtree isopen
+"autocmd bufenter * if (winnr(“$”) == 1 && exists(“b:NERDTreeType”) &&
+"b:NERDTreeType == “primary”) | q | endif
+
+"Delete the buffer of file you delleted.
+let NERDTreeAutoDeleteBuffer = 1
+
+"Make it prettier.
+"DTreeMinimalUI = 1
+let NERDTreeDirArrows = 1
+
+"Open NERDTree quick.
+nmap <Leader>n :NERDTree<Enter>
+
+
+"Hide .pyc file in nerdtree.
+    let NERDTreeIgnore=['\.pyc$', '\~$'] "ignore files in NERDTree
+
+"start nerdtree automatucally if no file js specjfisd or dir is opened.
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists("s:std_in") | exe 'NERDTree' argv()[0] | wincmd p | ene | endif
+
+"
+
+"......//////////////EMMET////////////////////
+".........................................
+"Map <C-y> to dt ok boss?
+let g:user_emmet_leader_key='dt'
+
+
+
+
