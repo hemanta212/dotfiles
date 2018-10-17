@@ -82,7 +82,9 @@ Plug 'davidhalter/jedi-vim'
 
 " Automatically close parenthesis, etc
 Plug 'Townk/vim-autoclose'
-
+"Autocomplettion plugin by Neo.
+    Plug 'shougo/neocomplete.vim'
+"
 " Surround
 Plug 'tpope/vim-surround'
 
@@ -126,6 +128,14 @@ Plug 'vim-scripts/YankRing.vim'
 
 " Linters
 Plug 'neomake/neomake'
+
+"  
+"TO search basically anything from vim.(Use it by ctrl + p.
+    Plug 'kien/ctrlp.vim'
+"
+
+"Cheat.sh
+Plug 'dbeniamine/cheat.sh-vim'
 " TODO is it running on save? or when?
 " TODO not detecting errors, just style, is it using pylint?
 
@@ -185,13 +195,16 @@ set wildmode=list:longest
 
 " save as sudo
 ca w!! w !sudo tee "%"
-
+ 
 " tab navigation mappings
-map tt :tabnew
-map <M-Right> :tabn<CR>
-imap <M-Right> <ESC>:tabn<CR>
-map <M-Left> :tabp<CR>
-imap <M-Left> <ESC>:tabp<CR>
+map tp :tabp<CR>
+map tm :tabm 
+map tt :tabnew 
+map td :tab split<CR>
+map tn :tabn<CR>
+map ts :vs<CR>
+map tb :sp<CR>
+
 
 " when scrolling, keep cursor 3 lines away from screen border
 set scrolloff=3
@@ -257,10 +270,10 @@ nmap ,F :Lines<CR>
 " commands finder mapping
 nmap ,c :Commands<CR>
 " to be able to call CtrlP with default search text
-"function! CtrlPWithSearchText(search_text, ctrlp_command_end)
-    "execute ':CtrlP' . a:ctrlp_command_end
-    "call feedkeys(a:search_text)
-"endfunction
+function! CtrlPWithSearchText(search_text, ctrlp_command_end)
+    execute ':CtrlP' . a:ctrlp_command_end
+    call feedkeys(a:search_text)
+endfunction
 " same as previous mappings, but calling with current word as default text
 "nmap ,wg :call CtrlPWithSearchText(expand('<cword>'), 'BufTag')<CR>
 "nmap ,wG :call CtrlPWithSearchText(expand('<cword>'), 'BufTagAll')<CR>
@@ -289,7 +302,9 @@ let g:jedi#completions_enabled = 0
 
 " All these mappings work only for python code:
 " Go to definition
-let g:jedi#goto_command = ',d'
+"let g:jedi#goto_command = ',d'
+nmap ,d :vs<CR>:call jedi#goto()<CR>
+
 " Find ocurrences
 let g:jedi#usages_command = ',o'
 " Find assignments
@@ -348,16 +363,16 @@ let g:airline#extensions#whitespace#enabled = 0
 
 " to use fancy symbols for airline, uncomment the following lines and use a
 " patched font (more info on docs/fancy_symbols.rst)
-"if !exists('g:airline_symbols')
-   "let g:airline_symbols = {}
-"endif
-"let g:airline_left_sep = '⮀'
-"let g:airline_left_alt_sep = '⮁'
-"let g:airline_right_sep = '⮂'
-"let g:airline_right_alt_sep = '⮃'
-"let g:airline_symbols.branch = '⭠'
-"let g:airline_symbols.readonly = '⭤'
-"let g:airline_symbols.linenr = '⭡'
+if !exists('g:airline_symbols')
+   let g:airline_symbols = {}
+endif
+let g:airline_left_sep = '⮀'
+let g:airline_left_alt_sep = '⮁'
+let g:airline_right_sep = '⮂'
+let g:airline_right_alt_sep = '⮃'
+let g:airline_symbols.branch = '⭠'
+let g:airline_symbols.readonly = '⭤'
+let g:airline_symbols.linenr = '⭡'
 
 "////////////////////////////////MY SETUP////////////////
 "//////////////////////////////////////////////////////////////
@@ -381,8 +396,8 @@ set showmatch		" Cursor shows matching ) and }
 set showmode		" Show current mode
 
 "Telling vim where to split the screen when called :vs and :sp.
-"set splitbelow
-"set splitright
+set splitbelow
+set splitright
 
 "split navigations
 nnoremap <C-J> <C-W><C-J>
@@ -391,11 +406,11 @@ nnoremap <C-L> <C-W><C-L>
 nnoremap <C-H> <C-W><C-H>
 
 "Flagging Unnecessary Whitespace
-"highlight BadWhitespace ctermbg=red guibg=darkred
-"au BufRead,BufNewFile *.py,*.pyw,*.c,*.h match BadWhitespace /\s\+$/
+highlight BadWhitespace ctermbg=red guibg=darkred
+au BufRead,BufNewFile *.py,*.pyw,*.c,*.h match BadWhitespace /\s\+$/
 
 "Add utf-8 support default.
-"set encoding=utf-8
+set encoding=utf-8
 
 "Resize things straight forward.
 nmap < <C-w>< 
@@ -426,6 +441,31 @@ nmap <Leader>w :wq!<Enter>
 
 "Remove highlight in search.
 nmap <Leader>h :nohl<Enter>
+
+
+"python with virtualenv support
+py << EOF
+import os
+import sys
+if 'VIRTUAL_ENV' in os.environ:
+  project_base_dir = os.environ['VIRTUAL_ENV']
+  activate_this = os.path.join(project_base_dir, 'bin/activate_this.py')
+  execfile(activate_this,dict(__file__=activate_this))
+EOF
+
+"run python file from <F6>.
+"map <F5> <Esc>:w<CR>:!clear;python3 %<CR>
+nnoremap <F5> :sp<CR> :term python3 % <CR> 
+
+"Run python Script from vim using the f6 button in a new window.
+"imap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
+"nmap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
+
+"save and run together
+imap <Leader>b <Esc><Leader>s<F5>
+nmap <Leader>b <Leader>s<F5>
+nnoremap <Leader>bb :bd!<CR>
+
 
 
 
@@ -469,7 +509,43 @@ autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists("s:std_in
 ".........................................
 "Map <C-y> to dt ok boss?
 let g:user_emmet_leader_key='dt'
+"
+"......//////////////Relativ numbers////////////////////
+".........................................
+
+"map numbertoggle 
+map <Leader>nu :NumbersToggle<Enter>
+
+"map terminal esc
+map <ESC> :<C-\><C-n>
+map <Leader>t :sp term<CR>
+
+"
+"......//////////////i////////////////////
+
+"/////////////////////////////////////////////////////////
+".....................NEoplete vim ////////////////////
+"....................................................
+"Enabel neocomplete autocomplete feature by default.
+  let g:neocomplete#enable_at_startup = 1
 
 
+"<TAB>: completion.
+inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
+"<C-h>, <BS>: close popup and delete backword char.
+ inoremap <expr><C-h> neocomplete#smart_close_popup()."\<C-h>"
+ inoremap <expr><BS> neocomplete#smart_close_popup()."\<C-h>"
+ inoremap <expr><C-y>  neocomplete#close_popup()
+ inoremap <expr><C-e>  neocomplete#cancel_popup()
+
+
+
+
+"Manage the autopopping pydoc.
+"If you prefer the Omni-Completion tip window to close when a selection is
+"made, these lines close it on movement in insert mode or when leaving
+"insert mode
+"autocmd CursorMovedI * if pumvisible() == 0|pclose|endif
+"autocmd InsertLeave * if pumvisible() == 0|pclose|endif
 
 

@@ -15,7 +15,7 @@ call vundle#begin()
 "call vundle#begin('~/some/path/here')
 
 " let Vundle manage Vundle, required
-Plugin 'gmarik/Vundle.vim'
+Plugin 'VundleVim/Vundle.vim'
 
 " add all your plugins here (note older versions of Vundle
 " used Bundle instead of Plugin)
@@ -39,9 +39,9 @@ Plugin 'gmarik/Vundle.vim'
 "PEP-8 checking syntax plugin.
     Plugin 'nvie/vim-flake8'
 "Autocomplettion plugin by Neo.
-"    Plugin 'shougo/neocomplete.vim'
+    Plugin 'shougo/neocomplete.vim'
 "Autocomplete by Valloric. Use one bet neo and valloric's.
-	  Plugin 'Valloric/YouCompleteMe'
+"	  Plugin 'Valloric/YouCompleteMe'
 "plugin for theme Zenburn for CLI and another for GUI.(its logic is below).
     Plugin 'jnurmine/Zenburn'
     Plugin 'altercation/vim-colors-solarized'
@@ -51,6 +51,31 @@ Plugin 'gmarik/Vundle.vim'
 "   Plugin 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
 "plugin for cheat.sh
     Plugin 'dbeniamine/cheat.sh-vim'
+
+" Terminal Vim with 256 colors colorscheme
+Plugin 'fisadev/fisa-vim-colorscheme'
+
+" Linters
+Plugin 'neomake/neomake'
+
+" Plug 'fisadev/vim-ctrlp-cmdpalette'
+Plugin 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
+Plugin 'junegunn/fzf.vim'
+
+" Airline
+Plugin 'vim-airline/vim-airline'
+Plugin 'vim-airline/vim-airline-themes'
+
+Plugin 'Shougo/context_filetype.vim'
+" Python autocompletion
+Plugin 'zchee/deoplete-jedi', { 'do': ':UpdateRemotePlugins' }
+" Just to add the python go-to-definition and similar features, autocompletion
+" from this plugin is disabled
+Plugin 'davidhalter/jedi-vim'
+
+
+
+
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -116,12 +141,13 @@ au BufNewFile,BufRead *.js, *.html, *.css
     syntax on
 
 "Enabel neocomplete autocomplete feature by default.
- "   let g:neocomplete#enable_at_startup = 1
+   let g:neocomplete#enable_at_startup = 1
 
 "enable youcomplete at startup.(!!only use one bet neocomplete and
 "youcompleteme ok boss?>)
-let g:ycm_autoclose_preview_window_after_completion=1
-map <leader>g  :YcmCompleter GoToDefinitionElseDeclaration<CR>
+"let g:#enable_at_startup = 1
+"let g:ycm_autoclose_preview_window_after_completion=1
+"map <leader>g  :YcmCompleter GoToDefinitionElseDeclaration<CR>
 
 "python with virtualenv support
 py3 << EOF
@@ -158,6 +184,21 @@ nnoremap <buffer> <Leader>r :exec '!python3' shellescape(@%, 1)<Enter>
 "save and run together
 imap <F5> <Esc><Leader>s<Leader>r
 nmap <F5> <Leader>s<Leader>r
+
+
+"run python file from <F6>.
+"map <F5> <Esc>:w<CR>:!clear;python3 %<CR>
+nnoremap <F5> :sp<CR> :term python3 % <CR> 
+
+"Run python Script from vim using the f6 button in a new window.
+"imap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
+"nmap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
+
+"save and run together
+imap <Leader>b <Esc><Leader>s<F5>
+nmap <Leader>b <Leader>s<F5>
+
+
 
 "////////---------/////////////-----------------///////////////
 ".....................................................................
@@ -237,10 +278,48 @@ nmap <Leader>w :wq!<Enter>
 "Remove highlight in search.
 nmap <Leader>h :nohl<Enter>
 
+" autocompletion of files and commands behaves like shell
+" (complete only the common part, list the options that match)
+set wildmode=list:longest
+
+" save as sudo
+ca w!! w !sudo tee "%"
+ 
+" tab navigation mappings
+map tp :tabp<CR>
+map tm :tabm 
+map tt :tabnew 
+map td :tab split<CR>
+map tn :tabn<CR>
+map ts :vs<CR>
+map tb :sp<CR>
+
+
+" when scrolling, keep cursor 3 lines away from screen border
+set scrolloff=3
+
+
+"map numbertoggle 
+map <Leader>nu :NumbersToggle<Enter>
+
+"map terminal esc
+nnoremap kj :<C-\><C-n>
+map <Leader>t :term<CR>
+
+
 
 "...///////.....////////........////
 ".........Graphics................
 "..///////.......//////.//////./////
+
+" use 256 colors when possible
+if (&term =~? 'mlterm\|xterm\|xterm-256\|screen-256') || has('nvim')
+    let &t_Co = 256
+    colorscheme fisa
+else
+    colorscheme delek
+endif
+
 
 
 "1. terminal color settings
@@ -333,12 +412,12 @@ autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists("s:std_in
 "....................................................
 
 "<TAB>: completion.
-" inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
+inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
 "<C-h>, <BS>: close popup and delete backword char.
-" inoremap <expr><C-h> neocomplete#smart_close_popup()."\<C-h>"
-" inoremap <expr><BS> neocomplete#smart_close_popup()."\<C-h>"
-" inoremap <expr><C-y>  neocomplete#close_popup()
-" inoremap <expr><C-e>  neocomplete#cancel_popup()
+ inoremap <expr><C-h> neocomplete#smart_close_popup()."\<C-h>"
+ inoremap <expr><BS> neocomplete#smart_close_popup()."\<C-h>"
+ inoremap <expr><C-y>  neocomplete#close_popup()
+ inoremap <expr><C-e>  neocomplete#cancel_popup()
 
 "///////////////////////////////////////////////////////////////
 "....................Powerline .....................
@@ -360,6 +439,84 @@ let g:user_emmet_leader_key='dt'
 
 "Get templates by keyword & tab
 imap html<Tab> <esc>:r /dotfiles/webtemp/html.html<Enter>12j8li
+
+
+" Neomake ------------------------------
+
+" Run linter on write
+autocmd! BufWritePost * Neomake
+
+" Check code as python3 by default
+let g:neomake_python_python_maker = neomake#makers#ft#python#python()
+let g:neomake_python_flake8_maker = neomake#makers#ft#python#flake8()
+let g:neomake_python_python_maker.exe = 'python3 -m py_compile'
+let g:neomake_python_flake8_maker.exe = 'python3 -m flake8'
+
+" Fzf ------------------------------
+
+" file finder mapping
+nmap ,e :Files<CR>
+" tags (symbols) in current file finder mapping
+nmap ,g :BTag<CR>
+" tags (symbols) in all files finder mapping
+nmap ,G :Tag<CR>
+" general code finder in current file mapping
+nmap ,f :BLines<CR>
+" general code finder in all files mapping
+nmap ,F :Lines<CR>
+" commands finder mapping
+nmap ,c :Commands<CR>
+" to be able to call CtrlP with default search text
+"function! CtrlPWithSearchText(search_text, ctrlp_command_end)
+    "execute ':CtrlP' . a:ctrlp_command_end
+    "call feedkeys(a:search_text)
+"endfunction
+" same as previous mappings, but calling with current word as default text
+"nmap ,wg :call CtrlPWithSearchText(expand('<cword>'), 'BufTag')<CR>
+"nmap ,wG :call CtrlPWithSearchText(expand('<cword>'), 'BufTagAll')<CR>
+"nmap ,wf :call CtrlPWithSearchText(expand('<cword>'), 'Line')<CR>
+"nmap ,we :call CtrlPWithSearchText(expand('<cword>'), '')<CR>
+"nmap ,pe :call CtrlPWithSearchText(expand('<cfile>'), '')<CR>
+"nmap ,wm :call CtrlPWithSearchText(expand('<cword>'), 'MRUFiles')<CR>
+"nmap ,wc :call CtrlPWithSearchText(expand('<cword>'), 'CmdPalette')<CR>
+
+" Airline ------------------------------
+
+let g:airline_powerline_fonts = 0
+let g:airline_theme = 'bubblegum'
+let g:airline#extensions#whitespace#enabled = 0
+
+" to use fancy symbols for airline, uncomment the following lines and use a
+" patched font (more info on docs/fancy_symbols.rst)
+if !exists('g:airline_symbols')
+   let g:airline_symbols = {}
+endif
+let g:airline_left_sep = '⮀'
+let g:airline_left_alt_sep = '⮁'
+let g:airline_right_sep = '⮂'
+let g:airline_right_alt_sep = '⮃'
+let g:airline_symbols.branch = '⭠'
+let g:airline_symbols.readonly = '⭤'
+let g:airline_symbols.linenr = '⭡'
+
+"" Jedi-vim ------------------------------
+
+" Disable autocompletion (using deoplete instead)
+let g:jedi#completions_enabled = 0
+
+" All these mappings work only for python code:
+" Go to definition
+"let g:jedi#goto_command = ',d'
+nmap ,d :vs<CR>:call jedi#goto()<CR>
+
+" Find ocurrences
+let g:jedi#usages_command = ',o'
+" Find assignments
+let g:jedi#goto_assignments_command = ',a'
+" Go to definition in new tab
+nmap ,D :tab split<CR>:call jedi#goto()<CR>
+
+
 
 
 "....................END..............
