@@ -1,0 +1,58 @@
+LEVEL 1: DO IT FIRST IN ANY PROBLEM
+First goto software and update and change the server
+Have some patience it will be fixed.........
+
+LEVEL 2 : IF level one doesnot work
+Software r updates ma bhako sablai untick garne(disselect garne) and try 
+sudo apt-get update 
+
+LEVEL 3 : IF LEVEL 2 DOESNOT WORK
+sudo rm -rf /var/lib/apt/lists/*
+sudo apt-get update
+
+lEVEL 4: IF LEVEL 3 DONT WORK
+sudo sed -i -re 's/\w+\.archive\.ubuntu\.com/archive.ubuntu.com/g' /etc/apt/sources.list
+sudo apt-get update
+
+or 
+sudo sed -i 's/[a-z][a-z].archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list 
+sudo apt-get update
+
+LEVEL 5 :if level 4 dont work
+sudo rm -rf /var/lib/apt/lists/partial
+sudo apt-get update -o Acquire::CompressionTypes::Order::=gz
+
+
+
+LEvel 6 :IT should work by now but if not then
+
+cd ~/etc/apt/apt.conf.d/ 
+touch 99fixbadproxy
+
+sudo gedit /etc/apt/apt.conf.d/99fixbadproxy
+nano 99fixbadproxy
+
+                  Paste this into 99fixbadproxy and save it:
+
+Acquire::http::Pipeline-Depth 0;
+Acquire::http::No-Cache true;
+Acquire::BrokenProxy    true;
+
+                      Now run the update command:
+
+sudo apt-get update
+
+OTHER SOLUTIONS TRY THESE MAY BE IT WILL HELP ...................
+
+apt-cacher-ng
+remove the proxy in file /etc/apt/apt.conf.d/01proxy
+
+Acquire::http::Proxy "http://xxx.xx.xx.xx:4321";
+
+THEN DO LEVEL 3
+
+
+
+LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
+
+GOTO SOFWARE ADN UPDATE AND CLICK SOURCE
