@@ -5,6 +5,19 @@
 ##POWERLINE_BASH_SELECT=1
 #. /usr/local/lib/python3.4/dist-packages/powerline/bindings/bash/powerline.sh
 alias jn='jupyter notebook --allow-root'
+alias vdir='~/.config/nvim/'
+cdls() { cd "$@" && ls -la; }
+cds() { cd "$@" && ls; }
+set-vimrc() {
+    echo("copying .vimrc")
+    cd ~/dotfiles;
+    cp pc-vim/.vimrc ~/ ;
+    echo("copied .vimrc!!")
+    echo("copying other vimrc modules")
+    cd pc-vim;
+    cp init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/.vim/;
+    echo("done!")
+}
 
 #///////////..............MY functions/////////////////////
 #///////////////////////////////////////////////
