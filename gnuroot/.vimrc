@@ -148,8 +148,8 @@ autocmd InsertLeave * if pumvisible() == 0|pclose|endif
 
 
 "run python file from <F6>.
-"map <F6> <Esc>:w<CR>:!clear;python3 %<CR>
-nnoremap <buffer> <Leader>r :exec '!python3' shellescape(@%, 1)<Enter>
+map <Leader>r <Esc>:w<CR>:!clear;python3 %<CR>
+"nnoremap <buffer> <Leader>r :exec '!python3' shellescape(@%, 1)<Enter>
 "Run python Script from vim using the f6 button in a new window.
 "imap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
 "nmap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
@@ -188,6 +188,16 @@ nnoremap <C-J> <C-W><C-J>
 nnoremap <C-K> <C-W><C-K>
 nnoremap <C-L> <C-W><C-L>
 nnoremap <C-H> <C-W><C-H>
+
+" tab navigation mappings
+map tp :tabp<CR>
+map tm :tabm 
+map tt :tabnew 
+map td :tab split<CR>
+map tn :tabn<CR>
+map ts :vs<CR>
+map tb :sp<CR>
+
 
 "Enable folding
 set foldmethod=indent
@@ -234,8 +244,10 @@ nmap <Leader>q :q!<Enter>
 nmap <Leader>w :wq!<Enter>
 
 "Remove highlight in search.
-nmap <Leader>h :nohl<Enter>
-
+nmap <Leader>h :help<Enter>
+map <Leader>hn :nohl<Enter>
+nmap <Leader>nc :set noic<CR>
+nmap <Leader>ic :set ic<CR>/
 
 "...///////.....////////........////
 ".........Graphics................
