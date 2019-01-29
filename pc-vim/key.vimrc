@@ -1,21 +1,23 @@
 "//////////////REAL ONE THAT I USE///////////
 "IF you dont have a VIrutalenv set up and want to run in separate window
-nnoremap <buffer> <Leader>p  :exec '!python3' shellescape(@%, 1)<Enter>
+"nnoremap <buffer> <Leader>p  :exec '!python3' shellescape(@%, 1)<Enter>
 
 "IF you dont have a VIrutalenv set up and want to run in same window as of
 "file
-nnoremap <buffer> <Leader>pp :term python3 % <CR>
+"nnoremap <buffer> <Leader>pp :term python3 % <CR>
 
 "IF you have virtual env and want to run 
 "in separate window
-nnoremap <buffer> <F6>  :exec '!pipenv run python' shellescape(@%, 1)<Enter>
+nnoremap <buffer> <F6>  :exec '!python3' shellescape(@%, 1)<Enter>
+"nnoremap <buffer> <F6>  :exec '!pipenv run python' shellescape(@%, 1)<Enter>
 
 "save and run together
-imap <Leader>r <Esc><Leader>s<F6>
-nmap <Leader>r <Leader>s<F6>
+"imap <Leader>r <Esc><Leader>s<F6>
+"nmap <Leader>r <Leader>s<F6>
 
 "IF you have virtual env and want to run 
 "result in below your file not in separate window
+"nnoremap <F5> :term python3 % <CR>
 nnoremap <F5> :term pipenv run python % <CR>
 
 "save and run together
@@ -75,8 +77,8 @@ map tm :tabm
 map tt :tabnew 
 map td :tab split<CR>
 map tn :tabn<CR>
-map ts :vs<CR>
-map tb :sp<CR>
+map ts :vs 
+map tb :sp 
 
 "map numbertoggle 
 map <Leader>nu :NumbersToggle<Enter>

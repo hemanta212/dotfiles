@@ -17,6 +17,9 @@ au BufNewFile,BufRead *.js, *.html, *.css
     \ set tabstop=2|
     \ set softtabstop=2|
     \ set shiftwidth=2|
+    \ set expandtab |
+    \ set autoindent |
+    \ set fileformat=unix
 
 "Activate syntax highlight and make code pretty.
     let python_highlight_all=1

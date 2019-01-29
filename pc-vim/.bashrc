@@ -1,10 +1,14 @@
 export DISPLAY=localhost:0
+export LIBGL_ALWAYS_INDIRECT=1
 # some more ls aliases
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
+alias pg='ping google.com'
 alias work='cd /mnt/f/my_projects/'
-alias xserv="/mnt/c/'Program Files'/VcXsrv/vcxsrv.exe"
+alias down='cd /mnt/f/Downloads/'
+alias x="/mnt/f/programs/Xming/Xming.exe -multiwindow"
+alias xserv="/mnt/c/'Program Files'/VcXsrv/vcxsrv.exe -multiwindow"
 alias subl="/mnt/c/'Program Files'/'Sublime Text 3'/sublime_text.exe"
 alias brave="/mnt/c/'Program Files (x86)'/BraveSoftware/Brave-Browser/Application/brave.exe"
 alias sbash="source ~/.bashrc"
