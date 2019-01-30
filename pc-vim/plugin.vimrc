@@ -55,7 +55,7 @@ inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
  inoremap <expr><C-e>  neocomplete#cancel_popup()
 
 "Enabel neocomplete autocomplete feature by default.
-"let g:neocomplete#enable_at_startup = 1
+let g:neocomplete#enable_at_startup = 1
 
 
 
@@ -64,7 +64,7 @@ inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
 "....................................................
 
 
-let g:deoplete#enable_at_startup = 1
+"let g:deoplete#enable_at_startup = 1
 
 
 "///////////////////////////////////////////////////////////////
