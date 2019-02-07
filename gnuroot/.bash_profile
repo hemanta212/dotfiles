@@ -20,22 +20,21 @@ alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 alias pg='ping google.com'
+alias pip3='pip3.4'
 
-set-vimrc() {
+upvrc() {
     cd ~;
-    cp .vimrc /home/dotfiles/gnuroot/;
+    cp .vimrc ~/dotfiles/gnuroot/;
     cd  ~/.vim/ ;
-    cp init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc /home/dotfiles/gnuroot/;
-    cd /home/dotfiles/
+    cp init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/dotfiles/gnuroot/;
+    cd ~/dotfiles/
     git add . && git commit -m "updated vim files"
     cd ;
 }
 
-get-vimrc() {
-    cd /home/dotfiles;
-    cp pc-vim/.vimrc ~/ ;
-    cd pc-vim;
-    cp init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/.vim/;
+dpvrc() {
+    cd ~/dotfiles/gnuroot/;
+    cp .vimrc init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/.vim/;
     cd ;
 }
 
@@ -105,12 +104,13 @@ sbash () {
 }
 upbash () {
       cd ~
-      cp .bashrc .bash_profile .bash_prompt /home/dotfiles/gnuroot/
-      cd /home/dotfiles/
+      cp .bashrc .bash_profile .aliases .bash_prompt ~/dotfiles/gnuroot/
+      cd ~/dotfiles/
       git add . && git commit -m "added configs to my bashrc of gnuroot"
 }
 dpbash() {
-        cp home/dotfiles/gnuroot/.bashrc .bash_prompt .bash_profile  ~/
+        cd ~/dotfiles/gnuroot/
+        cp .bashrc .aliases .bash_prompt .bash_profile  ~/
         
 }
 clone() {
@@ -123,7 +123,7 @@ sd (){
 
 }
 updotfiles () {
-        cd /home/dotfiles/
+        cd ~/dotfiles/
         git pull origin master
         git push origin master
 }
