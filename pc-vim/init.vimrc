@@ -89,10 +89,8 @@ Plug 'Shougo/context_filetype.vim'
 "Plug 'zchee/deoplete-jedi', { 'do': ':UpdateRemotePlugins' }
 " Just to add the python go-to-definition and similar features, autocompletion
 " from this plugin is disabled
-Plug 'davidhalter/jedi-vim'
-"Dependencies for deoplete-vim
-"Plug 'roxma/vim-hug-neovim-rpc'
-"Plug 'roxma/nvim-yarp'
+"Plug 'davidhalter/jedi-vim'
+
 "DEOPLETE VIM 
 "if has('nvim')
 "  Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }

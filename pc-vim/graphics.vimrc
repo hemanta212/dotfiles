@@ -34,16 +34,16 @@ endfun
 
 
 "1. terminal color settings
-"if has("gui_running")	" GUI color and font settings
-"	set guifont=Courier:h18
-"	set background=dark
-"	set t_Co=256		" 256 color mode
-"	set cursorline	" highlight current line
-"	highlight CursorLine  guibg=#003853 ctermbg=24  gui=none cterm=none
-"	colors moria
+if has("gui_running")	" GUI color and font settings
+	set guifont=Courier:h18
+	set background=dark
+	set t_Co=256		" 256 color mode
+	set cursorline	" highlight current line
+	highlight CursorLine  guibg=#003853 ctermbg=24  gui=none cterm=none
+	colorsheme solarized
 "else
 "	colors evening
-"endif
+endif
 
 "..........OR..........
 "Choose which theme to use with logic.

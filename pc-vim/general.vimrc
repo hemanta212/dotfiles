@@ -13,11 +13,11 @@ set hlsearch		" search highlighting
 set clipboard=unnamed	" yank to the system register (*) by default
 set showmatch		" Cursor shows matching ) and }
 set showmode		" Show current mode
-
+"set background=dark
 "Telling vim where to split the screen when called :vs and :sp.
 set splitbelow
 set splitright
-
+set t_Co=256
 set encoding=utf-8
 
 "Tabs to spaces *tab insert spaces*

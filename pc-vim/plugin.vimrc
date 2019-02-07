@@ -140,20 +140,20 @@ let g:airline_symbols.branch = '⭠'
 let g:airline_symbols.readonly = '⭤'
 let g:airline_symbols.linenr = '⭡'
 
-"" Jedi-vim ------------------------------
+"" Jedivim ------------------------------
 
 " Disable autocompletion (using deoplete instead)
-let g:jedi#completions_enabled = 0
+"let g:jedi#completions_enabled = 0
 
 " All these mappings work only for python code:
 " Go to definition
 "let g:jedi#goto_command = ',d'
-nmap ,d :vs<CR>:call jedi#goto()<CR>
+"nmap ,d :vs<CR>:call jedi#goto()<CR>
 
 " Find ocurrences
-let g:jedi#usages_command = ',o'
+"let g:jedi#usages_command = ',o'
 " Find assignments
-let g:jedi#goto_assignments_command = ',a'
+"let g:jedi#goto_assignments_command = ',a'
 " Go to definition in new tab
-nmap ,D :tab split<CR>:call jedi#goto()<CR>
+"nmap ,D :tab split<CR>:call jedi#goto()<CR>
 
