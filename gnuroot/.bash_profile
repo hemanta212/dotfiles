@@ -14,14 +14,6 @@ if [ -f ~/.git-completion.bash ]; then
     source ~/.git-completion.bash
 fi
 
-# some more ls aliases
-alias jn='jupyter notebook --allow-root'
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
-alias pg='ping google.com'
-alias pip3='pip3.4'
-
 upvrc() {
     cd ~;
     cp .vimrc ~/dotfiles/gnuroot/;
@@ -38,58 +30,58 @@ dpvrc() {
     cd ;
 }
 
-c (){
-	mkdir /sdcard/my_projects/$1/$2
-	git init /sdcard/my_projects/$1/$2
-}
+#c (){
+#	mkdir /sdcard/my_projects/$1/$2
+#	git init /sdcard/my_projects/$1/$2
+#}
 
-v () {
- vim /sdcard/my_projects/$1/$2
-}
-
-o () {
- cd /sdcard/my_projects/$1/$2
- ls
-}
-
-d (){
-	rm -rf /sdcard/my_projects/$1/$2
-}
-
-cv (){
-	c $1 $2
-	v $1 $2	
-}
-
-co (){
-	c $1 $2
-	o $1 $2
-}
-ov () {
-    o $1 $2 
-    v $1 $2
-} 
+#v () {
+# vim /sdcard/my_projects/$1/$2
+#}
+#
+#o () {
+# cd /sdcard/my_projects/$1/$2
+# ls
+#}
+#
+#d (){
+#	rm -rf /sdcard/my_projects/$1/$2
+#}
+#
+#cv (){
+#	c $1 $2
+#	v $1 $2	
+#}
+#
+#co (){
+#	c $1 $2
+#	o $1 $2
+#}
+#ov () {
+#    o $1 $2 
+#    v $1 $2
+#} 
 # open dump folder for testing purposers practice etc
-pyplay (){
-    
+dump (){
     vim /sdcard/my_projects/dumps/$1
 }
 home () {
 	cd ~
 	cd ../
 }
-
+vrc (){
+        vim ~/.vim/$1.vimrc
+}
 vbash (){
         vim ~/.bashrc
 }
-vrc (){
-        vim ~/.vim
+valias (){
+        vim ~/.aliases
+}
+vprofile (){
+        vim ~/.bash_profile
 }
 
-lpy (){
-        cd /lpy/
-        jn
-}
 vwake(){
     source bin/activate
 }
