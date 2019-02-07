@@ -1,5 +1,3 @@
-clear
-cd
 export PATH="/usr/local/sbin:$PATH";
 
 # Load dotfiles:
@@ -69,7 +67,7 @@ vwake(){
     source bin/activate
 }
 cenv () {
-        poetry $1 
+        poetry init $1 
         cd $1
 }
 

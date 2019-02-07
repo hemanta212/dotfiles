@@ -27,11 +27,7 @@ alias egrep='egrep --color=auto'
 alias sudo='sudo '
 
 # some more ls aliases
-alias jn='jupyter notebook --allow-root'
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 alias pg='ping google.com'
-alias pip3='pip3.4'
-
-
