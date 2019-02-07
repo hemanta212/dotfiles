@@ -8,7 +8,7 @@
 
 "IF you have virtual env and want to run 
 "in separate window
-nnoremap <buffer> <F6>  :exec '!python3' shellescape(@%, 1)<Enter>
+"nnoremap <buffer> <F6>  :exec '!python3' shellescape(@%, 1)<Enter>
 "nnoremap <buffer> <F6>  :exec '!pipenv run python' shellescape(@%, 1)<Enter>
 
 "save and run together
@@ -18,11 +18,23 @@ nnoremap <buffer> <F6>  :exec '!python3' shellescape(@%, 1)<Enter>
 "IF you have virtual env and want to run 
 "result in below your file not in separate window
 "nnoremap <F5> :term python3 % <CR>
-nnoremap <F5> :term pipenv run python % <CR>
+"nnoremap <F5> :term pipenv run python % <CR>
 
 "save and run together
-imap <Leader>b <Esc><Leader>s<F5>
-nmap <Leader>b <Leader>s<F5> 
+"imap <Leader>b <Esc><Leader>s<F5>
+"nmap <Leader>b <Leader>s<F5> 
+
+"run python file from <F6>.
+map <Leader>r <Esc>:w<CR>:!clear;python3 %<CR>
+"nnoremap <buffer> <Leader>r :exec '!python3' shellescape(@%, 1)<Enter>
+"Run python Script from vim using the f6 button in a new window.
+"imap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
+"nmap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
+
+"save and run together
+imap <F6> <Esc><Leader>s<Leader>r
+nmap <F6> <Leader>s<Leader>r
+
 
 "OTHER OPTIONS As well
 "run python file from <F6>.
