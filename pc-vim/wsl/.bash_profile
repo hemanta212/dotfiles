@@ -1,13 +1,13 @@
-export DISPLAY=localhost:0
-export LIBGL_ALWAYS_INDIRECT=1
-
-export PATH="/usr/local/sbin:$PATH";
-
 # Load dotfiles:
 for file in ~/.{bash_prompt,aliases}; do
     [ -r "$file" ] && [ -f "$file" ] && source "$file";
 done;
 unset file;
+
+export DISPLAY=localhost:0
+export LIBGL_ALWAYS_INDIRECT=1
+
+export PATH="/usr/local/sbin:$PATH";
 
 #Git auto-complete
 if [ -f ~/.git-completion.bash ]; then
@@ -56,7 +56,7 @@ vrc (){
 vbash (){
         vim ~/.bashrc
 }
-bash (){
+sobash (){
         source ~/.bashrc
 }
 valias (){
