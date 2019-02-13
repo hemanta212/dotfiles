@@ -1,3 +1,4 @@
+clear
 cd
 export PATH="/usr/local/sbin:$PATH";
 export PATH="$HOME/anaconda/bin:$PATH";
