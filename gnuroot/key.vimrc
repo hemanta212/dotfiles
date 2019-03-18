@@ -92,8 +92,14 @@ map tn :tabn<CR>
 map ts :vs 
 map tb :sp 
 
+
 "map numbertoggle 
 map <Leader>nu :NumbersToggle<Enter>
+map <Leader>dt :r !python3 ~/.personal/.time.py date<Enter>o<esc><Leader>dtt
+map <Leader>dtt :r !python3 ~/.personal/.time.py time<Enter>^i<tab><tab><esc>o<esc>o
+
+map <Leader>ip vip<C-v><S-i><tab><tab><esc> 
+map <Leader>uip vip< 
 
 "map terminal esc
 "tnoremap kj :<C-\><C-n>

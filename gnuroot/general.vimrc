@@ -10,6 +10,7 @@ set ar				" auto read when file is changed from outside
 set nu				" show line numbers
 syntax on			" syntax highlight
 set hlsearch		" search highlighting
+set incsearch
 set clipboard=unnamed	" yank to the system register (*) by default
 set showmatch		" Cursor shows matching ) and }
 set showmode		" Show current mode
