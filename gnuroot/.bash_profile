@@ -1,8 +1,11 @@
 clear
 cd
+
+TZ='Asia/Kathmandu'; export TZ
 export PATH="/usr/local/sbin:$PATH";
 export PATH="$HOME/anaconda/bin:$PATH";
-
+export LC_ALL='C.UTF-8'
+export LANG='C.UTF-8'
 # Load dotfiles:
 for file in ~/.{bash_prompt,aliases}; do
     [ -r "$file" ] && [ -f "$file" ] && source "$file";
@@ -30,6 +33,15 @@ dpvrc() {
     cd ;
 }
 
+dvim () {
+  cd ~/.personal/daily/;
+  vim $1.md; 
+}
+
+cvim () {
+  cd ~/.personal/coding/;
+  vim $1.md; 
+}
 #c (){
 #	mkdir /sdcard/my_projects/$1/$2
 #	git init /sdcard/my_projects/$1/$2
@@ -106,7 +118,6 @@ dpbash() {
         
 }
 clone() {
-        cd 
         git clone https://github.com/$1/$2
 }
         
