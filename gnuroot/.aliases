@@ -1,3 +1,4 @@
+alias 'pipi'='pip3 install --index-url https://n0n3m4.ru/repos/pydroid3/pypi/arm --extra-index-url https://n0n3m4.ru/repos/pydrod3/pypi/common'
 # Shortcuts
 alias ch='history | grep "git commit"'
 alias hg='history | grep'

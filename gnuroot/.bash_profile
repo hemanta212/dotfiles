@@ -6,6 +6,7 @@ export PATH="/usr/local/sbin:$PATH";
 export PATH="$HOME/anaconda/bin:$PATH";
 export LC_ALL='C.UTF-8'
 export LANG='C.UTF-8'
+
 # Load dotfiles:
 for file in ~/.{bash_prompt,aliases}; do
     [ -r "$file" ] && [ -f "$file" ] && source "$file";
@@ -42,14 +43,7 @@ cvim () {
   cd ~/.personal/coding/;
   vim $1.md; 
 }
-#c (){
-#	mkdir /sdcard/my_projects/$1/$2
-#	git init /sdcard/my_projects/$1/$2
-#}
 
-#v () {
-# vim /sdcard/my_projects/$1/$2
-#}
 #
 #o () {
 # cd /sdcard/my_projects/$1/$2
