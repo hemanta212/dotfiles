@@ -96,11 +96,17 @@ map tb :sp
 "map numbertoggle 
 map <Leader>nu :NumbersToggle<Enter>
 map <Leader>dt :r !python3 ~/.personal/.time.py date<Enter>o<esc><Leader>dtt
-map <Leader>dtt :r !python3 ~/.personal/.time.py time<Enter>^i<tab><tab><esc>o<esc>o
-
-map <Leader>ip vip<C-v><S-i><tab><tab><esc> 
+map <Leader>dtt :r !python3 ~/.personal/.time.py time<Enter>^i<tab><tab><esc>o<esc>o<tab><tab>
+map <Leader>ip vip<C-v><S-i><tab><esc> 
 map <Leader>uip vip< 
 
+map <Leader>cp vip<C-v><S-i>#<esc> 
+map <Leader>cl ^i# <esc>
+map <Leader>cs <C-v><S-i># <esc>
+map <Leader>dp <S-[>i'''<esc><S-]>i'''<esc>2<C-o>
+map <Leader>ds <S-i>i'''<esc><C-o>i'''<esc><C-o>
+
+map <Leader>ucs <C-v>x<esc>
 "map terminal esc
 "tnoremap kj :<C-\><C-n>
 "map <Leader>t :term<CR>

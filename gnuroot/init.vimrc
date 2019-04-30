@@ -82,6 +82,9 @@ Plug 'junegunn/fzf.vim'
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
 
+"Vim-tmux-navigator
+Plug 'christoomey/vim-tmux-navigator'
+
 Plug 'Shougo/context_filetype.vim'
 " Just to add the python go-to-definition and similar features, autocompletion
 "DEOPLETE VIM 
