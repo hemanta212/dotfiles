@@ -6,9 +6,19 @@ for file in ~/.{bash_prompt,aliases}; do
 done;
 unset file;
 
+for file in ~/.{pyenv/completions/pyenv.bash, git-completion.bash}; do
+  if [ -f "$file" ]; then
+    [ -r "$file" ] && [ -f "$file" ] && source "$file";
+  fi
+done;
+unset file;
+
 #Git auto-complete
-if [ -f ~/.git-completion.bash ]; then
-    source ~/.git-completion.bash
+if [ -d /home/h/.pyenv/bin ]; then
+  export PATH="/home/h/.pyenv/bin:$PATH"
+  eval "$(pyenv init -)"
+  eval "$(pyenv virtualenv-init -)"
+  export PYENV_ROOT='/home/h/.pyenv/'
 fi
 
 upvrc() {
@@ -17,8 +27,46 @@ upvrc() {
     cd  ~/.vim/ ;
     cp init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/dotfiles/vim/vim/;
     cd ~/dotfiles/
-    git add . && git commit 
+    git add . && git commit -m "updated vim configs" 
     cd ;
+}
+
+upnvim() {
+    cd ~/.config/nvim/;
+    cp init.vim ~/dotfiles/vim/neovim/;
+
+    cd ~/dotfiles/
+    git add . && git commit -m "updated neovim configs"
+    cd ;
+}
+aenv () {
+  if [ $# -eq 1 ]
+    then
+      source ~/.cache/pypoetry/virtualenvs/$1/bin/activate
+  fi
+  if [ $# -eq 1 ]
+    then
+      source $(poetry env info -p)/bin/activate
+  fi
+}
+
+cenv () {
+      python -m venv /home/.py
+}
+
+neovim () {
+    current=${PWD##*/}
+    cd ~/$1;
+    aenv;
+    cd current;
+    if [ $# -eq 1 ]
+        then
+           nvim; 
+    fi
+    if [ $# -eq 2 ]
+        then
+           nvim $2; 
+    fi
 }
 
 dpvrc() {
@@ -27,6 +75,13 @@ dpvrc() {
     cd ;
 }
 
+dpnvim() {
+    cd ~/dotfiles/vim/neovim/;
+    cp init.vim ~/.config/nvim/
+    cd ;
+}
+
+
 sbash () {
       source ~/.bashrc
 }
@@ -34,7 +89,7 @@ upbash () {
       cd ~
       cp .bashrc .bash_profile .aliases .tmux.conf .bash_prompt ~/dotfiles/bash/linux/
       cd ~/dotfiles/
-      git add . && git commit 
+      git add . && git commit -m "updated bash dotfiles"
 }
 dpbash() {
         cd ~/dotfiles/bash/linux/
@@ -59,7 +114,8 @@ vbash (){
 valias (){
         vim ~/.aliases
 }
-vprofile (){
+
+vprof (){
         vim ~/.bash_profile
 }
 
@@ -106,3 +162,5 @@ function extract {
 																																																																																																																																																																																				     done
 																																																																																																																																																																																					 fi
 																																																																																																																																																																																				 }
+
+export PATH="$HOME/.poetry/bin:$PATH"

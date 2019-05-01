@@ -1,3 +1,6 @@
+# my shortcuts
+
+
 # Shortcuts
 alias ch='history | grep "git commit"'
 alias hg='history | grep'
