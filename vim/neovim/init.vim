@@ -36,22 +36,11 @@ call plug#begin('~/.config/nvim/plugged')
 
 " Now the actual plugins:
 
-" Override configs by directory
-Plug 'arielrossanigo/dir-configs-override.vim'
 
-" Code commenter
-Plug 'scrooloose/nerdcommenter'
 
 " Better file browser
 Plug 'scrooloose/nerdtree'
 
-" Class/module browser
-Plug 'majutsushi/tagbar'
-" TODO known problems:
-" * current block not refreshing
-
-" Search results counter
-Plug 'vim-scripts/IndexedSearch'
 
 " Terminal Vim with 256 colors colorscheme
 Plug 'fisadev/fisa-vim-colorscheme'
@@ -67,52 +56,26 @@ Plug 'vim-airline/vim-airline-themes'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
 
-" Pending tasks list
-Plug 'fisadev/FixedTaskList.vim'
 
 " Async autocompletion
 Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+"
 " Completion from other opened files
 Plug 'Shougo/context_filetype.vim'
+
 " Python autocompletion
 Plug 'zchee/deoplete-jedi', { 'do': ':UpdateRemotePlugins' }
+"
 " Just to add the python go-to-definition and similar features, autocompletion
 " from this plugin is disabled
-Plug 'davidhalter/jedi-vim'
+"Plug 'davidhalter/jedi-vim'
 
-" Automatically close parenthesis, etc
-Plug 'Townk/vim-autoclose'
 "Autocomplettion plugin by Neo.
-    Plug 'shougo/neocomplete.vim'
+"    Plug 'shougo/neocomplete.vim'
 "
-" Surround
-Plug 'tpope/vim-surround'
-
-" Indent text object
-Plug 'michaeljsmith/vim-indent-object'
-
-" Indentation based movements
-Plug 'jeetsukumaran/vim-indentwise'
-
-" Better language packs
-Plug 'sheerun/vim-polyglot'
-
-" Ack code search (requires ack installed in the system)
-Plug 'mileszs/ack.vim'
-" TODO is there a way to prevent the progress which hides the editor?
-
-" Paint css colors with the real color
-Plug 'lilydjwg/colorizer'
-" TODO is there a better option for neovim?
-
-" Window chooser
-Plug 't9md/vim-choosewin'
 
 " Automatically sort python imports
 Plug 'fisadev/vim-isort'
-
-" Highlight matching html tags
-Plug 'valloric/MatchTagAlways'
 
 " Generate html in a simple way
 Plug 'mattn/emmet-vim'
@@ -120,11 +83,6 @@ Plug 'mattn/emmet-vim'
 " Git integration
 Plug 'tpope/vim-fugitive'
 
-" Git/mercurial/others diff icons on the side of the file lines
-Plug 'mhinz/vim-signify'
-
-" Yank history navigation
-Plug 'vim-scripts/YankRing.vim'
 
 " Linters
 Plug 'neomake/neomake'
@@ -144,7 +102,6 @@ Plug 'dbeniamine/cheat.sh-vim'
 " on/off. When the plugin is present, will always activate the relative
 " numbering every time you go to normal mode. Author refuses to add a setting
 " to avoid that)
-Plug 'myusuf3/numbers.vim'
 
 
 
@@ -291,6 +248,7 @@ endfunction
 let g:deoplete#enable_at_startup = 1
 let g:deoplete#enable_ignore_case = 1
 let g:deoplete#enable_smart_case = 1
+let g:deoplete#auto_complete=1
 " complete with words from any opened file
 let g:context_filetype#same_filetypes = {}
 let g:context_filetype#same_filetypes._ = '_'
@@ -312,48 +270,6 @@ let g:jedi#goto_assignments_command = ',a'
 " Go to definition in new tab
 nmap ,D :tab split<CR>:call jedi#goto()<CR>
 
-" Ack.vim ------------------------------
-
-" mappings
-nmap ,r :Ack
-nmap ,wr :Ack <cword><CR>
-
-" Window Chooser ------------------------------
-
-" mapping
-nmap  -  <Plug>(choosewin)
-" show big letters
-let g:choosewin_overlay_enable = 1
-
-" Signify ------------------------------
-
-" this first setting decides in which order try to guess your current vcs
-" UPDATE it to reflect your preferences, it will speed up opening files
-let g:signify_vcs_list = [ 'git', 'hg' ]
-" mappings to jump to changed blocks
-nmap <leader>sn <plug>(signify-next-hunk)
-nmap <leader>sp <plug>(signify-prev-hunk)
-" nicer colors
-highlight DiffAdd           cterm=bold ctermbg=none ctermfg=119
-highlight DiffDelete        cterm=bold ctermbg=none ctermfg=167
-highlight DiffChange        cterm=bold ctermbg=none ctermfg=227
-highlight SignifySignAdd    cterm=bold ctermbg=237  ctermfg=119
-highlight SignifySignDelete cterm=bold ctermbg=237  ctermfg=167
-highlight SignifySignChange cterm=bold ctermbg=237  ctermfg=227
-
-" Autoclose ------------------------------
-
-" Fix to let ESC work as espected with Autoclose plugin
-" (without this, when showing an autocompletion window, ESC won't leave insert
-"  mode)
-let g:AutoClosePumvisible = {"ENTER": "\<C-Y>", "ESC": "\<ESC>"}
-
-" Yankring -------------------------------
-
-" Fix for yankring and neovim problem when system has non-text things copied
-" in clipboard
-let g:yankring_clipboard_monitor = 0
-let g:yankring_history_dir = '~/.config/nvim/'
 
 " Airline ------------------------------
 
@@ -443,15 +359,7 @@ nmap <Leader>w :wq!<Enter>
 nmap <Leader>h :nohl<Enter>
 
 
-"python with virtualenv support
-py << EOF
-import os
-import sys
-if 'VIRTUAL_ENV' in os.environ:
-  project_base_dir = os.environ['VIRTUAL_ENV']
-  activate_this = os.path.join(project_base_dir, 'bin/activate_this.py')
-  execfile(activate_this,dict(__file__=activate_this))
-EOF
+let g:python_host_prog = '/home/h/.pyenv/shims/python'
 
 "run python file from <F6>.
 "map <F5> <Esc>:w<CR>:!clear;python3 %<CR>
@@ -527,16 +435,16 @@ map <Leader>t :sp term<CR>
 ".....................NEoplete vim ////////////////////
 "....................................................
 "Enabel neocomplete autocomplete feature by default.
-  let g:neocomplete#enable_at_startup = 1
+"  let g:neocomplete#enable_at_startup = 1
 
 
 "<TAB>: completion.
-inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
+"inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
 "<C-h>, <BS>: close popup and delete backword char.
- inoremap <expr><C-h> neocomplete#smart_close_popup()."\<C-h>"
- inoremap <expr><BS> neocomplete#smart_close_popup()."\<C-h>"
- inoremap <expr><C-y>  neocomplete#close_popup()
- inoremap <expr><C-e>  neocomplete#cancel_popup()
+" inoremap <expr><C-h> neocomplete#smart_close_popup()."\<C-h>"
+" inoremap <expr><BS> neocomplete#smart_close_popup()."\<C-h>"
+" inoremap <expr><C-y>  neocomplete#close_popup()
+" inoremap <expr><C-e>  neocomplete#cancel_popup()
 
 
 
