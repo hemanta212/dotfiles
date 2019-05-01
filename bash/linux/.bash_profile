@@ -13,16 +13,16 @@ fi
 
 upvrc() {
     cd ~;
-    cp .vimrc ~/dotfiles/pc-vim/;
+    cp .vimrc ~/dotfiles/vim/vim/;
     cd  ~/.vim/ ;
-    cp init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/dotfiles/pc-vim/;
+    cp init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/dotfiles/vim/vim/;
     cd ~/dotfiles/
     git add . && git commit 
     cd ;
 }
 
 dpvrc() {
-    cd ~/dotfiles/pc-vim/;
+    cd ~/dotfiles/vim/vim/;
     cp .vimrc init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/.vim/;
     cd ;
 }
@@ -32,12 +32,12 @@ sbash () {
 }
 upbash () {
       cd ~
-      cp .bashrc .bash_profile .aliases .tmux.conf .bash_prompt ~/dotfiles/pc-vim/
+      cp .bashrc .bash_profile .aliases .tmux.conf .bash_prompt ~/dotfiles/bash/linux/
       cd ~/dotfiles/
       git add . && git commit 
 }
 dpbash() {
-        cd ~/dotfiles/pc-vim/
+        cd ~/dotfiles/bash/linux/
         cp .bashrc .aliases .bash_prompt .tmux.conf .bash_profile  ~/
 }
         
