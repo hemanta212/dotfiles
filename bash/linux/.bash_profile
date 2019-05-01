@@ -39,26 +39,28 @@ upnvim() {
     git add . && git commit -m "updated neovim configs"
     cd ;
 }
+
 aenv () {
   if [ $# -eq 1 ]
     then
-      source ~/.cache/pypoetry/virtualenvs/$1/bin/activate
+      source /home/h/.cache/pypoetry/virtualenvs/$1/bin/activate
   fi
-  if [ $# -eq 1 ]
+  if [ $# -eq 0 ]
     then
       source $(poetry env info -p)/bin/activate
   fi
 }
 
-cenv () {
-      python -m venv /home/.py
+menv () {
+      python -m venv /home/h/.cache/pypoetry/virtualenvs/$1;
 }
 
 neovim () {
-    current=${PWD##*/}
+    current=$PWD
     cd ~/$1;
     aenv;
-    cd current;
+    cd $current;
+    echo $current;
     if [ $# -eq 1 ]
         then
            nvim; 
