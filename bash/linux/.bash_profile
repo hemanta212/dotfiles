@@ -14,11 +14,11 @@ done;
 unset file;
 
 #Git auto-complete
-if [ -d /home/h/.pyenv/bin ]; then
-  export PATH="/home/h/.pyenv/bin:$PATH"
+if [ -d  ~/.pyenv/bin ]; then
+  export PATH="~/.pyenv/bin:$PATH"
   eval "$(pyenv init -)"
   eval "$(pyenv virtualenv-init -)"
-  export PYENV_ROOT='/home/h/.pyenv/'
+  export PYENV_ROOT='~/.pyenv/'
 fi
 
 upvrc() {
@@ -43,7 +43,7 @@ upnvim() {
 aenv () {
   if [ $# -eq 1 ]
     then
-      source /home/h/.cache/pypoetry/virtualenvs/$1/bin/activate
+      source ~/.cache/pypoetry/virtualenvs/$1/bin/activate
   fi
   if [ $# -eq 0 ]
     then
@@ -52,7 +52,7 @@ aenv () {
 }
 
 menv () {
-      python -m venv /home/h/.cache/pypoetry/virtualenvs/$1;
+      python -m venv ~/.cache/pypoetry/virtualenvs/$1;
 }
 
 neovim () {
