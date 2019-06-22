@@ -41,6 +41,8 @@ call plug#begin('~/.config/nvim/plugged')
 " Better file browser
 Plug 'scrooloose/nerdtree'
 
+" Nerdtree tabs
+Plug 'jistr/vim-nerdtree-tabs'
 
 " Terminal Vim with 256 colors colorscheme
 Plug 'fisadev/fisa-vim-colorscheme'
@@ -125,7 +127,7 @@ set expandtab
 set tabstop=4
 set softtabstop=4
 set shiftwidth=4
-
+set guicursor=
 " show line numbers
 set nu
 
@@ -195,6 +197,9 @@ map <F3> :NERDTreeToggle<CR>
 nmap ,t :NERDTreeFind<CR>
 " don;t show these file types
 let NERDTreeIgnore = ['\.pyc$', '\.pyo$']
+
+" Nerdtree TABS ------------------------------
+let g:nerdtree_tabs_open_on_console_startup=1
 
 " Tasklist ------------------------------
 
@@ -358,8 +363,7 @@ nmap <Leader>w :wq!<Enter>
 "Remove highlight in search.
 nmap <Leader>h :nohl<Enter>
 
-
-let g:python_host_prog = '/home/h/.pyenv/shims/python'
+let g:python3_host_prog = '~/.cache/pypoetry/virtualenvs/neovim3/bin/python3'
 
 "run python file from <F6>.
 "map <F5> <Esc>:w<CR>:!clear;python3 %<CR>
@@ -456,4 +460,20 @@ map <Leader>t :sp term<CR>
 "autocmd CursorMovedI * if pumvisible() == 0|pclose|endif
 "autocmd InsertLeave * if pumvisible() == 0|pclose|endif
 
+"Write selected lines to python file
 
+vnoremap <Leader>pw :w .temp.swp<CR>j
+vnoremap <Leader>pa :w! >> .dump.swp<CR>
+vmap <Leader>pi <Leader>pw<Leader>pddd<Leader>prw<Leader>pd
+
+nnoremap <Leader>pra :read !python3 .dump.swp<CR><CR>
+nnoremap <Leader>prw :read !python3 .temp.swp<CR> :!rm .temp.swp <CR><CR>
+nnoremap <Leader>prd :!rm .dump.swp .temp.swp <CR><CR>
+
+nnoremap <Leader>pd <C-{>o```python<Esc><C-}>o```<CR><CR><Esc>
+nnoremap <Leader>cd <C-{>o```<Esc><C-}>o```<CR><CR><Esc>
+nnoremap <Leader>dd dkdd{jdd}
+
+
+"map" terminal esc
+"tnoremap p <Leader>t :term<CR>
