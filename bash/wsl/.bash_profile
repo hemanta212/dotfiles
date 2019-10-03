@@ -1,10 +1,13 @@
+export PATH="$HOME/.poetry/bin:$PATH"
+export PATH="$HOME/local/.blogger_cli/bin:$PATH"
+
 # Load dotfiles:
 for file in ~/.{bash_prompt,aliases}; do
     [ -r "$file" ] && [ -f "$file" ] && source "$file";
 done;
 unset file;
 
-export DISPLAY=localhost:0
+export DISPLAY=192.168.1.13:1
 export LIBGL_ALWAYS_INDIRECT=1
 
 export PATH="/usr/local/sbin:$PATH";
@@ -13,6 +16,35 @@ export PATH="/usr/local/sbin:$PATH";
 if [ -f ~/.git-completion.bash ]; then
     source ~/.git-completion.bash
 fi
+
+aenv () {
+  if [ $# -eq 1 ]
+    then
+      source ~/.virtualenvs/$1/bin/activate
+  fi
+  if [ $# -eq 0 ]
+    then
+      source $(poetry env info -p)/bin/activate
+  fi
+}
+
+menv () {
+      python -m venv ~/.virtualenvs/$1;
+}
+
+neovim () {
+    cd ~/$1;
+    aenv;
+    if [ $# -eq 1 ]
+        then
+           nvim; 
+    fi
+    if [ $# -eq 2 ]
+        then
+           nvim $2; 
+    fi
+
+}
 
 upvrc() {
     cd ~;
@@ -46,66 +78,16 @@ updotfiles () {
         git pull origin master
         git push origin master
 }
+
 clone() {
-        cd 
         git clone https://github.com/$1/$2
 }
+
 vrc (){
         vim ~/.vim/$1.vimrc
 }
-vbash (){
-        vim ~/.bashrc
-}
-sobash (){
-        source ~/.bashrc
-}
-valias (){
-        vim ~/.aliases
-}
-vprofile (){
-        vim ~/.bash_profile
+
+display (){
+    export DISPLAY=localhost:$1
 }
 
-vwake(){
-    source bin/activate
-}
-cenv () {
-        poetry init $1 
-        cd $1
-}
-
-function extract {
- if [ -z "$1" ]; then
-	     # display usage if no parameters given
-			     echo "Usage: extract <path/file_name>.<zip|rar|bz2|gz|tar|tbz2|tgz|Z|7z|xz|ex|tar.bz2|tar.gz|tar.xz>"
-					     echo "       extract <path/file_name_1.ext> [path/file_name_2.ext] [path/file_name_3.ext]"
-							     return 1
-									  else
-											    for n in $@
-														    do
-																	      if [ -f "$n" ] ; then
-																					          case "${n%,}" in
-																											            *.tar.bz2|*.tar.gz|*.tar.xz|*.tbz2|*.tgz|*.txz|*.tar) 
-																																		                         tar xvf "$n"       ;;
-																																														             *.lzma)      unlzma ./"$n"      ;;
-																																																				             *.bz2)       bunzip2 ./"$n"     ;;
-																																																										             *.rar)       unrar x -ad ./"$n" ;;
-																																																																             *.gz)        gunzip ./"$n"      ;;
-																																																																						             *.zip)       unzip ./"$n"       ;;
-																																																																												             *.z)         uncompress ./"$n"  ;;
-																																																																																		             *.7z|*.arj|*.cab|*.chm|*.deb|*.dmg|*.iso|*.lzh|*.msi|*.rpm|*.udf|*.wim|*.xar)
-																																																																																									                          7z x ./"$n"        ;;
-																																																																																																						            *.xz)        unxz ./"$n"        ;;
-																																																																																																												            *.exe)       cabextract ./"$n"  ;;
-																																																																																																																		            *)
-																																																																																																																									                         echo "extract: '$n' - unknown archive method"
-																																																																																																																																					                          return 1
-																																																																																																																																																		                         ;;
-																																																																																																																																																														           esac
-																																																																																																																																																																			       else
-																																																																																																																																																																							           echo "'$n' - file does not exist"
-																																																																																																																																																																												           return 1
-																																																																																																																																																																																	       fi
-																																																																																																																																																																																				     done
-																																																																																																																																																																																					 fi
-																																																																																																																																																																																				 }
