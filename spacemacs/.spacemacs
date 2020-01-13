@@ -33,16 +33,25 @@ values."
    '(vimscript
      rust
      html
+     dap
+
+     (auto-completion :variables
+        auto-completion-enable-snippets-in-popup nil
+        auto-completion-enable-help-tooltip t
+        auto-completion-enable-sort-by-usage t)
+
      (python :variables 
         python-backend 'lsp
         python-formatter 'black
+        python-fill-column 79
+        python-auto-set-local-pyenv-version 'on-visit
+        python-sort-imports-on-save t
         python-format-on-save t)
 
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
      ;; Uncomment some layer names and press <SPC f e R> (Vim style) or
      ;; <M-m f e R> (Emacs style) to install them.
-     
      better-defaults
      emacs-lisp
      git
