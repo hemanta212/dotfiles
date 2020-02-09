@@ -1,4 +1,3 @@
-
 # Shortcuts
 alias ch='history | grep "git commit"'
 alias hg='history | grep'
@@ -37,6 +36,9 @@ alias down='cd /mnt/f/Downloads/'
 alias x="/mnt/f/programs/Xming/Xming.exe -multiwindow"
 alias xserv="/mnt/c/'Program Files'/VcXsrv/vcxsrv.exe -multiwindow"
 alias subl="/mnt/c/'Program Files'/'Sublime Text 3'/sublime_text.exe"
-alias brave="/mnt/c/'Program Files (x86)'/BraveSoftware/Brave-Browser/Application/brave.exe"
 alias sbash="source ~/.bashrc"
-
+alias vbash='nvim ~/.bashrc'
+alias valias='nvim ~/.aliases'
+alias vprof='nvim ~/.bash_profile'
+alias vprompt='nvim ~/.bash_prompt'
+alias vtmux='nvim ~/.tmux.conf'
