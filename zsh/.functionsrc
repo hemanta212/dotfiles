@@ -1,0 +1,109 @@
+aenv () {
+  if [ $# -eq 1 ]
+    then
+      source ~/.cache/pypoetry/virtualenvs/$1/bin/activate
+  fi
+  if [ $# -eq 0 ]
+    then
+      source $(poetry env info -p)/bin/activate
+  fi
+}
+
+menv () {
+      python -m venv ~/.cache/pypoetry/virtualenvs/$1;
+}
+
+neovim () {
+    current=$PWD
+    cd ~/$1;
+    aenv;
+    cd $current;
+    echo $current;
+    if [ $# -eq 1 ]
+        then
+           nvim; 
+    fi
+    if [ $# -eq 2 ]
+        then
+           nvim $2; 
+    fi
+}
+
+upvrc() {
+    cd ~;
+    cp .vimrc ~/dotfiles/vim/vim/;
+    cd  ~/.vim/ ;
+    cp init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/dotfiles/vim/vim/;
+    cd ~/dotfiles/
+    git add . && git commit -m "updated vim configs" 
+    cd ;
+}
+
+upnvim() {
+    cd ~/.config/nvim/;
+    cp init.vim ~/dotfiles/vim/neovim/;
+
+    cd ~/dotfiles/
+    git add . && git commit -m "updated neovim configs"
+    cd ;
+}
+dpvrc() {
+    cd ~/dotfiles/vim/vim/;
+    cp .vimrc init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/.vim/;
+    cd ;
+}
+
+dpnvim() {
+    cd ~/dotfiles/vim/neovim/;
+    cp init.vim ~/.config/nvim/
+    cd ;
+}
+
+sbash () {
+      source ~/.zshrc
+}
+upbash () {
+      cd ~
+      cp -r .zshrc .functionsrc .aliases .tmux.conf .tmux/ .oh-my-zsh/ ~/dotfiles/zsh/
+      cd ~/dotfiles/
+      git add . && git commit -m "updated zsh dotfiles"
+}
+dpbash() {
+        cd ~/dotfiles/zsh/
+        cp .zshrc .aliases .functionsrc .tmux.conf  ~/
+}
+
+updotfiles () {
+        cd ~/dotfiles/
+        git pull origin master
+        git push origin master
+}
+clone() {
+        cd 
+        git clone https://github.com/$1/$2
+}
+vrc (){
+        vim ~/.vim/$1.vimrc
+}
+vbash (){
+        vim ~/.bashrc
+}
+valias (){
+        vim ~/.aliases
+}
+
+vprof (){
+        vim ~/.bash_profile
+}
+
+vwake(){
+    source bin/activate
+}
+
+flutcp (){
+    cp -r ~/flutter_dev/$1/lib /mnt/f/my_projects/dart_dev/$1/
+}
+
+winpro (){
+    cd /mnt/f/my_projects/$@
+}
