@@ -25,15 +25,15 @@
 "nmap <Leader>b <Leader>s<F5> 
 
 "run python file from <F6>.
-map <Leader>r <Esc>:w<CR>:!clear;python3 %<CR>
+nnoremap <Leader>r <Esc>:w<CR>:!clear;python3 %<CR>
 "nnoremap <buffer> <Leader>r :exec '!python3' shellescape(@%, 1)<Enter>
 "Run python Script from vim using the f6 button in a new window.
 "imap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
 "nmap <F6> <Esc>:w<CR>:!clear;python3 %<CR>
 
 "save and run together
-imap <F6> <Esc><Leader>s<Leader>r
-nmap <F6> <Leader>s<Leader>r
+inoremap <F6> <Esc><Leader>s<Leader>r
+nnoremap <F6> <Leader>s<Leader>r
 
 
 "OTHER OPTIONS As well
@@ -59,54 +59,81 @@ nnoremap <C-L> <C-W><C-L>
 nnoremap <C-H> <C-W><C-H>
 
 "Resize things straight forward.
-nmap < <C-w><
-nmap > <C-w>>
-nmap + <C-w>+
-nmap - <C-w>-
+nnoremap < <C-w><
+nnoremap > <C-w>>
+nnoremap + <C-w>+
+nnoremap - <C-w>-
 
 "Remap esc to kj
-imap kj <esc>
+inoremap kj <esc>
 cnoremap kj <esc>
-nmap kj <esc>
+nnoremap kj <esc>
 
 " Move normally between wrapped lines
-nmap j gj
-nmap k gk
+nnoremap j gj
+nnoremap k gk
 
 "write the file quick cmd.
-nmap <Leader>s :write<Enter>
+nnoremap <Leader>s :write<Enter>
 "quit quickly without writing.
-nmap <Leader>q :q!<Enter>
+nnoremap <Leader>q :q!<Enter>
 "save and quit.
-nmap <Leader>w :wq!<Enter>
+nnoremap <Leader>w :wq!<Enter>
 
 "Remove highlight in search.
-nmap <Leader>h :nohl<Enter>
+nnoremap <Leader>h :nohl<Enter>
+
+" buffers navigation
+nnoremap <Leader>bb :edit 
+nnoremap <Leader>bl :ls<CR>
+nnoremap <Leader>ba :badd 
+nnoremap <Leader>bd :bdelete 
+nnoremap <Leader>bw :bwipeout 
+nnoremap <Leader>bwp :bwipeout<CR>
+nnoremap <Leader>bp :bprevious<CR>
+nnoremap <Leader>bn :bnext<CR>
+nnoremap <Leader>tbp :sbprevious<CR>
+nnoremap <Leader>tbn :sbnext<CR>
+nnoremap <Leader>bft :bfirst<CR>
+nnoremap <Leader>tbft :sbfirst<CR>
+nnoremap <Leader>blt :blast<CR>
+nnoremap <Leader>tblt :sblast<CR>
 
 " tab navigation mappings
-map tp :tabp<CR>
-map tm :tabm 
-map tt :tabnew 
-map td :tab split<CR>
-map tn :tabn<CR>
-map ts :vs 
-map tb :sp 
+nnoremap <Leader>tp :tabp<CR>
+nnoremap <Leader>tm :tabm 
+nnoremap <Leader>tt :tabnew 
+nnoremap <Leader>td :tab split<CR>
+nnoremap <Leader>tn :tabn<CR>
+nnoremap <Leader>tv :vs 
+nnoremap <Leader>th :sp 
 
 
 "map numbertoggle 
-map <Leader>nu :NumbersToggle<Enter>
-map <Leader>dt :r !python3 ~/.personal/.time.py date<Enter>o<esc><Leader>dtt
-map <Leader>dtt :r !python3 ~/.personal/.time.py time<Enter>^i<tab><tab><esc>o<esc>o<tab><tab>
-map <Leader>ip vip<C-v><S-i><tab><esc> 
-map <Leader>uip vip< 
+nnoremap <Leader>nu :NumbersToggle<Enter>
+nnoremap <Leader>dt :r !python3 ~/.personal/.time.py date<Enter>o<esc><Leader>dtt
+nnoremap <Leader>dtt :r !python3 ~/.personal/.time.py time<Enter><esc>0i## <esc>o
+nnoremap <Leader>ip vip<C-v><S-i><tab><esc> 
+nnoremap <Leader>uip vip< 
 
-map <Leader>cp vip<C-v><S-i>#<esc> 
-map <Leader>cl ^i# <esc>
-map <Leader>cs <C-v><S-i># <esc>
-map <Leader>dp <S-[>i'''<esc><S-]>i'''<esc>2<C-o>
-map <Leader>ds <S-i>i'''<esc><C-o>i'''<esc><C-o>
+nnoremap <Leader>cp vip<C-v><S-i>#<esc> 
+nnoremap <Leader>cl ^i# <esc>
+nnoremap <Leader>cs <C-v><S-i># <esc>
+nnoremap <Leader>dp <S-[>i'''<esc><S-]>i'''<esc>2<C-o>
+nnoremap <Leader>ds <S-i>i'''<esc><C-o>i'''<esc><C-o>
 
-map <Leader>ucs <C-v>x<esc>
+nnoremap <Leader>ucs <C-v>x<esc>
+
+"Write selected lines to python file
+
+vnoremap <Leader>pw :w .temp.swp<CR>j
+vnoremap <Leader>pa :w! >> .dump.swp<CR>
+nnoremap <Leader>pra :read !python3 .dump.swp<CR><CR>
+nnoremap <Leader>prw :read !python3 .temp.swp && rm .temp.swp <CR><CR>
+nnoremap <Leader>prd :!rm .dump.swp .temp.swp <CR><CR>
+
+nnoremap <Leader>pd <C-{>o```python<Esc><C-}>o```<CR><Esc>
+nnoremap <Leader>dc <C-{>o```<Esc><C-}>o```<CR><Esc>
 "map terminal esc
 "tnoremap kj :<C-\><C-n>
 "map <Leader>t :term<CR>
