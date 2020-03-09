@@ -45,3 +45,15 @@ if has("gui_running")	" GUI color and font settings
 "	colors evening
 endif
 
+"..........OR..........
+"Choose which theme to use with logic.
+"    if has('gui_running')
+"       set background=dark
+"       colorscheme solarized
+"    else
+"       colorscheme zenburn
+"    endif
+"switching bet black and white solarized theme bg with f5..
+"    call togglebg#map("<F5>")
+
+

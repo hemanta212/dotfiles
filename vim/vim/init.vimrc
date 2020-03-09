@@ -39,48 +39,46 @@ call plug#begin('~/.vim/bundle')
 
 
 "PLUGINS LIST:
-
-"plugin related to folding 
+"plugin related to folding (from realpython.1st addition.)
     Plug 'tmhedberg/SimpylFold'
-
 "plugin for autoidentation in python.
     Plug 'vim-scripts/indentpython.vim'
 "
 "Plugin for syntax highlightion.
     Plug 'vim-syntastic/syntastic'
-
 "Inside File browsing using NerdTree plugin.
     Plug 'scrooloose/nerdtree'
-
 "Utilize tabs in NerdTree
     Plug 'jistr/vim-nerdtree-tabs'
-
 "TO search basically anything from vim.(Use it by ctrl + p.
     Plug 'kien/ctrlp.vim'
-
 "Enable Basic git cmds inside the vim.
     Plug 'tpope/vim-fugitive'
-
 "PEP-8 checking syntax plugin.
     Plug 'nvie/vim-flake8'
-
 "Autocomplettion plugin by Neo.
-"    Plug 'shougo/neocomplete.vim'
-
+    Plug 'shougo/neocomplete.vim'
+"Autocomplete by Valloric. Use one bet neo and valloric's.
+"	  Plug 'Valloric/YouCompleteMe'
+"plugin for theme Zenburn for CLI and another for GUI.(its logic is below).
+    Plug 'jnurmine/Zenburn'
+    Plug 'altercation/vim-colors-solarized'
 "emmet plugin for html css and js etc
     Plug 'mattn/emmet-vim'
-
 "Enable the powerline (basic file info at buttom. (  :) My dream!!)
 "   Plug 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
-
 "plugin for cheat.sh
     Plug 'dbeniamine/cheat.sh-vim'
 
 " Terminal Vim with 256 colors colorscheme
 Plug 'fisadev/fisa-vim-colorscheme'
 
+"tmux
+Plug 'tpope/vim-obsession'
+Plug 'christoomey/vim-tmux-navigator'
+
 " Linters
-"Plug 'neomake/neomake'
+Plug 'neomake/neomake'
 
 " Plug 'fisadev/vim-ctrlp-cmdpalette'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
@@ -91,7 +89,6 @@ Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
 
 Plug 'Shougo/context_filetype.vim'
-
 " Python autocompletion
 "Plug 'zchee/deoplete-jedi', { 'do': ':UpdateRemotePlugins' }
 " Just to add the python go-to-definition and similar features, autocompletion
@@ -99,14 +96,16 @@ Plug 'Shougo/context_filetype.vim'
 "Plug 'davidhalter/jedi-vim'
 
 "DEOPLETE VIM 
-if has('nvim')
-  Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
-else
-  Plug 'Shougo/deoplete.nvim'
-  Plug 'roxma/nvim-yarp'
-  Plug 'roxma/vim-hug-neovim-rpc'
-endif
+"if has('nvim')
+"  Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+"else
+"  Plug 'Shougo/deoplete.nvim'
+"  Plug 'roxma/nvim-yarp'
+"  Plug 'roxma/vim-hug-neovim-rpc'
+"endif
  
+"Flutter
+Plug 'dart-lang/dart-vim-plugin'
 
 
 

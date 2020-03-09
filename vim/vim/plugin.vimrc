@@ -2,9 +2,13 @@
 autocmd! bufwritepost plugin.vimrc source ~/.vimrc
 
 
+"......OTHER SETUPS of Plugin.......
+"------------------------------
 
-".............NERDTree Setup...............
-
+"...............................
+"-------NERDTree by scroollose.-------
+"////////////////////////////////////
+"......NERDTree Setup...............
 "Open directly to curently working file by \v
 nnoremap <silent> <Leader>v :NERDTreeFind<CR>
 
@@ -38,33 +42,34 @@ autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists("s:std_in
 "
 
 
+"/////////////////////////////////////////////////////////
 ".....................NEoplete vim ////////////////////
+"....................................................
 
 "<TAB>: completion.
-"inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
+inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
 "<C-h>, <BS>: close popup and delete backword char.
-" inoremap <expr><C-h> neocomplete#smart_close_popup()."\<C-h>"
-" inoremap <expr><BS> neocomplete#smart_close_popup()."\<C-h>"
-" inoremap <expr><C-y>  neocomplete#close_popup()
-" inoremap <expr><C-e>  neocomplete#cancel_popup()
+ inoremap <expr><C-h> neocomplete#smart_close_popup()."\<C-h>"
+ inoremap <expr><BS> neocomplete#smart_close_popup()."\<C-h>"
+ inoremap <expr><C-y>  neocomplete#close_popup()
+ inoremap <expr><C-e>  neocomplete#cancel_popup()
 
 "Enabel neocomplete autocomplete feature by default.
-"let g:neocomplete#enable_at_startup = 1
+let g:neocomplete#enable_at_startup = 1
 
 
 
+"/////////////////////////////////////////////////////////
 ".....................Deoplete vim ////////////////////
+"....................................................
 
-let g:deoplete#enable_at_startup = 1
-let g:deoplete#enable_ignore_case = 1
-let g:deoplete#enable_smart_case = 1
-let g:deoplete#auto_complete=1
+
+"let g:deoplete#enable_at_startup = 1
 
 
 "///////////////////////////////////////////////////////////////
 "....................Powerline .....................
 "/////////////////////////////////////////
-
 "Setup powerline in vim. first install powerline by pip install
  "powerline-status and do pip show powerline-status to get its path.
 "replace the path below by that path shown by pip.
@@ -79,18 +84,20 @@ let g:deoplete#auto_complete=1
 let g:user_emmet_leader_key='dt'
 
 
+"Get templates by keyword & tab
+imap html<Tab> <esc>:r /dotfiles/webtemp/html.html<Enter>
+
 
 " Neomake ------------------------------
 
 " Run linter on write
-"autocmd! BufWritePost * Neomake
+autocmd! BufWritePost * Neomake
 
 " Check code as python3 by default
-"let g:neomake_python_python_maker = neomake#makers#ft#python#python()
-""let g:neomake_python_flake8_maker = neomake#makers#ft#python#flake8()
-"let g:neomake_python_python_maker.exe = 'python3 -m py_compile'
-"let g:neomake_python_flake8_maker.exe = 'python3 -m flake8'
-
+let g:neomake_python_python_maker = neomake#makers#ft#python#python()
+let g:neomake_python_flake8_maker = neomake#makers#ft#python#flake8()
+let g:neomake_python_python_maker.exe = 'python3 -m py_compile'
+let g:neomake_python_flake8_maker.exe = 'python3 -m flake8'
 
 " Fzf ------------------------------
 
@@ -106,22 +113,16 @@ nmap ,f :BLines<CR>
 nmap ,F :Lines<CR>
 " commands finder mapping
 nmap ,c :Commands<CR>
-
 " to be able to call CtrlP with default search text
 "function! CtrlPWithSearchText(search_text, ctrlp_command_end)
     "execute ':CtrlP' . a:ctrlp_command_end
     "call feedkeys(a:search_text)
 "endfunction
-
 " same as previous mappings, but calling with current word as default text
 "nmap ,wg :call CtrlPWithSearchText(expand('<cword>'), 'BufTag')<CR>
 "nmap ,wG :call CtrlPWithSearchText(expand('<cword>'), 'BufTagAll')<CR>
 "nmap ,wf :call CtrlPWithSearchText(expand('<cword>'), 'Line')<CR>
 "nmap ,we :call CtrlPWithSearchText(expand('<cword>'), '')<CR>
-
-" ////////////////////// AIRLINE ///////////////////////////
-" ////////////////////////////////////////////////////////
-
 let g:airline_powerline_fonts = 0
 let g:airline_theme = 'bubblegum'
 let g:airline#extensions#whitespace#enabled = 0
