@@ -241,8 +241,10 @@ let g:context_filetype#same_filetypes._ = '_'
 
 " Airline ------------------------------
 "let g:airline#extensions#tabline#enabled = 0
-let g:airline_powerline_fonts = 1
-"let g:airline_theme = 'minimalist'
+" Watch out for performance issue in powerline fonts
+" let g:airline_powerline_fonts = 1 
+
+let g:airline_theme = 'minimalist'
 "let g:airline#extensions#whitespace#enabled = 0
 
 " to use fancy symbols for airline, uncomment the following lines and use a
