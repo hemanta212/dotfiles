@@ -64,13 +64,13 @@ sbash () {
 }
 upbash () {
       cd ~
-      cp -r .zshrc .functionsrc .aliases .tmux.conf .tmux/ .oh-my-zsh/ ~/dotfiles/zsh/
+      cp -r .p10k.zsh .zshrc .functionsrc .aliases .tmux.conf.local .z .zfunc/ .tmux/ .oh-my-zsh/ ~/dotfiles/zsh/
       cd ~/dotfiles/
       git add . && git commit -m "updated zsh dotfiles"
 }
 dpbash() {
         cd ~/dotfiles/zsh/
-        cp .zshrc .aliases .functionsrc .tmux.conf  ~/
+        cp .p10k.zsh .zshrc .functionsrc .aliases .tmux.conf.local .z ~/
 }
 
 updotfiles () {
