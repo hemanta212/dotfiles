@@ -64,13 +64,15 @@ sbash () {
 }
 upbash () {
       cd ~
-      cp -r .p10k.zsh .zshrc .functionsrc .aliases .tmux.conf.local .z .zfunc/ .tmux/ .oh-my-zsh/ ~/dotfiles/zsh/
+      cp -r .p10k.zsh .zshrc .functionsrc .aliases .tmux.conf.local .config/ptpython/.pythonrc.py .config/ptpython/config.py .z .zfunc/ .tmux/ .oh-my-zsh/ ~/dotfiles/zsh/
       cd ~/dotfiles/
+      rm -rf zsh/.oh-my-zsh/.git zsh/.tmux/.git/
       git add . && git commit -m "updated zsh dotfiles"
 }
 dpbash() {
         cd ~/dotfiles/zsh/
         cp .p10k.zsh .zshrc .functionsrc .aliases .tmux.conf.local .z ~/
+        cp config.py .pythonrc.py ~/.config/ptpython/
 }
 
 updotfiles () {
@@ -79,7 +81,7 @@ updotfiles () {
         git push origin master
 }
 clone() {
-        cd 
+        cd
         git clone https://github.com/$1/$2
 }
 vrc (){

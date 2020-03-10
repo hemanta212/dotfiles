@@ -112,6 +112,9 @@ if [ -d ~/.pyenv/bin ]; then
   export PYENV_ROOT='~/.pyenv/'
 fi
 
+export XDG_CONFIG_HOME="$HOME/.config"
+export PYTHONSTARTUP="$XDG_CONFIG_HOME/ptpython/.pythonrc.py"
+
 # init fasd
 eval "$(fasd --init auto)"
 
