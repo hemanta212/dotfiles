@@ -1,5 +1,0 @@
-pane	bk_app	1	:Neovim	0	:-	0	:/home/h	1	nvim	:nvim
-pane	bk_app	2	:Console	1	:*	0	:/home/h	1	bash	:
-window	bk_app	1	0	:-	b1c0,112x32,0,0,3
-window	bk_app	2	1	:*	b1bf,112x32,0,0,2
-state	bk_app	

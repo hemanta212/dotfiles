@@ -1,5 +1,0 @@
-pane	bk_app	1	:Neovim	1	:*	0	:/home/h/flutter_dev/bk_app	1	nvim	:nvim
-pane	bk_app	2	:Console	0	:-	0	:/home/h/flutter_dev/bk_app	1	bash	:
-window	bk_app	1	1	:*	adbf,112x31,0,0,2
-window	bk_app	2	0	:-	adc0,112x31,0,0,3
-state	bk_app	
