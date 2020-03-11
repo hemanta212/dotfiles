@@ -48,6 +48,8 @@ Plug 'neomake/neomake'
 " Python formatting
 Plug 'psf/black'
 
+Plug 'vim-vdebug/vdebug'
+
 " Automatically sort python imports
 Plug 'fisadev/vim-isort'
 
@@ -62,6 +64,8 @@ Plug 'kien/ctrlp.vim'
 
 " Navigate between vim and tmux
 Plug 'christoomey/vim-tmux-navigator'
+Plug 'tmux-plugins/vim-tmux-focus-events'
+Plug 'tmux-plugins/vim-tmux'
 
 "Cheat.sh
 Plug 'dbeniamine/cheat.sh-vim'
@@ -78,6 +82,7 @@ Plug 'dart-lang/dart-vim-plugin'
 " Dart autocomplete By lsp
 Plug 'natebosch/vim-lsc'
 Plug 'natebosch/vim-lsc-dart'
+
 
 " Dart autocomplete By cocnvim (Performance intensive)
 "Plug 'neoclide/coc.nvim', {'branch': 'release'}
