@@ -1,0 +1,9 @@
+pane	Logging	1	:Editor	1	:*	0	:/home/h/.personal/daily	1	bash	:/bin/bash /home/h/.personal/mdnote/editnewjournalfile.sh
+pane	bk_app	1	:Neovim	0	:#-	0	:/home/h/flutter_dev/bk_app1\ (deleted)	1	nvim	:nvim
+pane	bk_app	2	:bash	1	:*	0	:/home/h/flutter_dev	1	bash	:
+pane	bk_app	3	:bash	0	:	0	:/home/h/flutter_dev/hello_flutter	1	bash	:
+window	Logging	1	1	:*	ae03,122x31,0,0,6
+window	bk_app	1	0	:#-	adff,122x31,0,0,2
+window	bk_app	2	1	:*	ae05,122x31,0,0,8
+window	bk_app	3	0	:	ae06,122x31,0,0,9
+state	bk_app	

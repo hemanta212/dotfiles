@@ -1,0 +1,11 @@
+pane	0	1	:bash	1	:*	0	:/home/h	1	bash	:
+pane	Logging	1	:Editor	0	:-	0	:/home/h/flutter_dev/bk_app	1	nvim	:nvim
+pane	Logging	2	:bash	1	:*	0	:/home/h/flutter_dev/hello_flutter	1	bash	:
+pane	bk_app	1	:Neovim	1	:*	0	:/home/h	1	nvim	:nvim
+pane	bk_app	2	:bash	0	:-	0	:/home/h/flutter_dev/hello_flutter/images	1	bash	:
+window	0	1	1	:*	adfd,122x31,0,0,0
+window	Logging	1	0	:-	adfe,122x31,0,0,1
+window	Logging	2	1	:*	ae02,122x31,0,0,5
+window	bk_app	1	1	:*	adff,122x31,0,0,2
+window	bk_app	2	0	:-	ae00,122x31,0,0,3
+state	bk_app	Logging

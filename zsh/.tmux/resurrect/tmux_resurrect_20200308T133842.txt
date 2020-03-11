@@ -1,0 +1,13 @@
+pane	Kbd	1	:Editor	0	:-	0	:/home/h/khabar-board	1	nvim	:nvim
+pane	Kbd	2	:Console	1	:*	0	:/home/h/khabar-board	1	python	:python run.py sqlite-debug
+pane	Logging	1	:bash	1	:*	0	:/home/h/flutter_dev/bk_app	1	bash	:
+pane	Logging	2	:bash	0	:-	0	:/home/h/flutter_dev/hello_flutter	1	bash	:
+pane	bk_app	1	:Neovim	1	:*	0	:/home/h	1	nvim	:nvim
+pane	bk_app	2	:bash	0	:#-	0	:/home/h/poetry	1	bash	:
+window	Kbd	1	0	:-	b1be,112x32,0,0,1
+window	Kbd	2	1	:*	b1c3,112x32,0,0,6
+window	Logging	1	1	:*	b1bf,112x32,0,0,2
+window	Logging	2	0	:-	b1c0,112x32,0,0,3
+window	bk_app	1	1	:*	b1c1,112x32,0,0,4
+window	bk_app	2	0	:#-	b1c2,112x32,0,0,5
+state	Kbd	

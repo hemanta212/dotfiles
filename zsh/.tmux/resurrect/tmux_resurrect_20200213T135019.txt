@@ -1,0 +1,11 @@
+pane	0	1	:emacs	0	:	0	:/home/h/flutter_dev/bk_app	1	nvim	:nvim
+pane	0	2	:bash	0	:-	0	:/home/h	1	nvim	:nvim
+pane	0	3	:nvim	1	:*	0	:/home/h/blogger-cli	1	nvim	:nvim blogger-cli/
+pane	Blogger	1	:editor	0	:#-	0	:/home/h/blogger-cli	1	nvim	:nvim
+pane	Blogger	2	:bash	1	:*	0	:/home/h/khabar-board	1	bash	:
+window	0	1	0	:	bfbe,135x35,0,0,1
+window	0	2	0	:-	bfbf,135x35,0,0,2
+window	0	3	1	:*	bfc0,135x35,0,0,3
+window	Blogger	1	0	:#-	bfc1,135x35,0,0,4
+window	Blogger	2	1	:*	bfc2,135x35,0,0,5
+state	0	Blogger

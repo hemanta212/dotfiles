@@ -1,0 +1,7 @@
+pane	0	1	:[tmux]	1	:*	0	:/home/h	1	bash	:
+pane	bk_app	1	:Neovim	0	:-	0	:/home/h/flutter_dev/bk_app	1	nvim	:nvim
+pane	bk_app	2	:Console	1	:*	0	:/home/h/flutter_dev/bk_app	1	cp	:cp -r /home/h/flutter_dev/bk_app/lib /mnt/f/my_projects/dart_dev/bk_app/
+window	0	1	1	:*	b1be,112x32,0,0,1
+window	bk_app	1	0	:-	b1bf,112x32,0,0,2
+window	bk_app	2	1	:*	b1c0,112x32,0,0,3
+state	bk_app	
