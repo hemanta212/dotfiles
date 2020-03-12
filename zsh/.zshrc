@@ -12,5 +12,7 @@ for file in ~/.config/zsh/{zshrc,functionsrc,aliases,powerlevel10k/powerlevel10k
 done;
 unset file;
 
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
 # Load zsh-syntax-highlighting; should be last.
 source ~/.config/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 2>/dev/null
