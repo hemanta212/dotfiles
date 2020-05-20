@@ -1,7 +1,6 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
-
 (defun dotspacemacs/layers ()
   "Configuration Layers declaration.
 You should not put any user code in this function besides modifying the variable
@@ -37,22 +36,28 @@ values."
      rust
      dap
      (dart :variables
-         dart-server-sdk-path "~/flutter/flutter/bin/cache/dart-sdk/"
-         dart-server-format-on-save t
-         dart-server-enable-analysis-server t)
+        dart-server-sdk-path "~/local/flutter/bin/cache/dart-sdk/"
+        dart-server-format-on-save t
+        dart-server-enable-analysis-server t)
 
      (auto-completion :variables
         auto-completion-enable-snippets-in-popup nil
         auto-completion-enable-help-tooltip t
         auto-completion-enable-sort-by-usage t)
 
-     (python :variables 
-        python-backend 'lsp
+     (python :variables
         python-formatter 'black
         python-fill-column 79
         python-auto-set-local-pyenv-version 'on-visit
         python-sort-imports-on-save t
         python-format-on-save t)
+
+     (c-c++ :variables
+            =c-c++-backend= 'lsp-clangd
+            c++-enable-organize-includes-on-save t
+            c-c++-enable-clang-format-on-save t
+            c-c++-enable-auto-newline t
+            )
 
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
@@ -62,13 +67,13 @@ values."
      emacs-lisp
      git
      markdown
-     org
      ;; (shell :variables
      ;;        shell-default-height 30
      ;;        shell-default-position 'bottom)
      neotree
      syntax-checking
      version-control
+     org
      )
    ;; List of additional packages that will be installed without being
    ;; wrapped in a layer. If you need some configuration for these
@@ -325,6 +330,8 @@ before packages are loaded. If you are unsure, you should try in setting them in
 (defun dotspacemacs/user-config ()
   (setq-default evil-escape-key-sequence "kj"))
 
+(add-hook 'evil-insert-state-entry-hook (lambda () (send-string-to-terminal "\033[5 q"))) (add-hook 'evil-normal-state-entry-hook (lambda () (send-string-to-terminal "\033[0 q")))
+
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
 (custom-set-variables
@@ -354,7 +361,8 @@ This function is called at the very end of Spacemacs initialization."
  '(org-agenda-files (quote ("~/local/track.org")))
  '(package-selected-packages
    (quote
-    (yaml-mode ws-butler winum which-key volatile-highlights vi-tilde-fringe uuidgen use-package toc-org spaceline powerline restart-emacs request rainbow-delimiters popwin persp-mode pcre2el paradox spinner org-plus-contrib org-bullets open-junk-file neotree move-text macrostep lorem-ipsum linum-relative link-hint indent-guide hydra lv hungry-delete hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation helm-themes helm-swoop helm-projectile projectile pkg-info epl helm-mode-manager helm-make helm-flx helm-descbinds helm-ag google-translate golden-ratio flx-ido flx fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-tutor evil-surround evil-search-highlight-persist highlight evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state smartparens evil-indent-plus evil-iedit-state iedit evil-exchange evil-escape evil-ediff evil-args evil-anzu anzu evil goto-chg undo-tree eval-sexp-fu elisp-slime-nav dumb-jump diminish define-word column-enforce-mode clean-aindent-mode bind-map bind-key auto-highlight-symbol auto-compile packed ace-link ace-jump-helm-line helm helm-core popup nadvice evil-unimpaired async aggressive-indent adaptive-wrap ace-window))))
+    (yaml-mode ws-butler winum which-key volatile-highlights vi-tilde-fringe uuidgen use-package toc-org spaceline powerline restart-emacs request rainbow-delimiters popwin persp-mode pcre2el paradox spinner org-plus-contrib org-bullets open-junk-file neotree move-text macrostep lorem-ipsum linum-relative link-hint indent-guide hydra lv hungry-delete hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation helm-themes helm-swoop helm-projectile projectile pkg-info epl helm-mode-manager helm-make helm-flx helm-descbinds helm-ag google-translate golden-ratio flx-ido flx fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-tutor evil-surround evil-search-highlight-persist highlight evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state smartparens evil-indent-plus evil-iedit-state iedit evil-exchange evil-escape evil-ediff evil-args evil-anzu anzu evil goto-chg undo-tree eval-sexp-fu elisp-slime-nav dumb-jump diminish define-word column-enforce-mode clean-aindent-mode bind-map bind-key auto-highlight-symbol auto-compile packed ace-link ace-jump-helm-line helm helm-core popup nadvice evil-unimpaired async aggressive-indent adaptive-wrap ace-window)))
+ '(paradox-github-token t))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
