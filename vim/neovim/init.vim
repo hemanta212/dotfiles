@@ -25,7 +25,7 @@ call plug#begin('~/.config/nvim/plugged')
 Plug 'scrooloose/nerdtree'
 
 " Nerdtree tabs
-Plug 'jistr/vim-nerdtree-tabs'
+"Plug 'jistr/vim-nerdtree-tabs'
 
 " Terminal Vim with 256 colors colorscheme
 Plug 'fisadev/fisa-vim-colorscheme'
@@ -86,7 +86,14 @@ Plug 'natebosch/vim-lsc-dart'
 
 " Dart autocomplete By cocnvim (Performance intensive)
 "Plug 'neoclide/coc.nvim', {'branch': 'release'}
-
+" Deoplete vim
+if has('nvim')
+  Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+else
+  Plug 'Shougo/deoplete.nvim'
+  Plug 'roxma/nvim-yarp'
+  Plug 'roxma/vim-hug-neovim-rpc'
+endif
 
 " TODO is it running on save? or when?
 " TODO not detecting errors, just style, is it using pylint?
@@ -208,20 +215,20 @@ function! CtrlPWithSearchText(search_text, ctrlp_command_end)
 endfunction
 
 " same as previous mappings, but calling with current word as default text
-"nmap ,wg :call CtrlPWithSearchText(expand('<cword>'), 'BufTag')<CR>
-"nmap ,wG :call CtrlPWithSearchText(expand('<cword>'), 'BufTagAll')<CR>
-"nmap ,wf :call CtrlPWithSearchText(expand('<cword>'), 'Line')<CR>
-"nmap ,we :call CtrlPWithSearchText(expand('<cword>'), '')<CR>
-"nmap ,pe :call CtrlPWithSearchText(expand('<cfile>'), '')<CR>
-"nmap ,wm :call CtrlPWithSearchText(expand('<cword>'), 'MRUFiles')<CR>
-"nmap ,wc :call CtrlPWithSearchText(expand('<cword>'), 'CmdPalette')<CR>
+nmap ,wg :call CtrlPWithSearchText(expand('<cword>'), 'BufTag')<CR>
+nmap ,wG :call CtrlPWithSearchText(expand('<cword>'), 'BufTagAll')<CR>
+nmap ,wf :call CtrlPWithSearchText(expand('<cword>'), 'Line')<CR>
+nmap ,we :call CtrlPWithSearchText(expand('<cword>'), '')<CR>
+nmap ,pe :call CtrlPWithSearchText(expand('<cfile>'), '')<CR>
+nmap ,wm :call CtrlPWithSearchText(expand('<cword>'), 'MRUFiles')<CR>
+nmap ,wc :call CtrlPWithSearchText(expand('<cword>'), 'CmdPalette')<CR>
 
 
 " Deoplete -----------------------------
-"let g:deoplete#enable_at_startup = 1
-"let g:deoplete#enable_ignore_case = 1
-"let g:deoplete#enable_smart_case = 1
-"let g:deoplete#auto_complete=1
+let g:deoplete#enable_at_startup = 1
+let g:deoplete#enable_ignore_case = 1
+let g:deoplete#enable_smart_case = 1
+let g:deoplete#auto_complete=1
 
 "" complete with words from any opened file
 let g:context_filetype#same_filetypes = {}
@@ -230,18 +237,18 @@ let g:context_filetype#same_filetypes._ = '_'
 
 " Jedi-vim ------------------------------
 " Disable autocompletion (using deoplete instead)
-"let g:jedi#completions_enabled = 0
+let g:jedi#completions_enabled = 0
 
 " Go to definition
-"let g:jedi#goto_command = ',d'
-"nmap ,d :vs<CR>:call jedi#goto()<CR>
+let g:jedi#goto_command = ',d'
+nmap ,d :vs<CR>:call jedi#goto()<CR>
 
 " Find ocurrences
-"let g:jedi#usages_command = ',o'
+let g:jedi#usages_command = ',o'
 " Find assignments
-"let g:jedi#goto_assignments_command = ',a'
+let g:jedi#goto_assignments_command = ',a'
 " Go to definition in new tab
-"nmap ,D :tab split<CR>:call jedi#goto()<CR>
+nmap ,D :tab split<CR>:call jedi#goto()<CR>
 
 
 " Airline ------------------------------
