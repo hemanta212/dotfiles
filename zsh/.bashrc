@@ -1,0 +1,8 @@
+# If not running interactively, don't do anything
+zsh
+
+[[ $- == *i* ]] || return
+
+[ -n "$PS1" ] && source ~/.bash_profile;
+
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
