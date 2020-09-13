@@ -39,4 +39,4 @@ alias l='ls -CF'
 alias pg='ping google.com'
 alias memfree='echo "sync && echo 3 > /proc/sys/vm/drop_caches" | sudo sh'
 alias diary="cd ~/.personal/daily/ && ~/.personal/mdnote/editnewjournalfile.sh"
-
+alias cat='bat'

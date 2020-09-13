@@ -48,6 +48,7 @@ export PATH="$PATH":"$HOME/local/flutter/bin/"
 export PATH="/usr/local/sbin:$PATH";
 export PATH="$HOME/local/.blogger_cli/bin:$PATH"
 export PATH="$HOME/.poetry/bin:$PATH"
+export PATH="$HOME/.emacs.d/bin:$PATH"
 # export pyenv
 if [ -d ~/.pyenv/bin ]; then
   export PATH="~/.pyenv/bin:$PATH"

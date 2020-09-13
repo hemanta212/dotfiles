@@ -31,30 +31,30 @@ neovim () {
 
 upvrc() {
     cd ~;
-    cp .vimrc ~/dotfiles/vim/vim/;
+    cp .vimrc ~/dev/dotfiles/vim/vim/;
     cd  ~/.vim/ ;
-    cp init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/dotfiles/vim/vim/;
-    cd ~/dotfiles/
+    cp init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/dev/dotfiles/vim/vim/;
+    cd ~/dev/dotfiles/
     git add . && git commit -m "updated vim configs" 
     cd ;
 }
 
 upnvim() {
     cd ~/.config/nvim/;
-    cp init.vim ~/dotfiles/vim/neovim/;
+    cp init.vim ~/dev/dotfiles/vim/neovim/;
 
-    cd ~/dotfiles/
+    cd ~/dev/dotfiles/
     git add . && git commit -m "updated neovim configs"
     cd ;
 }
 dpvrc() {
-    cd ~/dotfiles/vim/vim/;
+    cd ~/dev/dotfiles/vim/vim/;
     cp .vimrc init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/.vim/;
     cd ;
 }
 
 dpnvim() {
-    cd ~/dotfiles/vim/neovim/;
+    cd ~/dev/dotfiles/vim/neovim/;
     cp init.vim ~/.config/nvim/
     cd ;
 }
@@ -65,22 +65,25 @@ sbash () {
 
 upbash () {
       cd ~
-      cp -r .oh-my-zsh/ tmp/ && rm -rf tmp/.oh-my-zsh/.git && cp -r tmp/.oh-my-zsh/ dotfiles/zsh/
-      cp -r .p10k.zsh .zshrc .functionsrc .aliases .tmux.conf.local .config/ptpython/.pythonrc.py .config/ptpython/config.py .z .zfunc/ .tmux/ .oh-my-zsh/ dotfiles/zsh/
-      cd dotfiles/
+      cp -r .zshrc .config/zsh dev/dotfiles/zsh/      
+      cp .tmux.conf dev/dotfiles
+      cd dev/dotfiles/
       git add . && git commit -m "updated zsh dotfiles"
 }
+
 dpbash() {
-        cd ~/dotfiles/zsh/
-        cp .p10k.zsh .zshrc .functionsrc .aliases .tmux.conf.local .z ~/
+        cd ~/dev/dotfiles/zsh/
+        cp .zshrc ~/
+        cp -r  zsh ~/.config/zsh/   
         cp config.py .pythonrc.py ~/.config/ptpython/
 }
 
 updotfiles () {
-        cd ~/dotfiles/
+        cd ~/dev/dotfiles/
         git pull origin master
         git push origin master
 }
+
 clone() {
         cd
         git clone https://github.com/$1/$2
