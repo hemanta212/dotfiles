@@ -645,6 +645,10 @@ nnoremap <Leader>fr :CocCommand flutter.run<CR>
 nnoremap <Leader>fg :CocCommand flutter.gotoSuper<CR>
 
 
+""'''''''''''/////////////////// Flutter dart-vim-plugin//////////////
+g:dart_style_guide = 2
+let g:dart_format_on_save = 1
+
 "'''''''''''/////////////////// Python coc-python //////////////
 nnoremap <Leader>pi :CocCommand python.setInterpreter<CR>
 nnoremap <Leader>pe :CocCommand python.execInTerminal<CR>
