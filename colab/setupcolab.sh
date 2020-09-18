@@ -2,22 +2,28 @@
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm --depth 1
 git clone https://github.com/hemanta212/dotfiles ~/dev/dotfiles
 
+# setup exit script
+curl -sSL https://hemanta212.github.io/dotfiles/colab/exit.sh -o ~/
+chmod u+x exit.sh
+
 
 # tmux and nvim init files
 cp ~/dev/dotfiles/tmux/.tmux.conf ~/
+curl -sSL https://hemanta212.github.io/dotfiles/colab/resurrect -o ~/.tmux/resurrector.zip 
+cd ~/.tmux/ && unzip resurrector.zip
+
 mkdir ~/.config/ && mkdir ~/.config/nvim && mkdir ~/.config/ptpython
 cp ~/dev/dotfiles/vim/neovim/init_heavy.vim ~/.config/nvim/init.vim
+
+nvim & >> /dev/null
 
 # zsh dotfiles
 cp -r ~/dev/dotfiles/zsh/zsh ~/.config/
 git clone https://github.com/romkatv/powerlevel10k ~/.config/zsh/powerlevel10k --depth 1
 
 # Prepare setup scripts
-cd ~/dev/dotfiles/
-git checkout colab
-cp colab/.p10k.zsh ~/zsh/p0k.zsh
-git checkout master
-cd zsh
+curl -sSL https://hemanta212.github.io/dotfiles/colab/.p10k.zsh -o ~/.config/zsh/p10k.zsh
+cd ~/dev/dotfiles/zsh
 cp .pythonrc.py ~/.config/ptpython/
 cp .zshrc .bashrc ~/
 
@@ -25,6 +31,8 @@ cp .zshrc .bashrc ~/
 cd ~/dev/dotfiles
 git config --global user.email "sharmahemanta.212@gmail.com"
 git config --global user.name "hemanta212"
+git config --global credential.helper store
+git push origin master
 cd ~/
 
 # Get sdkmanager cli and install android-sdk
@@ -50,5 +58,5 @@ flutter doctor
 flutter doctor --android-licenses
 flutter doctor
 
-python -m venv .pyvenv
-sudo .pyvenv/bin/python -m pip install ptpython requests 
+python -m venv .ptvenv
+sudo .ptvenv/bin/python -m pip install ptpython requests 
