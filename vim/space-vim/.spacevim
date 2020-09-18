@@ -93,11 +93,11 @@ function! UserInit()
   Plug 'kassio/neoterm'
   
   "Dart/Flutter vim
-  "Plug 'dart-lang/dart-vim-plugin'
+   Plug 'dart-lang/dart-vim-plugin'
   
   " Dart autocomplete By lsp
-  "Plug 'natebosch/vim-lsc'
-  "Plug 'natebosch/vim-lsc-dart'
+   Plug 'natebosch/vim-lsc'
+   Plug 'natebosch/vim-lsc-dart'
   
   
   " Dart autocomplete By cocnvim (Performance intensive)
