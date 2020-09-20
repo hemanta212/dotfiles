@@ -59,5 +59,9 @@ flutter doctor
 flutter doctor --android-licenses
 flutter doctor
 
+curl -sSL https://raw.githubsercontent.com/python-poetry/poetry/master/get-poetry.py -o ~/poetry.py
+curl -sSL https://hemanta212.githutb.io/blogger-cli/get_blogger.py -o ~/blogger.py
+python ~/poetry.py -y
+python ~/blogger.py -y 
 python -m venv .ptvenv
-sudo .ptvenv/bin/python -m pip install ptpython requests 
+.ptvenv/bin/python -m pip install ptpython requests 
