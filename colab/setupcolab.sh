@@ -6,7 +6,6 @@ git clone https://github.com/hemanta212/dotfiles ~/dev/dotfiles
 curl -sSL https://hemanta212.github.io/dotfiles/colab/exit.sh -o ~/exit.sh
 chmod u+x ~/exit.sh
 
-
 # tmux and nvim init files
 cp ~/dev/dotfiles/tmux/.tmux.conf ~/
 curl -sSL https://hemanta212.github.io/dotfiles/colab/resurrect.zip -o ~/.tmux/resurrector.zip 
@@ -60,7 +59,7 @@ flutter doctor --android-licenses
 flutter doctor
 
 curl -sSL https://raw.githubsercontent.com/python-poetry/poetry/master/get-poetry.py -o ~/poetry.py
-curl -sSL https://hemanta212.githutb.io/blogger-cli/get_blogger.py -o ~/blogger.py
+curl -sSL https://hemanta212.github.io/blogger-cli/get_blogger.py -o ~/blogger.py
 python ~/poetry.py -y
 python ~/blogger.py -y 
 python -m venv .ptvenv
