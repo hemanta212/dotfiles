@@ -11,11 +11,10 @@ chmod u+x exit.sh
 cp ~/dev/dotfiles/tmux/.tmux.conf ~/
 curl -sSL https://hemanta212.github.io/dotfiles/colab/resurrect -o ~/.tmux/resurrector.zip 
 cd ~/.tmux/ && unzip resurrector.zip
+cd 
 
 mkdir ~/.config/ && mkdir ~/.config/nvim && mkdir ~/.config/ptpython
 cp ~/dev/dotfiles/vim/neovim/init_heavy.vim ~/.config/nvim/init.vim
-
-nvim & >> /dev/null
 
 # zsh dotfiles
 cp -r ~/dev/dotfiles/zsh/zsh ~/.config/
@@ -26,6 +25,7 @@ curl -sSL https://hemanta212.github.io/dotfiles/colab/.p10k.zsh -o ~/.config/zsh
 cd ~/dev/dotfiles/zsh
 cp .pythonrc.py ~/.config/ptpython/
 cp .zshrc .bashrc ~/
+cd 
 
 # setup git
 cd ~/dev/dotfiles
@@ -33,7 +33,7 @@ git config --global user.email "sharmahemanta.212@gmail.com"
 git config --global user.name "hemanta212"
 git config --global credential.helper store
 git push origin master
-cd ~/
+cd
 
 # Get sdkmanager cli and install android-sdk
 wget https://dl.google.com/android/repository/commandlinetools-linux-6609375_latest.zip
