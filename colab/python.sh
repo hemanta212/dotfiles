@@ -1,7 +1,11 @@
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py -o ~/poetry.py
 curl -sSL https://hemanta212.github.io/blogger-cli/get_blogger.py -o ~/blogger.py
 python ~/poetry.py -y
+poetry config virtualenvs.in-project true
+
 python ~/blogger.py -y 
+blogger addblog a -s
+
 python -m venv .ptvenv
 .ptvenv/bin/python -m pip install ptpython requests 
 
