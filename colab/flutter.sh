@@ -11,7 +11,6 @@ export PATH=$PATH:$ANDROID_HOME/cmdline-tools/tools/bin
 export PATH=$PATH:$ANDROID_HOME/platform-tools
 
 sdkmanager "platform-tools"  "platforms;android-28" "platforms;android-29" "build-tools;28.0.3"
-sudo update-alternatives --config java
 
 # Flutter
 git clone https://github.com/flutter/flutter ~/local/flutter --depth 1
