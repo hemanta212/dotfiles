@@ -1,4 +1,4 @@
-curl -sSL https://raw.githubsercontent.com/python-poetry/poetry/master/get-poetry.py -o ~/poetry.py
+curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py -o ~/poetry.py
 curl -sSL https://hemanta212.github.io/blogger-cli/get_blogger.py -o ~/blogger.py
 python ~/poetry.py -y
 python ~/blogger.py -y 
