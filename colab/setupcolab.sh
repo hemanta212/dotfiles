@@ -14,7 +14,8 @@ cd ~/.tmux/ && unzip resurrector.zip
 cd 
 
 mkdir ~/.config/ && mkdir ~/.config/nvim && mkdir ~/.config/ptpython
-cp ~/dev/dotfiles/vim/neovim/init_heavy.vim ~/.config/nvim/init.vim
+curl -sLf https://spacevim.org/install.sh | bash
+cp ~/dev/dotfiles/vim/space-vim/.SpaceVim.d/ -r ~/
 
 # zsh dotfiles
 cp -r ~/dev/dotfiles/zsh/zsh ~/.config/
