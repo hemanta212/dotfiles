@@ -129,16 +129,21 @@ mystatus (){
     current=$PWD
     cd ~/dev/status
     git checkout gh-pages
+    git pull origin gh-pages
+
     echo "<div class='main'>" > index.html
     echo "<div class='head'><h1>$1</h1></div>" >> index.html
 
     if [ $# -eq 2 ]
         then
-           echo "<div class='detail'><h3>SEVER:$2 <br>email:sharmahemanta212@gmail.com</h3></div>" >> index.html
+           echo "<div class='detail'><h3>SEVER:$2</h3></div>" >> index.html
     fi
+
+    echo "<div class='time'>Last Updated: $(TZ=Asia/Kathmandu date '+%I:%M %p | %a %b %d %Y |')</div>" >> index.html
+    echo "<div class='email'><br>Email: sharmahemanta212@gmail.com</div>" >> index.html
     echo "</div>" >> index.html
 
-    git commit -a -m 'Updates status'
+    git commit -a -m "Updates status"
     git push origin gh-pages
     cd $current
 }
