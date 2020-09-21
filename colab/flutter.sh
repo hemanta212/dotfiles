@@ -13,7 +13,8 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 sdkmanager "platform-tools"  "platforms;android-28" "platforms;android-29" "build-tools;28.0.3"
 
 # Flutter
-git clone https://github.com/flutter/flutter ~/local/flutter --depth 1
+git clone https://github.com/flutter/flutter ~/local/flutter
+cd ~/local/flutter && git checkout stable && cd
 export PATH="$PATH":"$HOME/local/flutter/bin/"
 flutter
 flutter doctor
