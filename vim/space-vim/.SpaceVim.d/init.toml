@@ -45,6 +45,8 @@ default_height = 30
 
 name = 'incsearch'
 
+name = 'lang#dart'
+
 #[[custom_plugins]]
 #  repo = "lilydjwg/colorizer"
 #  on_cmd = ["ColorHighlight", "ColorToggle"]
