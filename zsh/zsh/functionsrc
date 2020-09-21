@@ -113,3 +113,31 @@ flutcp (){
 winpro (){
     cd /mnt/f/my_projects/$@
 }
+
+colab_con (){
+    if [ $# -eq 1 ]
+        then
+           ssh -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60 -p $1 pykancha@0.tcp.ngrok.io
+    fi
+    if [ $# -eq 2 ]
+        then
+           ssh -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60 -p $1 pykancha@0.tcp.$2.ngrok.io
+    fi
+}
+
+mystatus (){
+    current=$PWD
+    cd ~/dev/status
+    git checkout gh-pages
+    echo "<div class='main'>"
+    echo "<div class='head'><h1>$1</h1></div>"
+
+    if [ $# -eq 2 ]
+        then
+           echo "<div class='detail'><h3>$2</h3></div>"
+    fi
+    echo "</div>" 
+    git commit -a -m 'Updates status'
+    git push origin gh-pages
+    cd $current
+}
