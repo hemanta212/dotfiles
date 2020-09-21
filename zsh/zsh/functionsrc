@@ -134,7 +134,7 @@ mystatus (){
 
     if [ $# -eq 2 ]
         then
-           echo "<div class='detail'><h3>$2</h3></div>" >> index.html
+           echo "<div class='detail'><h3>SEVER:$2 <br>email:sharmahemanta212@gmail.com</h3></div>" >> index.html
     fi
     echo "</div>" >> index.html
 
