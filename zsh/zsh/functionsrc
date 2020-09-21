@@ -129,14 +129,15 @@ mystatus (){
     current=$PWD
     cd ~/dev/status
     git checkout gh-pages
-    echo "<div class='main'>"
-    echo "<div class='head'><h1>$1</h1></div>"
+    echo "<div class='main'>" > index.html
+    echo "<div class='head'><h1>$1</h1></div>" >> index.html
 
     if [ $# -eq 2 ]
         then
-           echo "<div class='detail'><h3>$2</h3></div>"
+           echo "<div class='detail'><h3>$2</h3></div>" >> index.html
     fi
-    echo "</div>" 
+    echo "</div>" >> index.html
+
     git commit -a -m 'Updates status'
     git push origin gh-pages
     cd $current
