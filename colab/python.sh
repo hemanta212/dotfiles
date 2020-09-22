@@ -1,3 +1,5 @@
+mkdir ~/dev
+
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py -o ~/poetry.py
 curl -sSL https://hemanta212.github.io/blogger-cli/get_blogger.py -o ~/blogger.py
 python ~/poetry.py -y
@@ -9,7 +11,7 @@ blogger addblog a -s
 python -m venv .ptvenv
 .ptvenv/bin/python -m pip install ptpython requests 
 
-mkdir ~/dev && cd ~/dev
+cd ~/dev
 git clone https://github.com/hemanta212/blogger-cli
 git clone https://github.com/hemanta212/nepali-news-portal-kbd kbd/
 cd kbd/

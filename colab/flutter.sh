@@ -1,3 +1,4 @@
+mkdir ~/dev
 # Get sdkmanager cli and install android-sdk
 wget https://dl.google.com/android/repository/commandlinetools-linux-6609375_latest.zip
 unzip commandlinetools-linux-6609375_latest.zip
@@ -21,8 +22,8 @@ flutter doctor
 flutter doctor --android-licenses
 flutter doctor
 
-mkdir ~/dev && cd ~/dev
-git clone https://github.com/hemanta212/hello_flutter.git 
+cd ~/dev
+git clone https://github.com/hemanta212/hello_flutter.git
 git clone https://github.com/hemanta212/inventory_app.git
 cd hello_flutter/
 git config --global credential.helper store
