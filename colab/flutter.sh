@@ -3,7 +3,9 @@ mkdir ~/dev
 wget https://dl.google.com/android/repository/commandlinetools-linux-6609375_latest.zip
 unzip commandlinetools-linux-6609375_latest.zip
 rm commandlinetools-linux-6609375_latest.zip
-mkdir local/ && mkdir local/android-sdk && mkdir local/android-sdk/cmdline-tools
+mkdir local/
+mkdir local/android-sdk
+mkdir local/android-sdk/cmdline-tools
 mv tools local/android-sdk/cmdline-tools/
 
 # Export the Android SDK path 
