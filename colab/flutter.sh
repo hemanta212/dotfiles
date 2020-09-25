@@ -33,3 +33,4 @@ git push origin master
 cd ~/dev
 
 git clone https://github.com/hemanta212/samachar_app.git
+git clone https://github.com/hemanta212/meme_khani.git

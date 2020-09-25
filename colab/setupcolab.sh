@@ -1,7 +1,6 @@
 # Clone resources 
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm --depth 1
 git clone https://github.com/hemanta212/dotfiles ~/dev/dotfiles
-git clone https://github.com/hemanta212/status ~/dev/status
 
 # setup exit script
 curl -sSL https://hemanta212.github.io/dotfiles/colab/exit.sh -o ~/exit.sh

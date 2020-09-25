@@ -21,3 +21,4 @@ cd ~/dev
 
 git clone https://github.com/hemanta212/news_api
 git clone https://github.com/hemanta212/meme_khani_api
+git clone https://github.com/hemanta212/status

@@ -1,4 +1,3 @@
-mkdir ~/dev
 cd ~/dev/dotfiles
 git config credential.helper store
 git push origin master
