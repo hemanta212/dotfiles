@@ -1,0 +1,113 @@
+import secrets, json, re, pathlib, getpass
+
+# Installing SSH server
+!apt-get update > /dev/null
+!apt-get install -qq -o=Dpkg::Use-Pty=0 openssh-server > /dev/null
+
+# Installing ngrok
+!wget -nv -nc https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+!unzip -n ngrok-stable-linux-amd64.zip
+
+# Creating user accounts
+root_password = secrets.token_urlsafe()
+user_password = "YOUR PASS"
+user_name = "YOUR USERNAME"
+!useradd -s /bin/bash -m $user_name
+!echo root:$root_password | chpasswd
+!echo $user_name:$user_password | chpasswd
+!usermod -aG sudo $user_name
+!mkdir -p /run/sshd
+!service ssh restart
+
+# Setting up ngrok
+if not pathlib.Path('/root/.ngrok2/ngrok.yml').exists():
+  print("---")
+  print("Copy and paste your tunnel authtoken from https://dashboard.ngrok.com/auth")
+  print("(You need to sign up for ngrok and login)")
+  # ngrok_token = getpass.getpass()
+  ngrok_token = "YOUR TOKEN"
+  !./ngrok authtoken $ngrok_token
+
+print("Select your ngrok region:")
+print("us - United States (Ohio)")
+print("eu - Europe (Frankfurt)")
+print("ap - Asia/Pacific (Singapore)")
+print("au - Australia (Sydney)")
+region = None
+url = None
+
+while True:
+    region = input()
+    get_ipython().system_raw("./ngrok tcp -region {} 22 &".format(region))
+    !sleep 1
+    tunnels = !curl -s http://localhost:4040/api/tunnels
+    try:
+        url = json.loads(tunnels[0])["tunnels"][0]["public_url"]
+        break
+    except:
+         pass
+            
+m = re.match("tcp://(.+):(\d+)", url)
+hostname = m.group(1)
+port = m.group(2)
+ssh_common_options = "-o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60"
+
+# Give the user login credentials etc.
+print("✂️"*24)
+print("root password: {}".format(root_password))
+print("PORT: {} REGION:{}".format(port, region))
+print("✂️"*24)
+print("---")
+print("Command to connect to the ssh server:")
+print("✂️"*24)
+print("ssh {} -p {} {}@{}".format(ssh_common_options, port, user_name, hostname))
+print("✂️"*24)
+print("---")
+
+
+!apt-get install curl python3-venv tmux zsh fasd gdb clang make bear libedit-dev clangd-9
+
+# Install neovim from ppa
+!add-apt-repository ppa:neovim-ppa/stable -y
+!apt-get update 
+!apt-get install neovim
+
+# Nodejs, jdk and android-sdk ppa
+!curl -sL https://deb.nodesource.com/setup_12.x | sudo -E  bash -
+!apt-get install -y npm nodejs
+!curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - 
+!echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
+!apt-get update && apt-get install yarn
+!npm install -g localtunnel browser-sync 
+
+!add-apt-repository ppa:openjdk-r/ppa -y
+!apt-get update
+!apt-get install openjdk-8-jdk 
+
+# Install the gh cli from ppa
+!apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+!apt-add-repository https://cli.github.com/packages -y
+!apt-get update
+!apt-get install gh
+
+
+!rm -rf /usr/local/bin/python
+
+!update-alternatives --install /usr/local/bin/python python /usr/bin/python3.6 1
+!python -m pip install pynvim ptpython
+
+!update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-9 100
+
+!update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java 5000
+
+!chown -hR pykancha /home/pykancha
+!chown -hR pykancha /var/log/
+
+!sudo -u pykancha curl -sSL https://hemanta212.github.io/dotfiles/colab/setupcolab.sh -o /home/pykancha/set.sh
+!sudo -u pykancha curl -sSL https://hemanta212.github.io/dotfiles/colab/python.sh -o /home/pykancha/py.sh
+!sudo -u pykancha curl -sSL https://hemanta212.github.io/dotfiles/colab/flutter.sh -o /home/pykancha/flutter.sh
+!sudo -u pykancha curl -sSL https://hemanta212.github.io/dotfiles/colab/c.sh -o /home/pykancha/c.sh
+!sudo -u pykancha chmod +x /home/pykancha/set.sh
+!sudo -u pykancha chmod +x /home/pykancha/py.sh
+!sudo -u pykancha chmod +x /home/pykancha/flutter.sh
+!sudo -u pykancha chmod +x /home/pykancha/c.sh
