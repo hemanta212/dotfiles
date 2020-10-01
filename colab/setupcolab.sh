@@ -15,6 +15,7 @@ cd
 mkdir ~/.config/ && mkdir ~/.config/nvim && mkdir ~/.config/ptpython
 curl -sLf https://spacevim.org/install.sh | bash
 cp ~/dev/dotfiles/vim/space-vim/.SpaceVim.d/ -r ~/
+cp ~/dev/dotfiles/emacs/.doom.d -r ~/
 
 # zsh dotfiles
 cp -r ~/dev/dotfiles/zsh/zsh ~/.config/
