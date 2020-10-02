@@ -1,62 +1,14 @@
-aenv () {
-  if [ $# -eq 1 ]
-    then
-      source ~/.cache/pypoetry/virtualenvs/$1/bin/activate
-  fi
-  if [ $# -eq 0 ]
-    then
-      source $(poetry env info -p)/bin/activate
-  fi
+upvim(){
+  cp ~/.SpaceVim.d ~/dev/dotfiles/vim/space-vim/ -r
 }
-
-menv () {
-      python -m venv ~/.cache/pypoetry/virtualenvs/$1;
+upvim(){
+  cp ~/dev/dotfiles/vim/space-vim/.SpaceVim.d ~/ -r
 }
-
-neovim () {
-    current=$PWD
-    cd ~/$1;
-    aenv;
-    cd $current;
-    echo $current;
-    if [ $# -eq 1 ]
-        then
-           nvim; 
-    fi
-    if [ $# -eq 2 ]
-        then
-           nvim $2; 
-    fi
+upmacs(){
+  cp ~/.doom.d ~/dev/dotfiles/emacs/ -r
 }
-
-upvrc() {
-    cd ~;
-    cp .vimrc ~/dev/dotfiles/vim/vim/;
-    cd  ~/.vim/ ;
-    cp init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/dev/dotfiles/vim/vim/;
-    cd ~/dev/dotfiles/
-    git add . && git commit -m "updated vim configs" 
-    cd ;
-}
-
-upnvim() {
-    cd ~/.config/nvim/;
-    cp init.vim ~/dev/dotfiles/vim/neovim/;
-
-    cd ~/dev/dotfiles/
-    git add . && git commit -m "updated neovim configs"
-    cd ;
-}
-dpvrc() {
-    cd ~/dev/dotfiles/vim/vim/;
-    cp .vimrc init.vimrc general.vimrc python.vimrc plugin.vimrc graphics.vimrc key.vimrc ~/.vim/;
-    cd ;
-}
-
-dpnvim() {
-    cd ~/dev/dotfiles/vim/neovim/;
-    cp init.vim ~/.config/nvim/
-    cd ;
+dpmacs(){
+  cp  ~/dev/dotfiles/emacs/.doom.d ~/ -r
 }
 
 sbash () {
@@ -65,10 +17,10 @@ sbash () {
 
 upbash () {
       cd ~
-      cp -r .zshrc .config/zsh dev/dotfiles/zsh/      
-      cp .tmux.conf dev/dotfiles
+      cp -r .zshrc .mytermuxrc .mywslrc  .mycolabrc  .config/zsh dev/dotfiles/zsh/      
+      cp .tmux.conf dev/dotfiles/tmux/
       cd dev/dotfiles/
-      git add . && git commit -m "updated zsh dotfiles"
+      git add . && git commit -m "updated dotfiles"
 }
 
 dpbash() {
@@ -85,48 +37,33 @@ updotfiles () {
 }
 
 clone() {
-        cd
-        git clone https://github.com/$1/$2
-}
-vrc (){
-        vim ~/.vim/$1.vimrc
-}
-vbash (){
-        vim ~/.bashrc
-}
-valias (){
-        vim ~/.aliases
-}
-
-vprof (){
-        vim ~/.bash_profile
-}
-
-vwake(){
-    source bin/activate
-}
-
-flutcp (){
-    cp -r ~/flutter_dev/$1/lib /mnt/f/my_projects/dart_dev/$1/
-}
-
-winpro (){
-    cd /mnt/f/my_projects/$@
+    if [ $# -eq 1 ]
+        then
+           git clone https://github.com/hemanta212/$1 ~/dev/dotfiles/$1
+    fi
+    if [ $# -eq 2 ]
+        then
+            git clone https://github.com/$1/$2 ~/dev/dotfiles/$2
+    fi
+    if [ $# -eq 3 ]
+        then
+            git clone https://github.com/$1/$2 $3/$2
+    fi
 }
 
 colab_con (){
     if [ $# -eq 1 ]
         then
-           ssh -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60 -p $1 pykancha@0.tcp.ngrok.io
+           ssh -o userknownhostsfile=/dev/null -o serveraliveinterval=60 -p $1 pykancha@0.tcp.ngrok.io
     fi
     if [ $# -eq 2 ]
         then
-           ssh -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60 -p $1 pykancha@0.tcp.$2.ngrok.io
+           ssh -o userknownhostsfile=/dev/null -o serveraliveinterval=60 -p $1 pykancha@0.tcp.$2.ngrok.io
     fi
 }
 
 mystatus (){
-    current=$PWD
+    current=$pwd
     cd ~/dev/status
     git checkout gh-pages
     git pull origin gh-pages
@@ -136,14 +73,14 @@ mystatus (){
 
     if [ $# -eq 2 ]
         then
-           echo "<div class='detail'><h3>SEVER:$2</h3></div>" >> index.html
+           echo "<div class='detail'><h3>sever:$2</h3></div>" >> index.html
     fi
 
-    echo "<div class='time'>Last Updated: $(TZ=Asia/Kathmandu date '+%I:%M %p | %a %b %d %Y |')</div>" >> index.html
-    echo "<div class='email'><br>Email: sharmahemanta212@gmail.com</div>" >> index.html
+    echo "<div class='time'>last updated: $(tz=asia/kathmandu date '+%i:%m %p | %a %b %d %y |')</div>" >> index.html
+    echo "<div class='email'><br>email: sharmahemanta212@gmail.com</div>" >> index.html
     echo "</div>" >> index.html
 
-    git commit -a -m "Updates status"
+    git commit -a -m "updates status"
     git push origin gh-pages
     cd $current
 }
