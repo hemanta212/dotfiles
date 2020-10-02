@@ -1,0 +1,16 @@
+persync(){
+  cd /sdcard/.cache/personal
+  git checkout org
+  git pull origin org
+  git add .
+  git commit -a -m "Updates org file"
+  git push origin org
+}
+
+peredit(){
+  current = $pwd
+  cd /sdcard/.cache/personal/org
+  git checkout org
+  emacs track.org
+  cd $current
+}

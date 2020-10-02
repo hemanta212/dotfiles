@@ -6,7 +6,7 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
 fi
 
 # Some sorcery /////////SOURCING other files //////////////////////
-for file in ~/.config/zsh/{zshrc,functionsrc,aliases,powerlevel10k/powerlevel10k.zsh-theme,p10k.zsh};
+for file in ~/.config/zsh/{zshrc,functionsrc,aliases,powerlevel10k/powerlevel10k.zsh-theme,p10k.zsh,.mytermuxrc,.mywslrc,.mycolabrc};
  do
     [ -r "$file" ] && [ -f "$file" ] && source "$file";
 done;
