@@ -26,7 +26,7 @@ upbash () {
 dpbash() {
         cd ~/dev/dotfiles/zsh/
         cp .zshrc ~/
-        cp -r  zsh ~/.config/zsh/   
+        cp -r  zsh ~/.config/   
         cp config.py .pythonrc.py ~/.config/ptpython/
 }
 
@@ -76,7 +76,7 @@ mystatus (){
            echo "<div class='detail'><h3>sever:$2</h3></div>" >> index.html
     fi
 
-    echo "<div class='time'>last updated: $(tz=asia/kathmandu date '+%i:%m %p | %a %b %d %y |')</div>" >> index.html
+    echo "<div class='time'>last updated: $(tz=asia/kathmandu date '+%l:%m %p | %a %b %d %y |')</div>" >> index.html
     echo "<div class='email'><br>email: sharmahemanta212@gmail.com</div>" >> index.html
     echo "</div>" >> index.html
 
