@@ -63,6 +63,12 @@ colab_con (){
 }
 
 mystatus (){
+    if [ $# -eq 0 ]
+        then
+           lynx https://hemanta212.github.io/status -dump
+           return
+    fi
+
     current=$pwd
     cd ~/dev/status
     git checkout gh-pages
@@ -73,7 +79,7 @@ mystatus (){
 
     if [ $# -eq 2 ]
         then
-           echo "<div class='detail'><h3>sever:$2</h3></div>" >> index.html
+           echo "<div class='detail'><h3>Server: $2</h3></div>" >> index.html
     fi
 
     echo "<div class='time'>last updated: $(tz=asia/kathmandu date '+%l:%m %p | %a %b %d %y |')</div>" >> index.html
