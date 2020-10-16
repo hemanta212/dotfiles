@@ -1,3 +1,5 @@
+sudo /etc/init.d/xrdp restart
+
 # Clone resources 
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm --depth 1
 git clone https://github.com/hemanta212/dotfiles ~/dev/dotfiles
@@ -16,6 +18,9 @@ mkdir ~/.config/ && mkdir ~/.config/nvim && mkdir ~/.config/ptpython
 curl -sLf https://spacevim.org/install.sh | bash
 cp ~/dev/dotfiles/vim/space-vim/.SpaceVim.d/ -r ~/
 cp ~/dev/dotfiles/emacs/.doom.d -r ~/
+
+cp ~/dev/dotfiles/i3/ -r ~/
+echo "i3" > .xsession
 
 # zsh dotfiles
 cp -r ~/dev/dotfiles/zsh/zsh ~/.config/
