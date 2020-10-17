@@ -1,4 +1,7 @@
-sudo /etc/init.d/xrdp restart
+sudo systemctl enable xrdp
+sudo /etc/init.d/xrdp start
+
+curl -L "https://cdn.wallpapersafari.com/9/8/IReacz.jpg" -o ~/macos.jpg
 
 # Clone resources 
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm --depth 1
@@ -19,7 +22,7 @@ curl -sLf https://spacevim.org/install.sh | bash
 cp ~/dev/dotfiles/vim/space-vim/.SpaceVim.d/ -r ~/
 cp ~/dev/dotfiles/emacs/.doom.d -r ~/
 
-cp ~/dev/dotfiles/i3/ -r ~/
+cp ~/dev/dotfiles/i3 -r ~/.i3
 echo "i3" > .xsession
 
 # zsh dotfiles
