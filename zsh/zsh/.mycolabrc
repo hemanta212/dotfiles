@@ -11,3 +11,7 @@ persync(){
   git pull origin org
   git push origin org
 }
+
+manim() {
+  python3 -m manim $1.py $2 -pl --video_dir=./videos
+}
