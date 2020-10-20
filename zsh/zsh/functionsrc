@@ -57,18 +57,18 @@ colab_con (){
           PORT=`mystatus | awk '/Server/ { print $2;}'`;
           REGION=`mystatus | awk '/Server/ {split($NF, DATA, "["); split(DATA[2], D, "]"); $FS="["; print D[1];}'`;
           echo ":: $PORT : $REGION ...";
-          ssh -p $PORT pykancha@0.tcp.$REGION.ngrok.io
+          ssh -L 3389:localhost:3389 -p $PORT pykancha@0.tcp.$REGION.ngrok.io
           return
     fi
 
 
     if [ $# -eq 1 ]
         then
-           ssh -o userknownhostsfile=/dev/null -o serveraliveinterval=60 -p $1 pykancha@0.tcp.ngrok.io
+           ssh -L 3389:localhost:3389 -p $1 pykancha@0.tcp.ngrok.io
     fi
     if [ $# -eq 2 ]
         then
-           ssh -o userknownhostsfile=/dev/null -o serveraliveinterval=60 -p $1 pykancha@0.tcp.$2.ngrok.io
+           ssh -L 3389:localhost:3389  -p $1 pykancha@0.tcp.$2.ngrok.io
     fi
 }
 
