@@ -13,7 +13,13 @@ export ANDROID_HOME=$HOME/local/android-sdk
 export PATH=$PATH:$ANDROID_HOME/cmdline-tools/tools/bin
 export PATH=$PATH:$ANDROID_HOME/platform-tools
 
-yes | sdkmanager "platform-tools"  "platforms;android-28" "platforms;android-29" "build-tools;28.0.3"
+yes | sdkmanager "platform-tools"  "build-tools;28.0.3" "platforms;android-30"
+
+# Adb
+cd ~/local/android-sdk/platform-tools/
+mv adb adb_old
+ln -s /usr/bin/adb adb
+cd
 
 # Flutter
 git clone https://github.com/flutter/flutter ~/local/flutter
