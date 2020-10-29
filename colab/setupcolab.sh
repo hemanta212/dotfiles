@@ -1,8 +1,3 @@
-sudo systemctl enable xrdp
-sudo /etc/init.d/xrdp start
-
-curl -L "https://cdn.wallpapersafari.com/9/8/IReacz.jpg" -o ~/macos.jpg
-
 # Clone resources 
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm --depth 1
 git clone https://github.com/hemanta212/dotfiles ~/dev/dotfiles
@@ -27,6 +22,7 @@ echo "i3" > .xsession
 
 # zsh dotfiles
 cp -r ~/dev/dotfiles/zsh/zsh ~/.config/
+rm ~/.config/zsh/.mytermuxrc
 git clone https://github.com/romkatv/powerlevel10k ~/.config/zsh/powerlevel10k --depth 1
 
 # Prepare setup scripts

@@ -40,3 +40,5 @@ cd ~/dev
 
 git clone https://github.com/hemanta212/samachar_app.git
 git clone https://github.com/hemanta212/meme_khani.git
+git clone https://github.com/hemanta212/marriage-card-tracker.git card_tracker
+cp ~/dev/personal/credentials/marriage_card_tracker/google-services.json card_tracker/android/app/
