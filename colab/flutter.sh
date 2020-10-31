@@ -15,12 +15,6 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 
 yes | sdkmanager "platform-tools"  "build-tools;28.0.3" "platforms;android-30"
 
-# Adb
-cd ~/local/android-sdk/platform-tools/
-mv adb adb_old
-ln -s /usr/bin/adb adb
-cd
-
 # Flutter
 git clone https://github.com/flutter/flutter ~/local/flutter
 cd ~/local/flutter && git checkout stable && cd
@@ -41,4 +35,7 @@ cd ~/dev
 git clone https://github.com/hemanta212/samachar_app.git
 git clone https://github.com/hemanta212/meme_khani.git
 git clone https://github.com/hemanta212/marriage-card-tracker.git card_tracker
-cp ~/dev/personal/credentials/marriage_card_tracker/google-services.json card_tracker/android/app/
+cd card_tracker 
+git checkout next
+cp ~/dev/personal/credentials/marriage_card_tracker/* android/app/
+mv card_tracker/android/app/key.properties android/
