@@ -38,4 +38,6 @@ git clone https://github.com/hemanta212/marriage-card-tracker.git card_tracker
 cd card_tracker 
 git checkout next
 cp ~/dev/personal/credentials/marriage_card_tracker/* android/app/
-mv card_tracker/android/app/key.properties android/
+mv android/app/key.properties android/
+cd 
+cp dev/card_tracker ~/  -r

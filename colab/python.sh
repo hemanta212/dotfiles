@@ -1,3 +1,4 @@
+cd ~/dev
 git clone https://github.com/hemanta212/nepali-news-portal-kbd kbd/
 cd kbd/
 git config --global credential.helper store
@@ -12,12 +13,11 @@ poetry config virtualenvs.in-project true
 python ~/blogger.py -y 
 blogger addblog a -s
 
-python -m venv .ptvenv
-.ptvenv/bin/python -m pip install ptpython requests 
+poetry init -n -q
+poetry add requests ptpython pylint black python-language-server
 
 cd ~/dev
 git clone https://github.com/hemanta212/blogger-cli
-
 git clone https://github.com/hemanta212/news_api
 git clone https://github.com/hemanta212/meme_khani_api
 git clone https://github.com/hemanta212/status
