@@ -25,11 +25,8 @@ cd ~/local/flutter && git checkout beta && cd
 export PATH="$PATH":"$HOME/local/flutter/bin/"
 flutter channel beta
 flutter upgrade
-flutter doctor
-yes | flutter doctor --android-licenses
 flutter config --enable-web
 flutter doctor
-
 # Get sdkmanager cli and install android-sdk
 wget https://dl.google.com/android/repository/commandlinetools-linux-6609375_latest.zip
 unzip commandlinetools-linux-6609375_latest.zip
@@ -45,5 +42,8 @@ export PATH=$PATH:$ANDROID_HOME/cmdline-tools/tools/bin
 export PATH=$PATH:$ANDROID_HOME/platform-tools
 
 yes | sdkmanager "platform-tools"  "build-tools;28.0.3" "platforms;android-29"
+
+yes | flutter doctor --android-licenses
+flutter doctor
 
 
