@@ -41,9 +41,8 @@ export ANDROID_HOME=$HOME/local/android-sdk
 export PATH=$PATH:$ANDROID_HOME/cmdline-tools/tools/bin
 export PATH=$PATH:$ANDROID_HOME/platform-tools
 
-yes | sdkmanager "platform-tools"  "build-tools;28.0.3" "platforms;android-29"
+yes | sdkmanager "platform-tools"  "build-tools;28.0.3" "platforms;android-28" "platforms;android-29"
 
 yes | flutter doctor --android-licenses
 flutter doctor
-
 
