@@ -13,5 +13,5 @@ persync(){
 }
 
 manim() {
-  poetry run manim manim $1.py $2 -pl --video_dir=./videos
+  poetry run manim $1.py $2 -pl --video_dir=./videos
 }
