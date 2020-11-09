@@ -100,3 +100,10 @@ mystatus (){
     git push origin gh-pages
     cd $current
 }
+
+colab_ssh(){
+          PORT=`mystatus | awk '/Server/ { print $2;}'`;
+          REGION=`mystatus | awk '/Server/ {split($NF, DATA, "["); split(DATA[2], D, "]"); $FS="["; print D[1];}'`;
+          echo ":: $PORT : $REGION ...";
+          ssh -p $PORT pykancha@0.tcp.$REGION.ngrok.io -L 5000:localhost:5000
+}
