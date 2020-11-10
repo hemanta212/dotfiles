@@ -4,6 +4,7 @@ git clone https://github.com/hemanta212/dotfiles ~/dev/dotfiles
 
 # setup exit script
 curl -sSL https://hemanta212.github.io/dotfiles/colab/exit.sh -o ~/exit.sh
+curl -sSL https://hemanta212.github.io/dotfiles/colab/manim.sh -o ~/manim.sh
 chmod u+x ~/exit.sh
 
 # tmux and nvim init files
