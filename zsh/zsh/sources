@@ -1,2 +1,7 @@
-git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/powerlevel10k
-echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >>! ~/.zshrc
+git clone --depth=1 https://github.com/romkatv/powerlevel10k.git
+echo 'source ~/path-to-powerlevel10k/powerlevel10k.zsh-theme' >>! ~/.zshrc
+
+git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git
+git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions.git
+git clone --depth=1 https://github.com/zsh-users/zsh-history-substring-search.git
+git clone --depth=1 https://github.com/agkozak/zsh-z.git
