@@ -6,13 +6,17 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
 fi
 
 # Some sorcery /////////SOURCING other files //////////////////////
-for file in ~/.config/zsh/{zshrc,functionsrc,aliases,powerlevel10k/powerlevel10k.zsh-theme,p10k.zsh,.mytermuxrc,.mywslrc,.mycolabrc};
+for file in ~/.config/zsh/{zshrc,functionsrc,aliases,p10k.zsh,.mytermuxrc,.mywslrc,.mycolabrc};
  do
     [ -r "$file" ] && [ -f "$file" ] && source "$file";
 done;
 unset file;
 
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+for file in ~/.config/zsh/zsh-plugins/{powerlevel10k/powerlevel10k.zsh-theme,zsh-autosuggestions/zsh-autosuggestions.zsh,zsh-history-substring-search/zsh-history-substring-search.zsh,zsh-z/zsh-z.plugin.zsh};
+ do
+    [ -r "$file" ] && [ -f "$file" ] && source "$file";
+done;
+unset file;
 
 # Load zsh-syntax-highlighting; should be last.
-source ~/.config/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 2>/dev/null
+source ~/.config/zsh/zsh-plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 2>/dev/null
