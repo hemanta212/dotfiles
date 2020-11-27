@@ -27,6 +27,7 @@ ln -s ~/dev/dotfiles/zsh/zsh ~/.config/zsh
 cd ~/.config/zsh
 wget https://hemanta212.github.io/dotfiles/colab/p10k.zsh
 mkdir zsh-plugins
+cd zsh-plugins
 git clone --depth=1 https://github.com/romkatv/powerlevel10k.git
 git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git
 git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions.git
