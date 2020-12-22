@@ -167,6 +167,8 @@
 (use-package counsel-projectile
   :config (counsel-projectile-mode))
 
+(use-package magit-delta)
+(add-hook 'magit-mode-hook (lambda () (magit-delta-mode +1)))
 (use-package magit)
 
 (use-package forge)
