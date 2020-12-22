@@ -14,5 +14,12 @@ persync(){
 
 manim() {
   poetry run manim $1.py $2 --low_quality --video_output_dir=./videos
-  curl localhost:60262/manim
+  if [ $# -eq 2 ]
+    then
+      curl localhost:60262/manim
+  fi
+  if [ $# -eq 3 ]
+    then
+      curl localhost:$3/manim
+  fi
 }
