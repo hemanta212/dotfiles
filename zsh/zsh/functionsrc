@@ -101,9 +101,17 @@ mystatus (){
     cd $current
 }
 
+colabarg(){
+    PORT=`mystatus | awk '/Server/ { print $2;}'`;
+    REGION=`mystatus | awk '/Server/ {split($NF, DATA, "["); split(DATA[2], D, "]"); $FS="["; print D[1];}'`;
+    echo ":: $PORT : $REGION ...";
+    ssh -L 3389:localhost:3389 -L 50080:localhost:5050 -R 5037:localhost:5037 -R 60262:localhost:60262 -p $PORT pykancha@0.tcp.$REGION.ngrok.io $@
+    return
+}
+
 colab_ssh(){
-          PORT=`mystatus | awk '/Server/ { print $2;}'`;
-          REGION=`mystatus | awk '/Server/ {split($NF, DATA, "["); split(DATA[2], D, "]"); $FS="["; print D[1];}'`;
-          echo ":: $PORT : $REGION ...";
-          ssh -p $PORT pykancha@0.tcp.$REGION.ngrok.io -L 5000:localhost:5000
+    PORT=`mystatus | awk '/Server/ { print $2;}'`;
+    REGION=`mystatus | awk '/Server/ {split($NF, DATA, "["); split(DATA[2], D, "]"); $FS="["; print D[1];}'`;
+    echo ":: $PORT : $REGION ...";
+    ssh -p $PORT pykancha@0.tcp.$REGION.ngrok.io -L 5000:localhost:5000
 }
