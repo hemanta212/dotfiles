@@ -44,4 +44,5 @@ cd
 cd ~/dev/dotfiles
 git config --global user.email "sharmahemanta.212@gmail.com"
 git config --global user.name "hemanta212"
+git config --global github.user "hemanta212"
 cd
