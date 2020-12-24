@@ -1,25 +1,22 @@
 peredit(){
   cd ~/dev/personal/org
-  git checkout org
-  emacs track.org
+  git checkout org && emacs track.org
 }
 
 persync(){
   cd ~/dev/personal/org
-  git checkout org
-  git commit -a -m "Updates org file"
+  git checkout org && git commit -a -m "Updates org file"
   git pull origin org
   git push origin org
 }
 
 manim() {
-  poetry run manim $1.py $2 --low_quality --video_output_dir=./videos
   if [ $# -eq 2 ]
     then
-      curl localhost:60262/manim
+      poetry run manim $1.py $2 --low_quality --video_output_dir=./videos && curl localhost:60262/manim
   fi
   if [ $# -eq 3 ]
     then
-      curl localhost:$3/manim
+      poetry run manim $1.py $2 --low_quality --video_output_dir=./videos && curl localhost:$3/manim
   fi
 }
