@@ -1,3 +1,8 @@
+#+Title Emacs configuration file
+#+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el
+
+* Package init
+#+begin_src emacs-lisp 
 ;; Initialize package sources
 (require 'package)
 
@@ -15,7 +20,9 @@
 
 (require 'use-package)
 (setq use-package-always-ensure t)
-
+#+end_src
+* Basic UI Configuration
+#+begin_src emacs-lisp
 (setq inhibit-startup-message t)
 
 ;;(scroll-bar-mode -1)        ; Disable visible scrollbar
@@ -38,7 +45,9 @@
   
 (column-number-mode)
 (global-display-line-numbers-mode t)
-
+#+end_src
+* Key-bindings
+#+begin_src emacs-lisp
 ;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
@@ -75,24 +84,35 @@
   :after evil
   :config
   (evil-collection-init))
-
+#+end_src
+* UI configuration
+** Command log mode
+#+begin_src emacs-lisp 
 (use-package command-log-mode)
-
+#+end_src
+** Color theme
+#+begin_src emacs-lisp
 (use-package doom-themes
   :init (load-theme 'doom-one t))
-
+#+end_src
+** Better modeline
+#+begin_src emacs-lisp
 (use-package all-the-icons)
 
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
   :custom ((doom-modeline-height 15)))
-
+#+end_src
+** Which key
+#+begin_src emacs-lisp
 (use-package which-key
   :init (which-key-mode)
   :diminish which-key-mode
   :config
   (setq which-key-idle-delay 1))
-
+#+end_src
+** Ivy and Counsel
+#+begin_src emacs-lisp
 (use-package ivy
   :diminish
   :bind (("C-s" . swiper)
@@ -121,7 +141,9 @@
          ("C-r" . 'counsel-minibuffer-history))
   :config
   (counsel-mode 1))
-
+#+end_src
+** Helpful help commands
+#+begin_src emacs-lisp
 (use-package helpful
   :custom
   (counsel-describe-function-function #'helpful-callable)
@@ -131,7 +153,9 @@
   ([remap describe-command] . helpful-command)
   ([remap describe-variable] . counsel-describe-variable)
   ([remap describe-key] . helpful-key))
-
+#+end_src
+** Text Scaling
+#+begin_src emacs-lisp
 (use-package hydra)
 
 (defhydra hydra-text-scale (:timeout 4)
@@ -142,7 +166,10 @@
 
 (rune/leader-keys
   "ts" '(hydra-text-scale/body :which-key "scale text"))
-
+#+end_src
+* Org-mode
+** Better font faces 
+#+begin_src emacs-lisp
 (defun efs/org-font-setup ()
   ;; Replace list hyphen with dot
   (font-lock-add-keywords 'org-mode
@@ -168,7 +195,10 @@
   (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
   (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
   (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
+#+end_src
 
+** General
+#+begin_src emacs-lisp
 (defun efs/org-mode-setup ()
   (org-indent-mode)
   (variable-pitch-mode 1)
@@ -181,13 +211,18 @@
     (setq org-agenda-files
         '("~/dev/personal/org/track.org"))
   (efs/org-font-setup))
-
+#+end_src
+** Nicer Bullets 
+#+begin_src emacs-lisp
 (use-package org-bullets
   :after org
   :hook (org-mode . org-bullets-mode)
   :custom
   (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+#+end_src
 
+** Center Org buffers
+#+begin_src emacs-lisp
 (defun efs/org-mode-visual-fill ()
   (setq visual-fill-column-width 100
         visual-fill-column-center-text t)
@@ -195,7 +230,9 @@
 
 (use-package visual-fill-column
   :hook (org-mode . efs/org-mode-visual-fill))
-
+#+end_src
+** Configure babel languages
+#+begin_src emacs-lisp 
 (org-babel-do-load-languages
   'org-babel-load-languages
   '((emacs-lisp . t)
@@ -203,7 +240,9 @@
 
 (push '("conf-unix" . conf-unix) org-src-lang-modes)
 (setq org-confirm-babel-evaluate nil)
-
+#+end_src
+** Auto tangle configuration file
+#+begin_src emacs-lisp
 ;; Automatically tangle our Emacs.org config file when we save it
 (defun efs/org-babel-tangle-config ()
   (when (string-equal (buffer-file-name)
@@ -213,7 +252,11 @@
       (org-babel-tangle))))
 
 (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
+#+end_src
 
+* Development
+** Projectile
+#+begin_src emacs-lisp
 (use-package projectile
   :diminish projectile-mode
   :config (projectile-mode)
@@ -228,7 +271,9 @@
 
 (use-package counsel-projectile
   :config (counsel-projectile-mode))
-
+#+end_src
+** Magit
+#+begin_src emacs-lisp
 (use-package magit
   :custom
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
@@ -237,6 +282,9 @@
 
 (use-package magit-delta)
 (add-hook 'magit-mode-hook (lambda () (magit-delta-mode +1)))
-
+#+end_src
+** Rainbow-delimeters
+#+begin_src emacs-lisp
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
+#+end_src
