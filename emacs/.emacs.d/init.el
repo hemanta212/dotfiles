@@ -62,6 +62,7 @@
   (setq evil-want-C-i-jump nil)
   :config
   (evil-mode 1)
+  (define-key evil-insert-state-map (kbd "C-k") 'evil-normal-state)
   (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
   (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
 
@@ -217,7 +218,7 @@
 
 (defun efs/lsp-mode-setup ()
     (setq lspheaderline-breadcumb-segments '(path-up-to-project file symbols))
-    (lsp-headerline-breakcumb-mode))
+    (lsp-headerline-breadcrumb-mode))
 
 (use-package lsp-mode
     :commands (lsp lsp-deferred)
@@ -243,23 +244,24 @@
     :config
     (setq typescript-indent-level 2))
 
-(use-package poetry)
+(use-package poetry
+:hook (python-mode . poetry-tracking-mode))
 
-(use-package python-mode
-    :ensure t
-    :hook (python-mode . lsp-deferred))
+;;(use-package python-mode
+;;    :ensure t
+;;    :hook (python-mode . lsp-deferred))
     ;;:custom
     ;;(python-shell-interpreter "python3"))
 ;;
 
-;;(use-package lsp-python-ms
-;;  :ensure t
-;;  :init
- ;; (setq lsp-python-ms-auto-install-server t)
-;;  :hook
-;;  (python-mode . (lambda ()
- ;;                      (require 'lsp-python-ms)
-  ;;                     (lsp-deferred))))  ; or lsp-deferred
+(use-package lsp-python-ms
+  :ensure t
+  :init
+ (setq lsp-python-ms-auto-install-server t)
+  :hook
+ (python-mode . (lambda ()
+                      (require 'lsp-python-ms)
+                     (lsp-deferred))))  ; or lsp-deferred
 
 (use-package company
   :after lsp-mode
