@@ -348,6 +348,14 @@ Try these commands with =M-x=:
                           (require 'lsp-pyright)
                           (lsp))))  ; or lsp-deferred
 #+end_src
+*** C/C++ 
+#+begin_src emacs-lisp
+;;(with-eval-after-load 'lsp-mode
+;;  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
+(add-hook 'c-mode-hook 'lsp)
+(add-hook 'cpp-mode-hook 'lsp)
+#+end_src
+
 ** Company Mode
 
 [[http://company-mode.github.io/][Company Mode]] provides a nicer in-buffer completion interface than =completion-at-point= which is more reminiscent of what you would expect from an IDE.  We add a simple configuration to make the keybindings a little more useful (=TAB= now completes the selection and initiates completion at the current location if needed).

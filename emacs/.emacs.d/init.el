@@ -260,6 +260,11 @@
                           (require 'lsp-pyright)
                           (lsp))))  ; or lsp-deferred
 
+;;(with-eval-after-load 'lsp-mode
+;;  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
+(add-hook 'c-mode-hook 'lsp)
+(add-hook 'cpp-mode-hook 'lsp)
+
 (use-package company
   :after lsp-mode
   :hook (lsp-mode . company-mode)
