@@ -214,6 +214,21 @@
 
 (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
 
+(use-package lsp-mode
+    :commands (lsp lsp-deferred)
+    :init
+    (setq lsp-keymap-prefix "C-c l") 
+    :config
+    (lsp-enable-which-key-integration t))
+
+(use-package typescript-mode
+    :mode "\\.ts\\'"
+    :hook (typescript-mode . lsp-deferred)
+    :config
+    (setq typescript-indent-level 2))
+
+(use-package poetry)
+
 (use-package projectile
   :diminish projectile-mode
   :config (projectile-mode)
@@ -237,6 +252,16 @@
 
 (use-package magit-delta)
 (add-hook 'magit-mode-hook (lambda () (magit-delta-mode +1)))
-
-(use-package rainbow-delimiters
-  :hook (prog-mode . rainbow-delimiters-mode))
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   '(poetry typescript-mode lsp-mode which-key visual-fill-column use-package sicp rainbow-delimiters org-bullets magit-delta ivy-rich hydra helpful general forge evil-magit evil-collection doom-themes doom-modeline counsel-projectile command-log-mode)))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )

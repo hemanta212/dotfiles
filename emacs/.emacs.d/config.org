@@ -255,6 +255,29 @@
 #+end_src
 
 * Development
+** Languages
+*** Language Servers
+#+begin_src emacs-lisp
+(use-package lsp-mode
+    :commands (lsp lsp-deferred)
+    :init
+    (setq lsp-keymap-prefix "C-c l") 
+    :config
+    (lsp-enable-which-key-integration t))
+#+end_src
+*** TypeScript
+#+begin_src emacs-lisp
+(use-package typescript-mode
+    :mode "\\.ts\\'"
+    :hook (typescript-mode . lsp-deferred)
+    :config
+    (setq typescript-indent-level 2))
+#+end_src
+*** Python
+**** Poetry
+#+begin_src emacs-lisp
+(use-package poetry)
+#+end_src
 ** Projectile
 #+begin_src emacs-lisp
 (use-package projectile
@@ -287,4 +310,3 @@
 #+begin_src emacs-lisp
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
-#+end_src
