@@ -115,3 +115,7 @@ colab_ssh(){
     echo ":: $PORT : $REGION ...";
     ssh -p $PORT pykancha@0.tcp.$REGION.ngrok.io -L 5000:localhost:5000
 }
+
+cheatsh(){
+    curl http://cheat.sh/$1
+}
