@@ -62,7 +62,6 @@
   (setq evil-want-C-i-jump nil)
   :config
   (evil-mode 1)
-  (define-key evil-insert-state-map "kj" 'evil-normal-state)
   (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
   (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
 
@@ -77,6 +76,11 @@
   :after evil
   :config
   (evil-collection-init))
+
+(use-package evil-escape
+  :init (evil-escape-mode)
+  :config
+  (setq evil-escape-key-sequence "kj"))
 
 (use-package command-log-mode)
 
@@ -220,7 +224,7 @@
     (setq lspheaderline-breadcumb-segments '(path-up-to-project file symbols))
     (lsp-headerline-breadcrumb-mode))
 
-(use-package lsp-mode
+    (use-package lsp-mode
     :commands (lsp lsp-deferred)
     :hook (lsp-mode . efs/lsp-mode-setup)
     :init
@@ -305,3 +309,16 @@
 
 (use-package evil-nerd-commenter
   :bind ("M-/" . evilnc-comment-or-uncomment-lines))
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   '(yasnippet which-key visual-fill-column use-package typescript-mode sicp rainbow-delimiters python-mode poetry org-bullets magit-delta lsp-ui lsp-treemacs lsp-pyright lsp-ivy ivy-rich helpful general forge evil-nerd-commenter evil-magit evil-escape evil-collection doom-themes doom-modeline counsel-projectile company-box command-log-mode)))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
