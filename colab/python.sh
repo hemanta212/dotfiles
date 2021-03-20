@@ -16,6 +16,5 @@ git clone https://github.com/hemanta212/nsfw-discord-bot
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py -o ~/poetry.py
 python ~/poetry.py -y
 poetry config virtualenvs.in-project true
-
 poetry init -n -q
 poetry add requests ptpython pylint black python-language-server
