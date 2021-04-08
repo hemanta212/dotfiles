@@ -3,9 +3,7 @@ sudo apt-get install python3-opencv libcairo2-dev texlive texlive-latex-extra te
 texlive-latex-recommended texlive-science texlive-fonts-extra tipa
 
 cd dev/hello-manim
-python -m venv .venv
+poetry install
 poetry add ./manim
 cd manim/ && poetry run python setup.py develop && cd ..
-cp -r manim/manimlib/* .venv/lib/python3.6/site-packages/manimlib/
-
-poetry install
+#cp -r manim/manimlib/* .venv/lib/python3.7/site-packages/manimlib/
