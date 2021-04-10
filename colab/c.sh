@@ -1,5 +1,7 @@
 cd ~/dev/
 git clone https://github.com/hemanta212/c-practice
+git clone https://github.com/hemanta212/lisp-in-c
+git clone https://github.com/hemanta212/hash-table-in-c
 git clone https://github.com/hemanta212/personal
 cd 
 
