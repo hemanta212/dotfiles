@@ -5,12 +5,25 @@ Copy this file to $XDG_CONFIG_HOME/ptpython/config.py
 """
 from __future__ import unicode_literals
 
+import sys
+
+try:
+    import ptpython
+except ImportError:
+    print("ptpython is not available: falling back to standard prompt")
+
 from prompt_toolkit.filters import ViInsertMode
 from prompt_toolkit.key_binding.key_processor import KeyPress
 from prompt_toolkit.keys import Keys
 from pygments.token import Token
 
 from ptpython.layout import CompletionVisualisation
+
+try:
+    from rich import pretty
+    pretty.install()
+except Exception as e:
+    print("No rich support :(", e)
 
 __all__ = ("configure",)
 
@@ -120,7 +133,15 @@ def configure(repl):
     repl.enable_syntax_highlighting = True
 
     # Install custom colorscheme named 'my-colorscheme' and use it.
+    # Custom colorscheme for the UI. See `ptpython/layout.py` and
+    # `ptpython/style.py` for all possible tokens.
     """
+    _custom_ui_colorscheme = {
+    # Blue prompt.
+    Token.Layout.Prompt: "bg:#eeeeff #000000 bold",
+    # Make the status toolbar red.
+    Token.Toolbar.Status: "bg:#ff0000 #000000",
+    }
     repl.install_ui_colorscheme('my-colorscheme', _custom_ui_colorscheme)
     repl.use_ui_colorscheme('my-colorscheme')
     """
@@ -141,17 +162,12 @@ def configure(repl):
         event.current_buffer.validate_and_handle()
     """
 
-    # Typing 'jj' in Vi Insert mode, should send escape. (Go back to navigation
-    # mode.)
-    """
-    @repl.add_key_binding('j', 'j', filter=ViInsertMode())
+    @repl.add_key_binding('k', 'j', filter=ViInsertMode())
     def _(event):
-        " Map 'jj' to Escape. "
+        " Map 'kj' to Escape. "
         event.cli.key_processor.feed(KeyPress(Keys.Escape))
-    """
 
     # Custom key binding for some simple autocorrection while typing.
-    """
     corrections = {
         'impotr': 'import',
         'pritn': 'print',
@@ -169,24 +185,8 @@ def configure(repl):
                 b.insert_text(corrections[w])
 
         b.insert_text(' ')
-    """
 
 
-# Custom colorscheme for the UI. See `ptpython/layout.py` and
-# `ptpython/style.py` for all possible tokens.
-_custom_ui_colorscheme = {
-    # Blue prompt.
-    Token.Layout.Prompt: "bg:#eeeeff #000000 bold",
-    # Make the status toolbar red.
-    Token.Toolbar.Status: "bg:#ff0000 #000000",
-}
+from ptpython.repl import embed
+sys.exit(embed(globals(), locals(), configure=configure))
 
-
-import sys
-
-try:
-    from ptpython.repl import embed
-except ImportError:
-    print("ptpython is not available: falling back to standard prompt")
-else:
-    sys.exit(embed(globals(), locals(), configure=configure))
