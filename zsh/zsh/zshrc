@@ -51,6 +51,7 @@ preexec() { echo -ne '\e[5 q' ;} # Use beam shape cursor for each new prompt.
 export EDITOR=nvim
 export PATH="$PATH":"$HOME/local/flutter/bin/"
 export PATH="$PATH":"$HOME/local/tools/bin/"
+export PATH="$PATH":"$HOME/.local/bin/"
 export PATH="/usr/local/sbin:$PATH";
 export PATH="$HOME/local/.blogger_cli/bin:$PATH"
 export PATH="$HOME/.poetry/bin:$PATH"
