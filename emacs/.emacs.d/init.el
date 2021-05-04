@@ -214,7 +214,7 @@
 ;; Automatically tangle our Emacs.org config file when we save it
 (defun efs/org-babel-tangle-config ()
   (when (string-equal (buffer-file-name)
-                      (expand-file-name "~/.emacs.d/config.org"))
+                      (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org"))
     ;; Dynamic scoping to the rescue
     (let ((org-confirm-babel-evaluate nil))
       (org-babel-tangle))))
@@ -310,16 +310,3 @@
 
 (use-package evil-nerd-commenter
   :bind ("M-/" . evilnc-comment-or-uncomment-lines))
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(yasnippet which-key visual-fill-column use-package typescript-mode sicp rainbow-delimiters python-mode poetry org-bullets magit-delta lsp-ui lsp-treemacs lsp-pyright lsp-ivy ivy-rich helpful general forge evil-nerd-commenter evil-magit evil-escape evil-collection doom-themes doom-modeline counsel-projectile company-box command-log-mode)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
