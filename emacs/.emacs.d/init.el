@@ -205,6 +205,7 @@
 (org-babel-do-load-languages
   'org-babel-load-languages
   '((emacs-lisp . t)
+    (C . t)
     (python . t)))
 
 (push '("conf-unix" . conf-unix) org-src-lang-modes)
