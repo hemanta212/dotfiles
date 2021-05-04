@@ -7,6 +7,7 @@ cd
 
 #git clone --depth 1 https://github.com/hlissner/doom-emacs ~/.emacs.d 
 #yes | ~/.emacs.d/bin/doom install
-rm -rf .emacs.d
-cp -r ~/dev/dotfiles/emacs/.emacs.d ~/
+rm -rf ~/.emacs.d
+mkdir ~/.emacs.d
+ln -s ~/dev/dotfiles/emacs/.emacs.d/{config.org,init.el} ~/.emacs.d/
 emacs

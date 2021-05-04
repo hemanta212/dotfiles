@@ -19,4 +19,4 @@ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poet
 python ~/poetry.py -y
 poetry config virtualenvs.in-project true
 poetry init -n -q
-poetry add requests ptpython pylint black python-language-server isort rich
+poetry add requests ptpython pylint black isort rich
