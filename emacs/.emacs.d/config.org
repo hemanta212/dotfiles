@@ -239,14 +239,16 @@
 #+end_src
 ** Configure babel languages
 #+begin_src emacs-lisp 
-(org-babel-do-load-languages
-  'org-babel-load-languages
-  '((emacs-lisp . t)
-    (python . t)))
+  (org-babel-do-load-languages
+    'org-babel-load-languages
+    '((emacs-lisp . t)
+      (C . t)
+      (python . t)))
 
-(push '("conf-unix" . conf-unix) org-src-lang-modes)
-(setq org-confirm-babel-evaluate nil)
+  (push '("conf-unix" . conf-unix) org-src-lang-modes)
+  (setq org-confirm-babel-evaluate nil)
 #+end_src
+
 ** Auto tangle configuration file
 #+begin_src emacs-lisp
 ;; Automatically tangle our Emacs.org config file when we save it
