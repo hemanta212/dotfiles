@@ -20,3 +20,5 @@ unset file;
 
 # Load zsh-syntax-highlighting; should be last.
 source ~/.config/zsh/zsh-plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 2>/dev/null
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
