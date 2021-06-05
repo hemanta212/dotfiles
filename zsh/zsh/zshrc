@@ -78,3 +78,10 @@ export PYTHONSTARTUP="$XDG_CONFIG_HOME/ptpython/.pythonrc.py"
 # init fasd
 eval "$(fasd --init auto)"
 export MANPATH="/usr/local/man:$MANPATH"
+
+
+if [ -d ~/.nvm ]; then
+source /usr/share/nvm/init-nvm.sh
+fi
+
+export DISPLAY=127.0.0.1:0
