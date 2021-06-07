@@ -36,7 +36,6 @@ tool-bar-mode -1)          ; Disable the toolbar
 (setq visible-bell t)
 
 (set-face-attribute 'default nil :font "Fira Code Retina" :height 130)
-;;(load-theme 'doom-gruvbox t)
 (dolist (mode '(org-mode-hook
                 term-mode-hook
 		  shell-mode-hook
@@ -104,6 +103,7 @@ tool-bar-mode -1)          ; Disable the toolbar
 ** Better modeline
 #+begin_src emacs-lisp
 (use-package all-the-icons)
+(use-package all-the-icons-ivy)
 
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
