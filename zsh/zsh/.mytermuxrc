@@ -1,3 +1,6 @@
+alias tro='termux-open'
+alias ytdl='youtube-dl'
+
 persync(){
   cd /sdcard/.cache/personal
   git checkout org
@@ -18,3 +21,5 @@ peredit(){
 e(){
   emacsclient -t -s $PREFIX/var/run/emacs$(id -u)/server $@
 }
+
+export PATH="$PATH":"$HOME/.cargo/bin/"
