@@ -9,5 +9,5 @@ cd
 #yes | ~/.emacs.d/bin/doom install
 rm -rf ~/.emacs.d
 mkdir ~/.emacs.d
-ln -s ~/dev/dotfiles/emacs/.emacs.d/{config.org,init.el} ~/.emacs.d/
+ln -s ~/dev/dotfiles/emacs/.emacs.d/* ~/.emacs.d/
 emacs
