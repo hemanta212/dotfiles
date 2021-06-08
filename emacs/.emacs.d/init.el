@@ -41,6 +41,8 @@
 
 ;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+;; Remap  Imenu to M-i
+(global-set-key (kbd "M-i") 'imenu)
 
 (use-package general
   :config

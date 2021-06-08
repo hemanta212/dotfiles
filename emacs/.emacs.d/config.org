@@ -1,25 +1,25 @@
-#+Title Emacs configuration file
+#+Title: Emacs configuration file
 #+PROPERTY: header-args:emacs-lisp :tangle ~/dev/dotfiles/emacs/.emacs.d/init.el
 
 * Package init
 #+begin_src emacs-lisp 
-;; Initialize package sources
-(require 'package)
+  ;; Initialize package sources
+  (require 'package)
 
-(setq package-archives '(("melpa" . "https://melpa.org/packages/")
-                         ("org" . "https://orgmode.org/elpa/")
-                         ("elpa" . "https://elpa.gnu.org/packages/")))
+  (setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                           ("org" . "https://orgmode.org/elpa/")
+                           ("elpa" . "https://elpa.gnu.org/packages/")))
 
-(package-initialize)
-(unless package-archive-contents
-(package-refresh-contents))
+  (package-initialize)
+  (unless package-archive-contents
+  (package-refresh-contents))
 
-;; Initialize use-package on non-Linux platforms
-(unless (package-installed-p 'use-package)
-   (package-install 'use-package))
+  ;; Initialize use-package on non-Linux platforms
+  (unless (package-installed-p 'use-package)
+     (package-install 'use-package))
 
-(require 'use-package)
-(setq use-package-always-ensure t)
+  (require 'use-package)
+  (setq use-package-always-ensure t)
 #+end_src
 * Basic UI Configuration
 #+begin_src emacs-lisp
@@ -50,6 +50,8 @@ tool-bar-mode -1)          ; Disable the toolbar
 #+begin_src emacs-lisp
 ;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+;; Remap  Imenu to M-i
+(global-set-key (kbd "M-i") 'imenu)
 
 (use-package general
   :config
