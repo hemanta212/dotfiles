@@ -52,6 +52,8 @@ tool-bar-mode -1)          ; Disable the toolbar
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 ;; Remap  Imenu to M-i
 (global-set-key (kbd "M-i") 'imenu)
+(global-set-key (kbd "C-c p f") 'counsel-fzf)
+(global-set-key (kbd "C-c C-x s") 'org-search-view)
 
 (use-package general
   :config
@@ -121,34 +123,35 @@ tool-bar-mode -1)          ; Disable the toolbar
 #+end_src
 ** Ivy and Counsel
 #+begin_src emacs-lisp
-(use-package ivy
-  :diminish
-  :bind (("C-s" . swiper)
-         :map ivy-minibuffer-map
-         ("TAB" . ivy-alt-done)
-         ("C-l" . ivy-alt-done)
-         ("C-j" . ivy-next-line)
-         ("C-k" . ivy-previous-line)
-         :map ivy-switch-buffer-map
-         ("C-k" . ivy-previous-line)
-         ("C-l" . ivy-done)
-         ("C-d" . ivy-switch-buffer-kill)
-         :map ivy-reverse-i-search-map
-         ("C-k" . ivy-previous-line)
-         ("C-d" . ivy-reverse-i-search-kill))
-  :config
-  (ivy-mode 1))
+    (use-package ivy
+      :diminish
+      :bind (("C-s" . swiper)
+             :map ivy-minibuffer-map
+             ("TAB" . ivy-alt-done)
+             ("C-l" . ivy-alt-done)
+             ("C-j" . ivy-next-line)
+             ("C-k" . ivy-previous-line)
+             :map ivy-switch-buffer-map
+             ("C-k" . ivy-previous-line)
+             ("C-l" . ivy-done)
+             ("C-d" . ivy-switch-buffer-kill)
+             :map ivy-reverse-i-search-map
+             ("C-k" . ivy-previous-line)
+             ("C-d" . ivy-reverse-i-search-kill))
+      :config
+      (ivy-mode 1))
 
-(use-package ivy-rich
-  :init
-  (ivy-rich-mode 1))
+    (use-package ivy-rich
+      :init
+      (ivy-rich-mode 1))
 
-(use-package counsel
-  :bind (("C-x b" . 'counsel-switch-buffer)
-         :map minibuffer-local-map
-         ("C-r" . 'counsel-minibuffer-history))
-  :config
-  (counsel-mode 1))
+    (use-package counsel
+      :bind (("C-x b" . 'counsel-switch-buffer)
+             :map minibuffer-local-map
+             ("C-r" . 'counsel-minibuffer-history))
+     
+      :config
+      (counsel-mode 1))
 #+end_src
 ** Helpful help commands
 #+begin_src emacs-lisp
@@ -390,20 +393,20 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
 ** Projectile
 #+begin_src emacs-lisp
-(use-package projectile
-  :diminish projectile-mode
-  :config (projectile-mode)
-  :custom ((projectile-completion-system 'ivy))
-  :bind-keymap
-  ("C-c p" . projectile-command-map)
-  :init
-  ;; NOTE: Set this to the folder where you keep your Git repos!
-  (when (file-directory-p "~/dev")
-    (setq projectile-project-search-path '("~/dev")))
-  (setq projectile-switch-project-action #'projectile-dired))
+  (use-package projectile
+    :diminish projectile-mode
+    :config (projectile-mode)
+    :custom ((projectile-completion-system 'ivy))
+    :bind-keymap
+    ("C-c p" . projectile-command-map)
+    :init
+    ;; NOTE: Set this to the folder where you keep your Git repos!
+    (when (file-directory-p "~/dev")
+      (setq projectile-project-search-path '("~/dev")))
+    (setq projectile-switch-project-action #'projectile-dired))
 
-(use-package counsel-projectile
-  :config (counsel-projectile-mode))
+  (use-package counsel-projectile
+    :config (counsel-projectile-mode))
 #+end_src
 ** Magit
 #+begin_src emacs-lisp

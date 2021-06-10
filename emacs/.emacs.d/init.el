@@ -19,7 +19,7 @@
 (setq inhibit-startup-message t)
 
 (scroll-bar-mode -1)        ; Disable visible scrollbar
-(tool-bar-mode -1)          ; Disable the toolbar
+tool-bar-mode -1)          ; Disable the toolbar
 (tooltip-mode -1)           ; Disable tooltips
 (set-fringe-mode 10)        ; Give some breathing room
 
@@ -43,6 +43,8 @@
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 ;; Remap  Imenu to M-i
 (global-set-key (kbd "M-i") 'imenu)
+(global-set-key (kbd "C-c p f") 'counsel-fzf)
+(global-set-key (kbd "C-c C-x s") 'org-search-view)
 
 (use-package general
   :config
@@ -88,6 +90,7 @@
 (use-package doom-themes
   :init (load-theme 'doom-one t))
 
+(use-package all-the-icons)
 (use-package all-the-icons-ivy)
 
 (use-package doom-modeline
@@ -126,6 +129,7 @@
   :bind (("C-x b" . 'counsel-switch-buffer)
          :map minibuffer-local-map
          ("C-r" . 'counsel-minibuffer-history))
+
   :config
   (counsel-mode 1))
 
@@ -252,6 +256,13 @@
 
 (use-package poetry
 :hook (python-mode . poetry-tracking-mode))
+
+;;(use-package python-mode
+;;    :ensure t
+;;    :hook (python-mode . lsp-deferred))
+    ;;:custom
+    ;;(python-shell-interpreter "python3"))
+;;
 
 (use-package lsp-pyright
   :ensure t
