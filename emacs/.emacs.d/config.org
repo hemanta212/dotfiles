@@ -23,28 +23,29 @@
 #+end_src
 * Basic UI Configuration
 #+begin_src emacs-lisp
-(setq inhibit-startup-message t)
+  (setq inhibit-startup-message t)
 
-(scroll-bar-mode -1)        ; Disable visible scrollbar
-(tool-bar-mode -1)          ; Disable the toolbar
-(tooltip-mode -1)           ; Disable tooltips
-(set-fringe-mode 10)        ; Give some breathing room
+  (if (display-graphic-p)
+      (progn
+        (set-fringe-mode 10)        ; Give some breathing room
+        (tooltip-mode -1)           ; Disable tooltips
+        (tool-bar-mode -1)
+        (set-face-attribute 'default nil :font "Fira Code Retina" :height 130)
+        (scroll-bar-mode -1)))
 
-(menu-bar-mode -1)            ; Disable the menu bar
+  (menu-bar-mode -1)            ; Disable the menu bar
+  ;; Set up the visible bell
+  (setq visible-bell t)
 
-;; Set up the visible bell
-(setq visible-bell t)
+  (dolist (mode '(org-mode-hook
+                  term-mode-hook
+                    shell-mode-hook
+                  treemacs-mode-hook
+                    eshell-mode-hook))
+    (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
-(set-face-attribute 'default nil :font "Fira Code Retina" :height 130)
-(dolist (mode '(org-mode-hook
-                term-mode-hook
-		  shell-mode-hook
-                treemacs-mode-hook
-		  eshell-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
-  
-(column-number-mode)
-(global-display-line-numbers-mode t)
+  (column-number-mode)
+  (global-display-line-numbers-mode t)
 #+end_src
 * Key-bindings
 #+begin_src emacs-lisp
