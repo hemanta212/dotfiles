@@ -1,10 +1,12 @@
 # ///////////////////////////BASIC SETTINGS///////////////////////
 # Enable colors and change prompt:
 autoload -U colors && colors
+
 # History in cache directory:
 HISTSIZE=10000
 SAVEHIST=10000
 HISTFILE=~/.cache/zsh/history
+
 # Basic auto/tab complete:
 fpath+=~/.config/zsh/zfunc
 autoload -U compinit
@@ -12,9 +14,11 @@ zstyle ':completion:*' menu select
 zmodload zsh/complist
 compinit
 _comp_options+=(globdots)		# Include hidden files.
+
 # vi mode
 bindkey -v
 export KEYTIMEOUT=1
+
 # Use vim keys in tab complete menu:
 bindkey -M viins 'kj' vi-cmd-mode
 bindkey -M menuselect 'h' vi-backward-char
@@ -24,8 +28,8 @@ bindkey -M menuselect 'j' vi-down-line-or-history
 bindkey -M vicmd 'jj' history-substring-search-up
 bindkey -M vicmd 'kk' history-substring-search-down
 bindkey '^[[A' history-substring-search-up
-
 bindkey -v '^?' backward-delete-char
+
 # Change cursor shape for different vi modes.
 function zle-keymap-select {
   if [[ ${KEYMAP} == vicmd ]] ||
@@ -83,5 +87,3 @@ export MANPATH="/usr/local/man:$MANPATH"
 if [ -d ~/.nvm ]; then
 source /usr/share/nvm/init-nvm.sh
 fi
-
-export DISPLAY=127.0.0.1:0

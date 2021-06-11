@@ -1,54 +1,28 @@
-upvim(){
-  cp ~/.SpaceVim.d ~/dev/dotfiles/vim/space-vim/ -r
-}
-upvim(){
-  cp ~/dev/dotfiles/vim/space-vim/.SpaceVim.d ~/ -r
-}
-upmacs(){
-  cp ~/.doom.d ~/dev/dotfiles/emacs/ -r
-}
-dpmacs(){
-  cp  ~/dev/dotfiles/emacs/.doom.d ~/ -r
-}
-
 sbash () {
       source ~/.zshrc
-}
-
-upbash () {
-      cd ~
-      cp -r .zshrc .mytermuxrc .mywslrc  .mycolabrc  .config/zsh dev/dotfiles/zsh/      
-      cp .tmux.conf dev/dotfiles/tmux/
-      cd dev/dotfiles/
-      git add . && git commit -m "updated dotfiles"
-}
-
-dpbash() {
-        cd ~/dev/dotfiles/zsh/
-        cp .zshrc ~/
-        cp -r  zsh ~/.config/   
-        cp config.py .pythonrc.py ~/.config/ptpython/
-}
-
-updotfiles () {
-        cd ~/dev/dotfiles/
-        git pull origin master
-        git push origin master
 }
 
 clone() {
     if [ $# -eq 1 ]
         then
-           git clone https://github.com/hemanta212/$1 ~/dev/dotfiles/$1
+           git clone https://github.com/hemanta212/$1 ~/dev/$1
     fi
     if [ $# -eq 2 ]
         then
-            git clone https://github.com/$1/$2 ~/dev/dotfiles/$2
+            git clone https://github.com/$1/$2 ~/dev/$2
     fi
     if [ $# -eq 3 ]
         then
             git clone https://github.com/$1/$2 $3/$2
     fi
+}
+
+cheatsh(){
+    curl http://cheat.sh/$1
+}
+
+neovim(){
+    nvim $(fzf)
 }
 
 colab_con (){
@@ -60,7 +34,6 @@ colab_con (){
           ssh -L 3389:localhost:3389 -L 50080:localhost:5050 -R 5037:localhost:5037 -R 60262:localhost:60262 -p $PORT pykancha@0.tcp.$REGION.ngrok.io
           return
     fi
-
 
     if [ $# -eq 1 ]
         then
@@ -114,10 +87,6 @@ colab_ssh(){
     REGION=`mystatus | awk '/Server/ {split($NF, DATA, "["); split(DATA[2], D, "]"); $FS="["; print D[1];}'`;
     echo ":: $PORT : $REGION ...";
     ssh -X -m hmac-sha1 -c aes128-gcm@openssh.com -C -p $PORT pykancha@0.tcp.$REGION.ngrok.io -L 5000:localhost:5000
-}
-
-cheatsh(){
-    curl http://cheat.sh/$1
 }
 
 colab_c_con (){
