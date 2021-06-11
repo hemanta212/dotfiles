@@ -1,5 +1,6 @@
 mkdir -p ~/.config/ && mkdir -p ~/.config/nvim && mkdir -p ~/.config/ptpython && mkdir -p ~/.config/zsh/
 
+
 # Clone resources 
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm --depth 1
 git clone https://github.com/hemanta212/dotfiles ~/dev/dotfiles
