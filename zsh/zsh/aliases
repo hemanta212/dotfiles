@@ -1,9 +1,13 @@
-# my shortcuts
-
-
-# Shortcuts
-alias ch='history | grep "git commit"'
 alias hg='history | grep'
+alias pb="curl -F 'sprunge=<-' http://sprunge.us"
+alias pg='ping google.com'
+alias memfree='echo "sync && echo 3 > /proc/sys/vm/drop_caches" | sudo sh'
+alias cat='bat'
+
+
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
 
 # Detect which `ls` flavor is in use
 if ls --color > /dev/null 2>&1; then # GNU `ls`
@@ -29,14 +33,3 @@ alias egrep='egrep --color=auto'
 # Enable aliases to be sudo’ed
 alias sudo='sudo '
 
-# aliases for fasd
-alias v='f -e vim' # quick opening files with vim
-
-# some more ls aliases
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
-alias pg='ping google.com'
-alias memfree='echo "sync && echo 3 > /proc/sys/vm/drop_caches" | sudo sh'
-alias diary="cd ~/.personal/daily/ && ~/.personal/mdnote/editnewjournalfile.sh"
-alias cat='bat'

@@ -1,8 +1,9 @@
+alias pb="curl -F 'sprunge=<-' http://sprunge.us | termux-clipboard-set"
 alias tro='termux-open'
 alias ytdl='youtube-dl'
 
 persync(){
-  cd /sdcard/.cache/personal
+  cd ~/dev/personal/org
   git checkout org
   git pull origin org
   git add .
@@ -10,16 +11,9 @@ persync(){
   git push origin org
 }
 
-peredit(){
-  current = $pwd
-  cd /sdcard/.cache/personal/org
-  git checkout org
-  emacs track.org
-  cd $current
-}
-
 e(){
   emacsclient -t -s $PREFIX/var/run/emacs$(id -u)/server $@
 }
 
 export PATH="$PATH":"$HOME/.cargo/bin/"
+export DISPLAY=127.0.0.1:0
