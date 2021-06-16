@@ -9,6 +9,8 @@ HISTFILE=~/.cache/zsh/history
 
 # Basic auto/tab complete:
 fpath+=~/.config/zsh/zfunc
+autoload -U bashcompinit
+bashcompinit
 autoload -U compinit
 zstyle ':completion:*' menu select
 zmodload zsh/complist
@@ -87,3 +89,5 @@ export MANPATH="/usr/local/man:$MANPATH"
 if [ -d ~/.nvm ]; then
 source /usr/share/nvm/init-nvm.sh
 fi
+
+eval "$(register-python-argcomplete pipx)"

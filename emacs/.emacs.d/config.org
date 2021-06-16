@@ -55,6 +55,7 @@
 (global-set-key (kbd "M-i") 'imenu)
 (global-set-key (kbd "C-c p f") 'counsel-fzf)
 (global-set-key (kbd "C-c C-x s") 'org-search-view)
+(global-set-key (kbd "M-w") 'scroll-other-window)
 
 (use-package general
   :config
@@ -269,6 +270,13 @@
 #+end_src
 
 * Development
+** Vterm
+Utrafast modern terminal written in C libvterm.
+#+begin_src emacs-lisp
+  (use-package vterm
+    :ensure t)
+#+end_src
+
 ** Languages
 *** IDE features with LSP Mode
 **** Lsp-mode
@@ -435,4 +443,14 @@ Emacs' built in commenting functionality =comment-dwim= (usually bound to =M-;=)
 #+begin_src emacs-lisp
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
- 
+#+end_src 
+
+** Yasnippet 
+Yasnippet is the snippet tool for emacs. It doesnot bundle the snippets itself though which should be separately installed.
+#+begin_src emacs-lisp
+  (use-package yasnippet)
+  (yas-global-mode 1)
+
+  (use-package yasnippet-snippets)
+
+#+end_src
