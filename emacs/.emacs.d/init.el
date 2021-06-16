@@ -46,6 +46,7 @@
 (global-set-key (kbd "M-i") 'imenu)
 (global-set-key (kbd "C-c p f") 'counsel-fzf)
 (global-set-key (kbd "C-c C-x s") 'org-search-view)
+(global-set-key (kbd "M-w") 'scroll-other-window)
 
 (use-package general
   :config
@@ -227,6 +228,9 @@
 
 (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
 
+(use-package vterm
+  :ensure t)
+
 (defun efs/lsp-mode-setup ()
     (setq lspheaderline-breadcumb-segments '(path-up-to-project file symbols))
     (lsp-headerline-breadcrumb-mode))
@@ -316,16 +320,11 @@
 
 (use-package evil-nerd-commenter
   :bind ("M-/" . evilnc-comment-or-uncomment-lines))
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(all-the-icons-ivy yasnippet which-key visual-fill-column use-package typescript-mode sicp rainbow-delimiters python-mode poetry org-bullets magit-delta lsp-ui lsp-treemacs lsp-pyright lsp-ivy ivy-rich htmltagwrap helpful general forge evil-nerd-commenter evil-magit evil-escape evil-collection doom-themes doom-modeline counsel-projectile company-web company-box command-log-mode)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+
+(use-package rainbow-delimiters
+  :hook (prog-mode . rainbow-delimiters-mode))
+
+(use-package yasnippet)
+(yas-global-mode 1)
+
+(use-package yasnippet-snippets)
