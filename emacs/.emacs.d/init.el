@@ -15,6 +15,8 @@
 
 (require 'use-package)
 (setq use-package-always-ensure t)
+;; To see which package load when to optimize the startup time
+(setq use-package-verbose t)
 
 (setq inhibit-startup-message t)
 
@@ -40,6 +42,18 @@
 (column-number-mode)
 (global-display-line-numbers-mode t)
 
+;; The default is 800 kilobytes.  Measured in bytes.
+(setq gc-cons-threshold (* 50 10000 10000))
+
+(defun efs/display-startup-time ()
+  (message "Emacs loaded in %s with %d garbage collections."
+           (format "%.2f seconds"
+                   (float-time
+                     (time-subtract after-init-time before-init-time)))
+           gcs-done))
+
+(add-hook 'emacs-startup-hook #'efs/display-startup-time)
+
 ;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 ;; Remap  Imenu to M-i
@@ -47,8 +61,11 @@
 (global-set-key (kbd "C-c p f") 'counsel-fzf)
 (global-set-key (kbd "C-c C-x s") 'org-search-view)
 (global-set-key (kbd "M-w") 'scroll-other-window)
+(global-set-key (kbd "M-W") 'scroll-other-window-down)
+
 
 (use-package general
+  :after evil
   :config
   (general-create-definer rune/leader-keys
     :keymaps '(normal insert visual emacs)
@@ -57,7 +74,9 @@
 
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
-    "tt" '(counsel-load-theme :which-key "choose theme")))
+    "tt" '(counsel-load-theme :which-key "choose theme")
+    "fde" '(lambda () (interactive) (find-file (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org")))))
+
 
 (use-package evil
   :init
@@ -83,26 +102,30 @@
   (evil-collection-init))
 
 (use-package evil-escape
-  :init (evil-escape-mode)
+  :after evil
   :config
+  (evil-escape-mode)
   (setq evil-escape-key-sequence "kj"))
 
-(use-package command-log-mode)
+(use-package command-log-mode
+  :commands command-log-mode)
 
 (use-package doom-themes
   :init (load-theme 'doom-one t))
 
 (use-package all-the-icons)
-(use-package all-the-icons-ivy)
+(use-package all-the-icons-ivy
+  :after (all-the-icons ivy))
 
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
   :custom ((doom-modeline-height 15)))
 
 (use-package which-key
-  :init (which-key-mode)
+  :defer 0
   :diminish which-key-mode
   :config
+  (which-key-mode)
   (setq which-key-idle-delay 1))
 
 (use-package ivy
@@ -124,6 +147,7 @@
   (ivy-mode 1))
 
 (use-package ivy-rich
+  :after ivy
   :init
   (ivy-rich-mode 1))
 
@@ -135,7 +159,17 @@
   :config
   (counsel-mode 1))
 
+(use-package ivy-prescient
+  :after counsel
+  ;; :custom
+  ;; (ivy-prescient-enable-filtering nil)
+  :config
+  ;; Uncomment the following line to have sorting remembered across sessions!
+  (prescient-persist-mode 1)
+  (ivy-prescient-mode 1))
+
 (use-package helpful
+  :commands (helpful-callable helpful-variable helpful-command helpful-key)
   :custom
   (counsel-describe-function-function #'helpful-callable)
   (counsel-describe-variable-function #'helpful-variable)
@@ -145,7 +179,8 @@
   ([remap describe-variable] . counsel-describe-variable)
   ([remap describe-key] . helpful-key))
 
-(use-package hydra)
+(use-package hydra
+:defer t)
 
 (defhydra hydra-text-scale (:timeout 4)
   "scale text"
@@ -188,6 +223,9 @@
   (visual-line-mode 1))
 
 (use-package org
+  ;; :defer t
+  :pin org
+  :commands (org-capture org-agenda)
   :hook (org-mode . efs/org-mode-setup)
   :config
   (setq org-ellipsis " ▾")
@@ -209,14 +247,26 @@
 (use-package visual-fill-column
   :hook (org-mode . efs/org-mode-visual-fill))
 
-(org-babel-do-load-languages
-  'org-babel-load-languages
-  '((emacs-lisp . t)
-    (C . t)
-    (python . t)))
+(with-eval-after-load 'org 
+ (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t)
+     (C . t)
+     (scheme . t)
+     (python . t)))
 
-(push '("conf-unix" . conf-unix) org-src-lang-modes)
-(setq org-confirm-babel-evaluate nil)
+ (push '("conf-unix" . conf-unix) org-src-lang-modes)
+ (setq org-confirm-babel-evaluate nil))
+
+(with-eval-after-load 'org
+  ;; This is needed as of Org 9.2
+  (require 'org-tempo)
+
+  (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
+  (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+  (add-to-list 'org-structure-template-alist '("c" . "src c"))
+  (add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
+  (add-to-list 'org-structure-template-alist '("py" . "src python")))
 
 ;; Automatically tangle our Emacs.org config file when we save it
 (defun efs/org-babel-tangle-config ()
@@ -229,7 +279,11 @@
 (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
 
 (use-package vterm
-  :ensure t)
+  :commands vterm
+  :config
+  (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
+  ;;(setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
+  (setq vterm-max-scrollback 10000))
 
 (defun efs/lsp-mode-setup ()
     (setq lspheaderline-breadcumb-segments '(path-up-to-project file symbols))
@@ -251,29 +305,28 @@
 (use-package lsp-treemacs
   :after lsp)
 
-(use-package lsp-ivy)
+(use-package lsp-ivy
+:after lsp)
 
 (use-package typescript-mode
-    :mode "\\.ts\\'"
+    :mode "\\.ts\\'" ;; only load/open for .ts file 
     :hook (typescript-mode . lsp-deferred)
     :config
     (setq typescript-indent-level 2))
 
 (use-package poetry
-:hook (python-mode . poetry-tracking-mode))
-
-;;(use-package python-mode
-;;    :ensure t
-;;    :hook (python-mode . lsp-deferred))
-    ;;:custom
-    ;;(python-shell-interpreter "python3"))
-;;
+:after python-mode)
+;; :config
+;; (message "Poetry loaded")
+;; (poetry-tracking-mode))
 
 (use-package lsp-pyright
+  :defer t
   :ensure t
   :hook (python-mode . (lambda ()
                           (require 'lsp-pyright)
-                          (lsp))))  ; or lsp-deferred
+                          (lsp)  ; lsp or lsp-deferred
+                          (poetry-tracking-mode))))
 
 ;;(with-eval-after-load 'lsp-mode
 ;;  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
@@ -307,16 +360,21 @@
   (setq projectile-switch-project-action #'projectile-dired))
 
 (use-package counsel-projectile
+  :after projectile
   :config (counsel-projectile-mode))
 
 (use-package magit
+  :defer t
   :custom
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
-(use-package forge)
+(use-package forge
+:after magit)
 
-(use-package magit-delta)
-(add-hook 'magit-mode-hook (lambda () (magit-delta-mode +1)))
+(use-package magit-delta
+:after magit
+:config
+(add-hook 'magit-mode-hook (lambda () (magit-delta-mode +1))))
 
 (use-package evil-nerd-commenter
   :bind ("M-/" . evilnc-comment-or-uncomment-lines))
@@ -324,7 +382,54 @@
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
 
-(use-package yasnippet)
-(yas-global-mode 1)
+(use-package yasnippet
+:defer t
+:config
+(yas-global-mode 1))
 
-(use-package yasnippet-snippets)
+(use-package yasnippet-snippets
+  :after yasnippet)
+
+;; Make gc pauses faster by decreasing the threshold.
+(setq gc-cons-threshold (* 1 1000 1000))
+
+;; NOTE: If you want to move everything out of the ~/.emacs.d folder
+  ;; reliably, set `user-emacs-directory` before loading no-littering!
+  ;(setq user-emacs-directory "~/.cache/emacs")
+
+;  ;; (use-package no-littering)
+
+  ;; no-littering doesn't set this by default so we must place
+  ;; auto save files in the same path as it uses for sessions
+;  ;; (setq auto-save-file-name-transforms
+;        ;; `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+
+;; (use-package dired
+;;   :ensure nil
+;;   :commands (dired dired-jump)
+;;   :bind (("C-x C-j" . dired-jump))
+;;   :custom ((dired-listing-switches "-agho --group-directories-first"))
+;;   :config
+;;   (evil-collection-define-key 'normal 'dired-mode-map
+;;     "h" 'dired-single-up-directory
+;;     "l" 'dired-single-buffer))
+
+;; (use-package dired-single
+;;   :commands (dired dired-jump))
+
+;; (use-package all-the-icons-dired
+;;   :hook (dired-mode . all-the-icons-dired-mode))
+
+;; (use-package dired-open
+;;   :commands (dired dired-jump)
+;;   :config
+;;   ;; Doesn't work as expected!
+;;   ;;(add-to-list 'dired-open-functions #'dired-open-xdg t)
+;;   (setq dired-open-extensions '(("png" . "feh")
+;;                                 ("mkv" . "mpv"))))
+
+;; (use-package dired-hide-dotfiles
+;;   :hook (dired-mode . dired-hide-dotfiles-mode)
+;;   :config
+;;   (evil-collection-define-key 'normal 'dired-mode-map
+;;     "H" 'dired-hide-dotfiles-mode))
