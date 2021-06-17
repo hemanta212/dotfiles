@@ -326,7 +326,6 @@ You can add more =src= block templates below by copying one of the lines and cha
 
     (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
     (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
-    (add-to-list 'org-structure-template-alist '("c" . "src c"))
     (add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
     (add-to-list 'org-structure-template-alist '("py" . "src python")))
 
@@ -346,18 +345,6 @@ You can add more =src= block templates below by copying one of the lines and cha
 #+end_src
 
 * Development
-** Vterm
-Utrafast modern terminal written in C libvterm.
-#+begin_src emacs-lisp
-
-  (use-package vterm
-    :commands vterm
-    :config
-    (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
-    ;;(setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
-    (setq vterm-max-scrollback 10000))
-#+end_src
-
 ** Languages
 *** IDE features with LSP Mode
 **** Lsp-mode
@@ -543,6 +530,18 @@ Yasnippet is the snippet tool for emacs. It doesnot bundle the snippets itself t
 
 #+end_src
 
+** Vterm
+Utrafast modern terminal written in C libvterm.
+#+begin_src emacs-lisp
+
+  (use-package vterm
+    :commands vterm
+    :config
+    (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
+    ;;(setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
+    (setq vterm-max-scrollback 10000))
+#+end_src
+
 * Runtime Performance
 
 Dial the GC threshold back down so that garbage collection happens more frequently but in less time.
@@ -574,7 +573,6 @@ We use the [[https://github.com/emacscollective/no-littering/blob/master/no-litt
 #+end_src
 
 ** File Management
-
 *** Dired
 
 Dired is a built-in file manager for Emacs that does some pretty amazing things!  Here are some key bindings you should try out:
