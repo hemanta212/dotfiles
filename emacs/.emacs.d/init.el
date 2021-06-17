@@ -54,6 +54,16 @@
 
 (add-hook 'emacs-startup-hook #'efs/display-startup-time)
 
+;; NOTE: If you want to move everything out of the ~/.emacs.d folder
+;; reliably, set `user-emacs-directory` before loading no-littering!
+;(setq user-emacs-directory "~/.cache/emacs")
+
+(use-package no-littering)
+;; no-littering doesn't set this by default so we must place
+;; auto save files in the same path as it uses for sessions
+(setq auto-save-file-name-transforms
+      `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+
 ;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 ;; Remap  Imenu to M-i
@@ -190,6 +200,39 @@
 
 (rune/leader-keys
   "ts" '(hydra-text-scale/body :which-key "scale text"))
+
+(use-package dired
+  :ensure nil
+  :commands (dired dired-jump)
+  :bind (("C-x C-j" . dired-jump))
+  :custom ((dired-listing-switches "-agho --group-directories-first"))
+  :config
+  (evil-collection-define-key 'normal 'dired-mode-map
+    "h" 'dired-single-up-directory
+    "l" 'dired-single-buffer))
+
+(use-package dired-single
+  :commands (dired dired-jump))
+
+(use-package all-the-icons-dired
+  :hook (dired-mode . all-the-icons-dired-mode))
+
+(use-package dired-open
+  :commands (dired dired-jump)
+  :config
+  ;; Doesn't work as expected!
+  ;; (add-to-list 'dired-open-functions #'dired-open-xdg t)
+  (setq dired-open-extensions '(("png" . "termux-open")
+                                ("jpg" . "termux-open")
+                                ("wav" . "termux-open")
+                                ("mp3" . "termux-open")
+                                ("mp4" . "termux-open"))))
+
+(use-package dired-hide-dotfiles
+  :hook (dired-mode . dired-hide-dotfiles-mode)
+  :config
+  (evil-collection-define-key 'normal 'dired-mode-map
+    "H" 'dired-hide-dotfiles-mode))
 
 (defun efs/org-font-setup ()
   ;; Replace list hyphen with dot
@@ -391,44 +434,3 @@
 
 ;; Make gc pauses faster by decreasing the threshold.
 (setq gc-cons-threshold (* 1 1000 1000))
-
-;; NOTE: If you want to move everything out of the ~/.emacs.d folder
-  ;; reliably, set `user-emacs-directory` before loading no-littering!
-  ;(setq user-emacs-directory "~/.cache/emacs")
-
-;  ;; (use-package no-littering)
-
-  ;; no-littering doesn't set this by default so we must place
-  ;; auto save files in the same path as it uses for sessions
-;  ;; (setq auto-save-file-name-transforms
-;        ;; `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
-
-;; (use-package dired
-;;   :ensure nil
-;;   :commands (dired dired-jump)
-;;   :bind (("C-x C-j" . dired-jump))
-;;   :custom ((dired-listing-switches "-agho --group-directories-first"))
-;;   :config
-;;   (evil-collection-define-key 'normal 'dired-mode-map
-;;     "h" 'dired-single-up-directory
-;;     "l" 'dired-single-buffer))
-
-;; (use-package dired-single
-;;   :commands (dired dired-jump))
-
-;; (use-package all-the-icons-dired
-;;   :hook (dired-mode . all-the-icons-dired-mode))
-
-;; (use-package dired-open
-;;   :commands (dired dired-jump)
-;;   :config
-;;   ;; Doesn't work as expected!
-;;   ;;(add-to-list 'dired-open-functions #'dired-open-xdg t)
-;;   (setq dired-open-extensions '(("png" . "feh")
-;;                                 ("mkv" . "mpv"))))
-
-;; (use-package dired-hide-dotfiles
-;;   :hook (dired-mode . dired-hide-dotfiles-mode)
-;;   :config
-;;   (evil-collection-define-key 'normal 'dired-mode-map
-;;     "H" 'dired-hide-dotfiles-mode))
