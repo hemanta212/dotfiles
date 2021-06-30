@@ -24,10 +24,10 @@ manim() {
 manimc() {
   if [ $# -eq 2 ]
     then
-      poetry run manim $1.py $2 --low_qualiy --output_file=Test.mp4 && curl localhost:60262/manim
+      poetry run manim $1.py $2 --quality l --progress_bar display --output_file=Test.mp4 && curl localhost:60262/manim
   fi
   if [ $# -eq 3 ]
     then
-      poetry run manim $1.py $2 --low_quality --output_file=Test.mp4 && curl localhost:$3/manim
+      poetry run manim $1.py $2 --quality l --progress_bar display --output_file=Test.mp4 && curl localhost:$3/manim
   fi
 }
