@@ -85,6 +85,7 @@
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
     "tt" '(counsel-load-theme :which-key "choose theme")
+    "fo" '(lambda () (interactive) (find-file (expand-file-name "~/dev/personal/org/track.org")))
     "fde" '(lambda () (interactive) (find-file (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org")))))
 
 
@@ -320,6 +321,15 @@
 
 (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
 
+(use-package org-roam
+  :after org-mode
+  :init
+  (setq org-roam-directory "~/org-roam")
+  :custom
+  (org-roam-db-update-method 'immediate)
+  :config
+  (org-roam-mode))
+
 (defun efs/lsp-mode-setup ()
     (setq lspheaderline-breadcumb-segments '(path-up-to-project file symbols))
     (lsp-headerline-breadcrumb-mode))
@@ -426,11 +436,8 @@
   :after yasnippet)
 
 (use-package vterm
-  :commands vterm
-  :config
-  (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
-  ;;(setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
-  (setq vterm-max-scrollback 10000))
+  :commands vterm)
+  ;; (setq vterm-max-scrollback 10000))
 
 ;; Make gc pauses faster by decreasing the threshold.
 (setq gc-cons-threshold (* 1 1000 1000))
