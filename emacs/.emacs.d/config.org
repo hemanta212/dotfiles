@@ -568,6 +568,15 @@ Try these commands with =M-x=:
                             (lsp)  ; lsp or lsp-deferred
                             (poetry-tracking-mode))))
 #+end_src
+**** Black Formatting
+#+begin_src emacs-lisp
+  (use-package blacken
+    :demand t
+    :after poetry
+    :hook (poetry-tracking-mode . blacken-mode))
+    ;;:customize
+    ;;(blacken-only-if-project-is-blackened))
+#+end_src
 *** C/C++ 
 #+begin_src emacs-lisp
 ;;(with-eval-after-load 'lsp-mode
@@ -656,6 +665,7 @@ Yasnippet is the snippet tool for emacs. It doesnot bundle the snippets itself t
   (use-package yasnippet
   :defer t
   :config
+  (setq yas-snippet-dirs '("~/dev/dotfiles/emacs/snippets/"))
   (yas-global-mode 1))
 
   (use-package yasnippet-snippets

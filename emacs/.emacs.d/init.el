@@ -373,6 +373,13 @@
                           (lsp)  ; lsp or lsp-deferred
                           (poetry-tracking-mode))))
 
+(use-package blacken
+  :demand t
+  :after poetry
+  :hook (poetry-tracking-mode . blacken-mode))
+  ;;:customize
+  ;;(blacken-only-if-project-is-blackened))
+
 ;;(with-eval-after-load 'lsp-mode
 ;;  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
 (add-hook 'c-mode-hook 'lsp)
@@ -430,6 +437,7 @@
 (use-package yasnippet
 :defer t
 :config
+(setq yas-snippet-dirs '("~/dev/dotfiles/emacs/snippets/"))
 (yas-global-mode 1))
 
 (use-package yasnippet-snippets
