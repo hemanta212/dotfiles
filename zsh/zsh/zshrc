@@ -8,13 +8,14 @@ SAVEHIST=10000
 HISTFILE=~/.cache/zsh/history
 
 # Basic auto/tab complete:
+source ~/.cache/zplug/repos/marlonrichert/zsh-autocomplete/zsh-autocomplete.plugin.zsh
 fpath+=~/.config/zsh/zfunc
 autoload -U bashcompinit
 bashcompinit
 autoload -U compinit
 zstyle ':completion:*' menu select
 zmodload zsh/complist
-compinit
+# compinit
 _comp_options+=(globdots)		# Include hidden files.
 
 # vi mode
@@ -27,9 +28,9 @@ bindkey -M menuselect 'h' vi-backward-char
 bindkey -M menuselect 'k' vi-up-line-or-history
 bindkey -M menuselect 'l' vi-forward-char
 bindkey -M menuselect 'j' vi-down-line-or-history
-bindkey -M vicmd 'jj' history-substring-search-up
-bindkey -M vicmd 'kk' history-substring-search-down
-bindkey '^[[A' history-substring-search-up
+# bindkey -M vicmd 'jj' history-substring-search-up
+# bindkey -M vicmd 'kk' history-substring-search-down
+# bindkey '^[[A' history-substring-search-up
 bindkey -v '^?' backward-delete-char
 
 # Change cursor shape for different vi modes.
@@ -88,9 +89,13 @@ export MANPATH="/usr/local/man:$MANPATH"
 
 if [ -d ~/.nvm ]; then
 source /usr/share/nvm/init-nvm.sh
-fi
-
-eval "$(register-python-argcomplete pipx)"
-
 export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+fi
+
+if [ -d ~/.local/pipx ]; then
+eval "$(register-python-argcomplete pipx)"
+fi
+
+export _ZO_DATA_DIR="$HOME/.config/zsh/"
+eval "$(zoxide init zsh)"
