@@ -1,0 +1,12 @@
+# -*- mode: snippet -*-
+# name:c-basic-starter 
+# key: >cbs
+# --
+
+#include <stdio.h>
+
+int main(void){
+    $0
+
+    return 0;
+}

@@ -1,0 +1,12 @@
+# -*- mode: snippet -*-
+# name:c-basic-starter-args
+# key: >cbsa
+# --
+
+#include <stdio.h>
+
+int main(int argc, char* argv[]){
+    $0
+
+    return 0;
+}

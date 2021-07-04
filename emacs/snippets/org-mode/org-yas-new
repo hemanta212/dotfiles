@@ -1,0 +1,15 @@
+# -*- mode: snippet -*-
+# name: org-yas-new
+# key: >yns
+# expand-env: ((yas-indent-line 'never)  (yas-wrap-around-region 'nil))
+# --
+
+#+begin_src yasnippet :tangle ~/dev/dotfiles/emacs/snippets/${1:mode}-mode/${2:name}
+# -*- mode: snippet -*-
+# name: $2
+# key: >${3:key}
+# --
+
+$0
+
+#+end_src

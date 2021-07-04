@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: org-header
+# key: >oh
+# --
+
+#+Title: ${1:title}
+#+Author: Hemanta Sharma
+
+$0
