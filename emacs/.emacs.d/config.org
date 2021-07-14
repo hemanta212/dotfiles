@@ -464,6 +464,18 @@ You can add more =src= block templates below by copying one of the lines and cha
 (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
 #+end_src
 
+** Custom org utilities
+*** Auto export on save (toggler)
+#+begin_src emacs-lisp
+  (defun toggle-org-markdown-export-on-save ()
+    (interactive)
+    (if (memq 'org-md-export-to-markdown after-save-hook)
+        (progn
+          (remove-hook 'after-save-hook 'org-md-export-to-markdown t)
+          (message "Disabled org markdown export on save for current buffer..."))
+      (add-hook 'after-save-hook 'org-md-export-to-markdown nil t)
+      (message "Enabled org markdown export on save for current buffer...")))
+#+end_src
 * Org-roam
 ** General
 #+begin_src emacs-lisp

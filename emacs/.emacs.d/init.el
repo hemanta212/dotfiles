@@ -321,6 +321,15 @@
 
 (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
 
+(defun toggle-org-markdown-export-on-save ()
+  (interactive)
+  (if (memq 'org-md-export-to-markdown after-save-hook)
+      (progn
+        (remove-hook 'after-save-hook 'org-md-export-to-markdown t)
+        (message "Disabled org markdown export on save for current buffer..."))
+    (add-hook 'after-save-hook 'org-md-export-to-markdown nil t)
+    (message "Enabled org markdown export on save for current buffer...")))
+
 (use-package org-roam
   :after org-mode
   :init
@@ -449,3 +458,16 @@
 
 ;; Make gc pauses faster by decreasing the threshold.
 (setq gc-cons-threshold (* 1 1000 1000))
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   '(yasnippet-snippets which-key vterm visual-fill-column use-package typescript-mode sicp rainbow-delimiters python-mode python-black poetry org-roam org-bullets no-littering magit-delta lsp-ui lsp-treemacs lsp-pyright lsp-ivy ivy-rich ivy-prescient htmltagwrap helpful general forge evil-nerd-commenter evil-magit evil-escape evil-collection doom-themes doom-modeline dired-single dired-open dired-hide-dotfiles counsel-projectile company-web company-box command-log-mode blacken all-the-icons-ivy all-the-icons-dired)))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
