@@ -31,3 +31,13 @@ manimc() {
       poetry run manim $1.py $2 --quality l --progress_bar display --output_file=Test.mp4 && curl localhost:$3/manim
   fi
 }
+
+open-img(){
+	curl localhost:60262/manim-pic
+}
+
+build(){
+poetry run python -m manim .py;
+mv images/Generator_ManimCE_v0.8.0.png images/image.png;
+curl localhost:/manim-pic;
+}
