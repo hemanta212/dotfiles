@@ -553,13 +553,14 @@ Try these commands with =M-x=:
 
 #+end_src
 
-*** TypeScript
+**** FlyCheck
 #+begin_src emacs-lisp
-  (use-package typescript-mode
-      :mode "\\.ts\\'" ;; only load/open for .ts file 
-      :hook (typescript-mode . lsp-deferred)
-      :config
-      (setq typescript-indent-level 2))
+  (use-package flycheck
+    :ensure t
+    :defer t
+    :config
+     (setq flycheck-python-pyright-executable "~/.emacs.d/var/lsp/server/npm/pyright")
+    :init (global-flycheck-mode))
 #+end_src
 *** Python
 **** Poetry
@@ -597,6 +598,12 @@ Try these commands with =M-x=:
 (add-hook 'cpp-mode-hook 'lsp)
 #+end_src
 
+*** Typescript
+  (use-package typescript-mode
+      :mode "\\.ts\\'" ;; only load/open for .ts file 
+      :hook (typescript-mode . lsp-deferred)
+      :config
+      (setq typescript-indent-level 2))
 ** Company Mode
 
 [[http://company-mode.github.io/][Company Mode]] provides a nicer in-buffer completion interface than =completion-at-point= which is more reminiscent of what you would expect from an IDE.  We add a simple configuration to make the keybindings a little more useful (=TAB= now completes the selection and initiates completion at the current location if needed).
