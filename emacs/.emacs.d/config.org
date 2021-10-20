@@ -32,7 +32,7 @@
         (set-fringe-mode 10)        ; Give some breathing room
         (tooltip-mode -1)           ; Disable tooltips
         (tool-bar-mode -1)
-        (set-face-attribute 'default nil :font "Fira Code Retina" :height 130)
+        (set-face-attribute 'default nil :font "Fira Code Retina" :height 140)
         (scroll-bar-mode -1)))
 
   (menu-bar-mode -1)            ; Disable the menu bar
@@ -151,7 +151,7 @@ We use the [[https://github.com/emacscollective/no-littering/blob/master/no-litt
 ** Color theme
 #+begin_src emacs-lisp
 (use-package doom-themes
-  :init (load-theme 'doom-one t))
+  :init (load-theme 'doom-gruvbox t))
 #+end_src
 ** Better modeline
 #+begin_src emacs-lisp
@@ -497,12 +497,15 @@ You can add more =src= block templates below by copying one of the lines and cha
   (defun efs/lsp-mode-setup ()
       (setq lspheaderline-breadcumb-segments '(path-up-to-project file symbols))
       (lsp-headerline-breadcrumb-mode))
-
+  
       (use-package lsp-mode
       :commands (lsp lsp-deferred)
       :hook (lsp-mode . efs/lsp-mode-setup)
       :init
       (setq lsp-keymap-prefix "C-c l") 
+      (setq lsp-lens-enable t) 
+      (setq lsp-signature-auto-activate nil) 
+      ;; (setq lsp-enable-file-watchers nil)
       :config
       (lsp-enable-which-key-integration t))
 #+end_src
@@ -532,9 +535,11 @@ Try these commands with =M-x=:
 This package is built on the [[https://github.com/Alexander-Miller/treemacs][treemacs]] package which might be of some interest to you if you like to have a file browser at the left side of your screen in your editor.
 
 #+begin_src emacs-lisp
-
+  
   (use-package lsp-treemacs
     :after lsp)
+    (with-eval-after-load 'treemacs
+    (treemacs-resize-icons 15))
 #+end_src
 
 **** lsp-ivy
@@ -590,6 +595,66 @@ Try these commands with =M-x=:
     ;;:customize
     ;;(blacken-only-if-project-is-blackened))
 #+end_src
+**** Manim build after save
+#+begin_src emacs-lisp
+  (defun manim-build-img ()
+      "Build manim image after saving a file"
+      (when (or (string-equal (buffer-file-name)
+                          (expand-file-name "~/dev/manim/manim/mathgaps/test.py"))
+             (string-equal (file-name-directory buffer-file-name)
+                          (expand-file-name "~/dev/manim/manim/mathgaps/scripts/")))
+        (async-shell-command (format "cd ~/dev/manim/manim/mathgaps && poetry run python -m manim -ql %s" buffer-file-name))))
+  
+  (defun kivy-build ()
+    "Build kivy app after saving a file"
+      (when (string-equal (file-name-directory buffer-file-name)
+                          (expand-file-name "~/dev/kivy/test/"))
+      (shell-command-to-string "cp main.py /mnt/d/projects/kivy/test/ && cd /mnt/d/projects/kivy/test && poetry.exe run python main.py")))
+  
+  (defun sphinx-build ()
+      "Build sphinx html builds after saving a file"
+      (when (string-equal (file-name-directory buffer-file-name)
+                          (expand-file-name "~/dev/c-practice/cipher-site/"))
+        (async-shell-command (format "rm -rf _build/html && poetry run make html" buffer-file-name))))
+  
+    (add-hook 'after-save-hook #'manim-build-img)
+    (add-hook 'after-save-hook #'sphinx-build)
+#+end_src
+*** Flutter/Dart
+**** Dart-Mode
+#+begin_src emacs-lisp
+  (use-package dart-mode
+    :defer t
+    :custom
+    (dart-sdk-path (concat (getenv "HOME") "/local/flutter/bin/cache/dark-sdk/")
+    dart-format-on-save t))
+#+end_src
+**** Lsp-dart
+#+begin_src emacs-lisp
+    (use-package lsp-dart
+        :defer t
+        :ensure t
+        :hook (dart-mode . (lambda ()
+                              (require 'lsp-dart)
+                              (lsp))))  ; lsp or lsp-deferred
+#+end_src
+**** Hover
+#+begin_src emacs-lisp
+  (use-package hover
+    :after dart-mode
+;;    :bind (:map dart-mode-map
+;;                ("C-M-z" . #'hover-run-or-hot-reload)
+ ;;               ("C-M-x" . #'hover-run-or-hot-restart)
+  ;;              ("C-M-p" . #'hover-take-screenshot'))
+    :init
+    (setq hover-flutter-sdk-path (concat (getenv "HOME") "/local/flutter")
+          hover-command-path (concat (getenv "GOPATH") "/bin/hover")
+          hover-hot-reload-on-save t
+          hover-screenshot-path (concat "/mnt/d/" "images/flutter")
+          hover-screenshot-prefix "emacs-"
+          hover-observatory-uri "http://0.0.0.0:50300"
+          hover-clear-buffer-on-hot-restart t))
+#+end_src
 *** C/C++ 
 #+begin_src emacs-lisp
 ;;(with-eval-after-load 'lsp-mode
@@ -628,6 +693,19 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
 #+end_src
 
+*** Company Tabnine
+#+begin_src emacs-lisp
+  (use-package company-tabnine
+    :ensure t
+    :config
+    ;; Trigger completion immediately.
+    (setq company-idle-delay 0)
+    ;; Number the candidates (use M-1, M-2 etc to select completions).
+    (setq company-show-numbers t)
+    )
+  (add-to-list 'company-backends #'company-tabnine)
+#+end_src
+
 ** Projectile
 #+begin_src emacs-lisp
   (use-package projectile
@@ -656,10 +734,10 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
   (use-package forge
   :after magit)
 
-  (use-package magit-delta
-  :after magit
-  :config
-  (add-hook 'magit-mode-hook (lambda () (magit-delta-mode +1))))
+  ;; (use-package magit-delta
+  ;; :after magit
+  ;; :config
+  ;; (add-hook 'magit-mode-hook (lambda () (magit-delta-mode +1))))
 #+end_src
 ** Commenting
 
@@ -701,6 +779,13 @@ Utrafast modern terminal written in C libvterm.
     ;; (setq vterm-max-scrollback 10000))
 #+end_src
 
+* Emacs Outside
+** Edit Server
+#+begin_src emacs-lisp
+  (use-package edit-server
+   :config
+    (edit-server-start))
+#+end_src
 * Runtime Performance
 
 Dial the GC threshold back down so that garbage collection happens more frequently but in less time.

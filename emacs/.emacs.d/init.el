@@ -25,7 +25,7 @@
       (set-fringe-mode 10)        ; Give some breathing room
       (tooltip-mode -1)           ; Disable tooltips
       (tool-bar-mode -1)
-      (set-face-attribute 'default nil :font "Fira Code Retina" :height 130)
+      (set-face-attribute 'default nil :font "Fira Code Retina" :height 140)
       (scroll-bar-mode -1)))
 
 (menu-bar-mode -1)            ; Disable the menu bar
@@ -122,7 +122,7 @@
   :commands command-log-mode)
 
 (use-package doom-themes
-  :init (load-theme 'doom-one t))
+  :init (load-theme 'doom-gruvbox t))
 
 (use-package all-the-icons)
 (use-package all-the-icons-ivy
@@ -348,6 +348,9 @@
     :hook (lsp-mode . efs/lsp-mode-setup)
     :init
     (setq lsp-keymap-prefix "C-c l") 
+    (setq lsp-lens-enable t) 
+    (setq lsp-signature-auto-activate nil) 
+    ;; (setq lsp-enable-file-watchers nil)
     :config
     (lsp-enable-which-key-integration t))
 
@@ -358,6 +361,8 @@
 
 (use-package lsp-treemacs
   :after lsp)
+  (with-eval-after-load 'treemacs
+  (treemacs-resize-icons 15))
 
 (use-package lsp-ivy
 :after lsp)
@@ -390,6 +395,57 @@
   ;;:customize
   ;;(blacken-only-if-project-is-blackened))
 
+(defun manim-build-img ()
+    "Build manim image after saving a file"
+    (when (or (string-equal (buffer-file-name)
+                        (expand-file-name "~/dev/manim/manim/mathgaps/test.py"))
+           (string-equal (file-name-directory buffer-file-name)
+                        (expand-file-name "~/dev/manim/manim/mathgaps/scripts/")))
+      (async-shell-command (format "cd ~/dev/manim/manim/mathgaps && poetry run python -m manim -ql %s" buffer-file-name))))
+
+(defun kivy-build ()
+  "Build kivy app after saving a file"
+    (when (string-equal (file-name-directory buffer-file-name)
+                        (expand-file-name "~/dev/kivy/test/"))
+    (shell-command-to-string "cp main.py /mnt/d/projects/kivy/test/ && cd /mnt/d/projects/kivy/test && poetry.exe run python main.py")))
+
+(defun sphinx-build ()
+    "Build sphinx html builds after saving a file"
+    (when (string-equal (file-name-directory buffer-file-name)
+                        (expand-file-name "~/dev/c-practice/cipher-site/"))
+      (async-shell-command (format "rm -rf _build/html && poetry run make html" buffer-file-name))))
+
+  (add-hook 'after-save-hook #'manim-build-img)
+  (add-hook 'after-save-hook #'sphinx-build)
+
+(use-package dart-mode
+  :defer t
+  :custom
+  (dart-sdk-path (concat (getenv "HOME") "/local/flutter/bin/cache/dark-sdk/")
+  dart-format-on-save t))
+
+(use-package lsp-dart
+    :defer t
+    :ensure t
+    :hook (dart-mode . (lambda ()
+                          (require 'lsp-dart)
+                          (lsp))))  ; lsp or lsp-deferred
+
+(use-package hover
+    :after dart-mode
+;;    :bind (:map dart-mode-map
+;;                ("C-M-z" . #'hover-run-or-hot-reload)
+ ;;               ("C-M-x" . #'hover-run-or-hot-restart)
+  ;;              ("C-M-p" . #'hover-take-screenshot'))
+    :init
+    (setq hover-flutter-sdk-path (concat (getenv "HOME") "/local/flutter")
+          hover-command-path (concat (getenv "GOPATH") "/bin/hover")
+          hover-hot-reload-on-save t
+          hover-screenshot-path (concat "/mnt/d/" "images/flutter")
+          hover-screenshot-prefix "emacs-"
+          hover-observatory-uri "http://0.0.0.0:50300"
+          hover-clear-buffer-on-hot-restart t))
+
 ;;(with-eval-after-load 'lsp-mode
 ;;  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
 (add-hook 'c-mode-hook 'lsp)
@@ -408,6 +464,16 @@
 
 (use-package company-box
   :hook (company-mode . company-box-mode))
+
+(use-package company-tabnine
+  :ensure t
+  :config
+  ;; Trigger completion immediately.
+  (setq company-idle-delay 0)
+  ;; Number the candidates (use M-1, M-2 etc to select completions).
+  (setq company-show-numbers t)
+  )
+(add-to-list 'company-backends #'company-tabnine)
 
 (use-package projectile
   :diminish projectile-mode
@@ -433,10 +499,10 @@
 (use-package forge
 :after magit)
 
-(use-package magit-delta
-:after magit
-:config
-(add-hook 'magit-mode-hook (lambda () (magit-delta-mode +1))))
+;; (use-package magit-delta
+;; :after magit
+;; :config
+;; (add-hook 'magit-mode-hook (lambda () (magit-delta-mode +1))))
 
 (use-package evil-nerd-commenter
   :bind ("M-/" . evilnc-comment-or-uncomment-lines))
@@ -456,6 +522,10 @@
 (use-package vterm
   :commands vterm)
   ;; (setq vterm-max-scrollback 10000))
+
+(use-package edit-server
+ :config
+  (edit-server-start))
 
 ;; Make gc pauses faster by decreasing the threshold.
 (setq gc-cons-threshold (* 1 1000 1000))

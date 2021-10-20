@@ -1,4 +1,4 @@
-alias pb="curl -F 'sprunge=<-' http://sprunge.us | termux-clipboard-set"
+alias pbc="curl -F 'sprunge=<-' http://sprunge.us | termux-clipboard-set"
 alias tro='termux-open'
 alias ytdl='youtube-dl'
 

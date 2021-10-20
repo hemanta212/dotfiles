@@ -25,6 +25,10 @@ neovim(){
     nvim $(fzf)
 }
 
+ec(){
+   cat $HOME/dev/dotfiles/emacs/ec | zsh
+}
+
 colab_con (){
     if [ $# -eq 0 ]
         then

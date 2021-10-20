@@ -32,4 +32,6 @@ alias egrep='egrep --color=auto'
 
 # Enable aliases to be sudo’ed
 alias sudo='sudo '
+export LOCAL_IP=`ipconfig.exe getifaddr en0`
+alias serve="browser-sync start -s -f . --no-notify --host 192.168.1.14 --port 9000"
 

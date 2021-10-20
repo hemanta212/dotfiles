@@ -8,7 +8,6 @@ SAVEHIST=10000
 HISTFILE=~/.cache/zsh/history
 
 # Basic auto/tab complete:
-source ~/.cache/zplug/repos/marlonrichert/zsh-autocomplete/zsh-autocomplete.plugin.zsh
 fpath+=~/.config/zsh/zfunc
 autoload -U bashcompinit
 bashcompinit
@@ -87,10 +86,11 @@ eval "$(fasd --init auto)"
 export MANPATH="/usr/local/man:$MANPATH"
 
 
-if [ -d ~/.nvm ]; then
-source /usr/share/nvm/init-nvm.sh
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+if [ -d ~/.config/nvm ]; then
+export NVM_DIR="$HOME/.config/nvm"
+export PATH="$NVM_DIR/versions/node/v14.17.6/bin:$PATH"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 fi
 
 if [ -d ~/.local/pipx ]; then
@@ -99,3 +99,10 @@ fi
 
 export _ZO_DATA_DIR="$HOME/.config/zsh/"
 eval "$(zoxide init zsh)"
+
+export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0 #GWSL
+export PULSE_SERVER=tcp:$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}') #GWSL
+#export HOST_IP="$(ip route |awk '/^default/{print $3}')"
+#export PULSE_SERVER="tcp:$HOST_IP"
+export LIBGL_ALWAYS_INDIRECT=1 #GWSL
+#export DISPLAY=$(awk '/nameserver / {print $2; exit}' /etc/resolv.conf 2>/dev/null):0
