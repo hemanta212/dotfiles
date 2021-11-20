@@ -26,7 +26,14 @@ neovim(){
 }
 
 ec(){
-   cat $HOME/dev/dotfiles/emacs/ec | zsh
+    if [ $# -eq 0 ]
+    then
+	cat $HOME/dev/dotfiles/emacs/ec | zsh 
+   fi
+   if [ $# -eq 1 ]
+   then
+   emacsclient -t $1
+   fi
 }
 
 colab_con (){
