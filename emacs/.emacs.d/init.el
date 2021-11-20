@@ -95,6 +95,7 @@
   (setq evil-want-keybinding nil)
   (setq evil-want-C-u-scroll t)
   (setq evil-want-C-i-jump nil)
+  (setq evil-want-minibuffer t)
   :config
   (evil-mode 1)
   (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
@@ -106,6 +107,12 @@
 
   (evil-set-initial-state 'messages-buffer-mode 'normal)
   (evil-set-initial-state 'dashboard-mode 'normal))
+
+(defun evil-init-minibuffer ()
+  (set (make-local-variable 'evil-echo-state) nil)
+  (evil-emacs-state))
+
+ (add-hook 'minibuffer-setup-hook 'evil-init-minibuffer 90)
 
 (use-package evil-collection
   :after evil
@@ -329,6 +336,11 @@
         (message "Disabled org markdown export on save for current buffer..."))
     (add-hook 'after-save-hook 'org-md-export-to-markdown nil t)
     (message "Enabled org markdown export on save for current buffer...")))
+
+(use-package org-download
+;; Drag-and-drop to `dired`
+  :hook (dired-mode-hook . org-download-enable))
+;; (add-hook 'dired-mode-hook 'org-download-enable)
 
 (use-package org-roam
   :after org-mode

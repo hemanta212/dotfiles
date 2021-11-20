@@ -88,59 +88,66 @@ We use the [[https://github.com/emacscollective/no-littering/blob/master/no-litt
 
 * Key-bindings
 #+begin_src emacs-lisp
-  ;; Make ESC quit prompts
-  (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
-  ;; Remap  Imenu to M-i
-  (global-set-key (kbd "M-i") 'imenu)
-  (global-set-key (kbd "C-c p f") 'counsel-fzf)
-  (global-set-key (kbd "C-c C-x s") 'org-search-view)
-  (global-set-key (kbd "M-w") 'scroll-other-window)
-  (global-set-key (kbd "M-W") 'scroll-other-window-down)
-
-
-  (use-package general
-    :after evil
-    :config
-    (general-create-definer rune/leader-keys
-      :keymaps '(normal insert visual emacs)
-      :prefix "SPC"
-      :global-prefix "C-SPC")
-
-    (rune/leader-keys
-      "t"  '(:ignore t :which-key "toggles")
-      "tt" '(counsel-load-theme :which-key "choose theme")
-      "fo" '(lambda () (interactive) (find-file (expand-file-name "~/dev/personal/org/track.org")))
-      "fde" '(lambda () (interactive) (find-file (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org")))))
-
-
-  (use-package evil
-    :init
-    (setq evil-want-integration t)
-    (setq evil-want-keybinding nil)
-    (setq evil-want-C-u-scroll t)
-    (setq evil-want-C-i-jump nil)
-    :config
-    (evil-mode 1)
-    (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
-    (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
-
-    ;; Use visual line motions even outside of visual-line-mode buffers
-    (evil-global-set-key 'motion "j" 'evil-next-visual-line)
-    (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
-
-    (evil-set-initial-state 'messages-buffer-mode 'normal)
-    (evil-set-initial-state 'dashboard-mode 'normal))
-
-  (use-package evil-collection
-    :after evil
-    :config
-    (evil-collection-init))
-
-  (use-package evil-escape
-    :after evil
-    :config
-    (evil-escape-mode)
-    (setq evil-escape-key-sequence "kj"))
+    ;; Make ESC quit prompts
+    (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+    ;; Remap  Imenu to M-i
+    (global-set-key (kbd "M-i") 'imenu)
+    (global-set-key (kbd "C-c p f") 'counsel-fzf)
+    (global-set-key (kbd "C-c C-x s") 'org-search-view)
+    (global-set-key (kbd "M-w") 'scroll-other-window)
+    (global-set-key (kbd "M-W") 'scroll-other-window-down)
+    
+    
+    (use-package general
+      :after evil
+      :config
+      (general-create-definer rune/leader-keys
+        :keymaps '(normal insert visual emacs)
+        :prefix "SPC"
+        :global-prefix "C-SPC")
+    
+      (rune/leader-keys
+        "t"  '(:ignore t :which-key "toggles")
+        "tt" '(counsel-load-theme :which-key "choose theme")
+        "fo" '(lambda () (interactive) (find-file (expand-file-name "~/dev/personal/org/track.org")))
+        "fde" '(lambda () (interactive) (find-file (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org")))))
+    
+    
+    (use-package evil
+      :init
+      (setq evil-want-integration t)
+      (setq evil-want-keybinding nil)
+      (setq evil-want-C-u-scroll t)
+      (setq evil-want-C-i-jump nil)
+      (setq evil-want-minibuffer t)
+      :config
+      (evil-mode 1)
+      (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
+      (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
+    
+      ;; Use visual line motions even outside of visual-line-mode buffers
+      (evil-global-set-key 'motion "j" 'evil-next-visual-line)
+      (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
+    
+      (evil-set-initial-state 'messages-buffer-mode 'normal)
+      (evil-set-initial-state 'dashboard-mode 'normal))
+    
+    (defun evil-init-minibuffer ()
+      (set (make-local-variable 'evil-echo-state) nil)
+      (evil-emacs-state))
+  
+     (add-hook 'minibuffer-setup-hook 'evil-init-minibuffer 90)
+    
+    (use-package evil-collection
+      :after evil
+      :config
+      (evil-collection-init))
+    
+    (use-package evil-escape
+      :after evil
+      :config
+      (evil-escape-mode)
+      (setq evil-escape-key-sequence "kj"))
 #+end_src
 * UI configuration
 ** Command log mode
@@ -475,6 +482,14 @@ You can add more =src= block templates below by copying one of the lines and cha
           (message "Disabled org markdown export on save for current buffer..."))
       (add-hook 'after-save-hook 'org-md-export-to-markdown nil t)
       (message "Enabled org markdown export on save for current buffer...")))
+#+end_src
+** Org-download
+  Repo: https://github.com/abo-abo/org-download
+#+begin_src emacs-lisp
+  (use-package org-download
+  ;; Drag-and-drop to `dired`
+    :hook (dired-mode-hook . org-download-enable))
+  ;; (add-hook 'dired-mode-hook 'org-download-enable)
 #+end_src
 * Org-roam
 ** General
