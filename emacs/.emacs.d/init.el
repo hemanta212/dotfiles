@@ -319,14 +319,22 @@
   (add-to-list 'org-structure-template-alist '("py" . "src python")))
 
 ;; Automatically tangle our Emacs.org config file when we save it
-(defun efs/org-babel-tangle-config ()
+  (defun efs/org-babel-tangle-config ()
+    (when (string-equal (buffer-file-name)
+                        (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org"))
+      ;; Dynamic scoping to the rescue
+      (let ((org-confirm-babel-evaluate nil))
+        (org-babel-tangle))))
+
+(defun efs/org-babel-tangle-neovim-config ()
   (when (string-equal (buffer-file-name)
-                      (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org"))
+                      (expand-file-name "~/dev/dotfiles/neovim/init.org"))
     ;; Dynamic scoping to the rescue
     (let ((org-confirm-babel-evaluate nil))
       (org-babel-tangle))))
 
-(add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
+  (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)
+                             (add-hook 'after-save-hook #'efs/org-babel-tangle-neovim-config) ))
 
 (defun toggle-org-markdown-export-on-save ()
   (interactive)
@@ -462,6 +470,13 @@
 ;;  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
 (add-hook 'c-mode-hook 'lsp)
 (add-hook 'cpp-mode-hook 'lsp)
+
+(use-package lua-mode
+    :mode "\\.lua\\'" ;; only load/open for .ts file 
+    :hook (lua-mode . lsp-deferred)
+    :config
+    (setq lua-indent-level 3)
+    (setq lua-documentation-function 'browse-web))
 
 (use-package company
   :after lsp-mode

@@ -460,15 +460,23 @@ You can add more =src= block templates below by copying one of the lines and cha
 
 ** Auto tangle configuration file
 #+begin_src emacs-lisp
-;; Automatically tangle our Emacs.org config file when we save it
-(defun efs/org-babel-tangle-config ()
-  (when (string-equal (buffer-file-name)
-                      (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org"))
-    ;; Dynamic scoping to the rescue
-    (let ((org-confirm-babel-evaluate nil))
-      (org-babel-tangle))))
-
-(add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
+     ;; Automatically tangle our Emacs.org config file when we save it
+     (defun efs/org-babel-tangle-config ()
+       (when (string-equal (buffer-file-name)
+                           (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org"))
+         ;; Dynamic scoping to the rescue
+         (let ((org-confirm-babel-evaluate nil))
+           (org-babel-tangle))))
+  
+   (defun efs/org-babel-tangle-neovim-config ()
+     (when (string-equal (buffer-file-name)
+                         (expand-file-name "~/dev/dotfiles/neovim/init.org"))
+       ;; Dynamic scoping to the rescue
+       (let ((org-confirm-babel-evaluate nil))
+         (org-babel-tangle))))
+  
+     (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)
+                                (add-hook 'after-save-hook #'efs/org-babel-tangle-neovim-config) ))
 #+end_src
 
 ** Custom org utilities
@@ -684,6 +692,16 @@ Try these commands with =M-x=:
       :hook (typescript-mode . lsp-deferred)
       :config
       (setq typescript-indent-level 2))
+*** Lua
+#+begin_src emacs-lisp
+  (use-package lua-mode
+      :mode "\\.lua\\'" ;; only load/open for .ts file 
+      :hook (lua-mode . lsp-deferred)
+      :config
+      (setq lua-indent-level 3)
+      (setq lua-documentation-function 'browse-web))
+#+end_src
+
 ** Company Mode
 
 [[http://company-mode.github.io/][Company Mode]] provides a nicer in-buffer completion interface than =completion-at-point= which is more reminiscent of what you would expect from an IDE.  We add a simple configuration to make the keybindings a little more useful (=TAB= now completes the selection and initiates completion at the current location if needed).
