@@ -8,8 +8,12 @@
 # To get a config file with the same key positions, but for your current
 # layout, use the i3-config-wizard
 #
+# PREQUISITE
+# apt install rofi xss-lock nm-tray compton feh 
+# also fonts as well
 
-set $mod Mod2
+
+set $mod Mod1
 
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the bar {} block below.
@@ -28,7 +32,8 @@ exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
 
 # NetworkManager is the most popular way to manage wireless networks on Linux,
 # and nm-applet is a desktop environment-independent system tray GUI for it.
-exec --no-startup-id nm-applet
+# sudo apt-get install nm-tray
+#exec --no-startup-id nm-applet
 
 # Use pactl to adjust volume in PulseAudio.
 set $refresh_i3status killall -SIGUSR1 i3status
@@ -61,10 +66,10 @@ bindsym $mod+Shift+q kill
 # bindsym Mod1+d exec --no-startup-id i3-dmenu-desktop
 
 # change focus
-bindsym $mod+$left focus left
-bindsym $mod+$down focus down
-bindsym $mod+$up focus up
-bindsym $mod+$right focus right
+bindsym $mod+left focus left
+bindsym $mod+down focus down
+bindsym $mod+up focus up
+bindsym $mod+right focus right
 
 # alternatively, you can use the cursor keys:
 bindsym $mod+Left focus left
@@ -136,8 +141,8 @@ set $base0F #fcc09e
 
 # Define names for default workspaces for which we configure key bindings later on.
 # We use variables to avoid repeating the names in multiple places.
-set $ws1 "1: Terminals "
-set $ws2 "2: Emacs "
+set $ws1 "1: Term "
+set $ws2 "2: Emacs"
 set $ws3 "3: Browser "
 set $ws4 "4: Misc "
 set $ws5 "5"
@@ -171,11 +176,11 @@ bindsym $mod+Shift+8 move container to workspace number $ws8
 bindsym $mod+Shift+9 move container to workspace number $ws9
 bindsym $mod+Shift+0 move container to workspace number $ws10
 
-assign [class="Terminals"] $ws1
-assign [class="Emacs"] $ws2
-assign [class="firefox"] $ws3
-assign [class="nyxt"] $ws3
-assign [class="microsoft-edge"] $ws3
+assign [class="Emacs"] $ws1
+assign [class="Terminals"] $ws2
+assign [class="^Firefox$"] $ws3
+assign [class="^Nyxt.*"] $ws3
+assign [class="^Microsoft.*"] $ws3
 
 # reload the configuration file
 bindsym $mod+Shift+c reload
@@ -255,7 +260,6 @@ client.urgent           $base02 $base08    $base00 $base0F
 bindsym $mod+shift+x exec i3lock 
 
 bindsym $mod+d exec rofi -show run 
-
 
 exec emacs
 exec xfce4-terminal
