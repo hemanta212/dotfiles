@@ -58,7 +58,7 @@ fi
 zplug load #--verbose
 
 # Some sorcery /////////SOURCING other files //////////////////////
-for file in ~/.config/zsh/{zshrc,functionsrc,aliases,.mytermuxrc,.mycolabrc};
+for file in ~/.config/zsh/{functionsrc,aliases,.mytermuxrc,.mycolabrc,zshrc};
  do
     [ -r "$file" ] && [ -f "$file" ] && source "$file";
 done;
@@ -69,4 +69,3 @@ unset file;
 
 # Generated for envman. Do not edit.
 [ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
-

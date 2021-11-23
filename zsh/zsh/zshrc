@@ -101,8 +101,8 @@ export _ZO_DATA_DIR="$HOME/.config/zsh/"
 eval "$(zoxide init zsh)"
 
 export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0 #GWSL
-export PULSE_SERVER=tcp:$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}') #GWSL
-#export HOST_IP="$(ip route |awk '/^default/{print $3}')"
-#export PULSE_SERVER="tcp:$HOST_IP"
+export HOST_IP="$(ip route |awk '/^default/{print $3}')"
+export PULSE_SERVER="tcp:$HOST_IP"
+#export PULSE_SERVER=tcp:$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}') #GWSL
+#export PULSE_COOKIE=/mnt/c/Users/Dell/.pulse-cookie
 export LIBGL_ALWAYS_INDIRECT=1 #GWSL
-#export DISPLAY=$(awk '/nameserver / {print $2; exit}' /etc/resolv.conf 2>/dev/null):0
