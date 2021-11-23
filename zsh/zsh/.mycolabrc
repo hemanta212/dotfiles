@@ -1,15 +1,3 @@
-peredit(){
-  cd ~/dev/personal/org
-  git checkout org && emacs track.org
-}
-
-persync(){
-  cd ~/dev/personal/org
-  git checkout org && git commit -a -m "Updates org file"
-  git pull origin org
-  git push origin org
-}
-
 manim() {
   if [ $# -eq 2 ]
     then

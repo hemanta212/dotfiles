@@ -3,6 +3,7 @@ alias pb="curl -F 'sprunge=<-' http://sprunge.us"
 alias pg='ping google.com'
 alias memfree='echo "sync && echo 3 > /proc/sys/vm/drop_caches" | sudo sh'
 alias cat='bat'
+alias ytdl='youtube-dl'
 
 
 alias ll='ls -alF'
@@ -32,6 +33,5 @@ alias egrep='egrep --color=auto'
 
 # Enable aliases to be sudo’ed
 alias sudo='sudo '
-export LOCAL_IP=`ipconfig.exe getifaddr en0`
 alias serve="browser-sync start -s -f . --no-notify --host 192.168.1.14 --port 9000"
 
