@@ -69,6 +69,20 @@
      use { 'CRAG666/code_runner.nvim', requires = 'nvim-lua/plenary.nvim' }
 
 
+     -- Vim Which-key
+     -- use 'liuchengxu/vim-which-key'
+      use {
+      "folke/which-key.nvim",
+      config = function()
+          require("which-key").setup {
+          -- your configuration comes here
+          -- or leave it empty to use the default settings
+          -- refer to the configuration section below
+          }
+      end
+      }
+
+
   -- Automatically set up your configuration after cloning packer.nvim
   -- Put this at the end after all plugins
   if packer_bootstrap then
@@ -113,6 +127,8 @@ vim.o.termguicolors = true
 vim.o.background = "dark" -- or "light" for light mode
 vim.cmd [[colorscheme gruvbox]]
 vim.cmd [[set autochdir]]
+vim.cmd [[set pumblend=20]]
+vim.cmd [[set winblend=20]]
 vim.cmd [[nnoremap <M-x> :]]
 vim.cmd [[nnoremap <C-space> :]]
 
@@ -307,8 +323,8 @@ require('code_runner').setup {
     position = "belowright",
     size = 4
   },
-  filetype_path = "/home/pykancha/.config/nvim/code_runner.json",
-  project_path = "/home/pykancha/.config/nvim/projects.json",
+  filetype_path = "$HOME/.config/nvim/code_runner.json",
+  project_path = "$HOME/.config/nvim/projects.json",
   -- project = {
   -- ["~/dev/manim/manim/mathgaps"] = {
   --     name = "Manim Mathgaps",
@@ -324,7 +340,7 @@ require('code_runner').setup {
    -- }
 }
 
-  vim.api.nvim_set_keymap('n', '<leader>r', ':RunCode<CR>', { noremap = true, silent = false })
+  vim.api.nvim_set_keymap('n', '<leader>rr', ':RunCode<CR>', { noremap = true, silent = false })
   vim.api.nvim_set_keymap('n', '<leader>rf', ':RunFile<CR>', { noremap = true, silent = false })
   vim.api.nvim_set_keymap('n', '<leader>rp', ':RunProject<CR>', { noremap = true, silent = false })
 
@@ -484,6 +500,8 @@ require('orgmode').setup({
   org_default_notes_file = '~/dev/personal/org/*',
 })
 --]=====]
+
+-- vim.cmd [[nnoremap <silent> <leader>   :<c-u>WhichKey '<Space>'<CR>]]
 
 --[=====[ 
    -- Example custom server

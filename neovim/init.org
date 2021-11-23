@@ -9,23 +9,23 @@
     if fn.empty(fn.glob(install_path)) > 0 then
       packer_bootstrap = fn.system({'git', 'clone', '--depth', '1', 'https://github.com/wbthomason/packer.nvim', install_path})
     end
-  
+
     -- Simple way to manage the packages the startup function
     require('packer').startup(function(use)
       -- My plugins here
     use 'wbthomason/packer.nvim'
-  
+
     use 'tpope/vim-fugitive' -- Git commands in nvim
-  
+
     use 'nvim-treesitter/nvim-treesitter'
     use 'nvim-treesitter/nvim-treesitter-textobjects'
    -- UI to select things (files, grep results, open buffers...)
     use { 'nvim-telescope/telescope.nvim', requires = { 'nvim-lua/plenary.nvim' } }
-  
+
     use 'joshdick/onedark.vim' -- Theme inspired by Atom
     use 'romgrk/doom-one.vim' -- ported from doom emacs
     use {"ellisonleao/gruvbox.nvim", requires = {"rktjmp/lush.nvim"}}
-  
+
     use 'itchyny/lightline.vim' -- Fancier statusline
     -- Add indentation guides even on blank lines
     use 'lukas-reineke/indent-blankline.nvim'
@@ -34,7 +34,7 @@
     use 'hrsh7th/cmp-nvim-lsp'
     use 'saadparwaiz1/cmp_luasnip'
     use 'L3MON4D3/LuaSnip' -- Snippets plugin
-  
+
     -- NEOGIT (MAGIT for neovim)
        use { 
         'TimUntersberger/neogit', 
@@ -43,7 +43,7 @@
           'sindrets/diffview.nvim' 
         }
        }
-  
+
     -- Orgmode.nvim (ORG for neovim)
        use {
           'kristijanhusak/orgmode.nvim',
@@ -51,7 +51,7 @@
           --    require('orgmode').setup{}
           -- end
        }
-  
+
        -- ORG bullets
        use {"akinsho/org-bullets.nvim", config = function()
                require("org-bullets").setup {
@@ -63,17 +63,31 @@
                   end
             }
        end}
-  
+
        -- Github Copilot
        use 'github/copilot.vim'
-  
+
        -- Snip Run 
        use { 'michaelb/sniprun', run = 'bash ./install.sh'}
-  
+
        -- Code runner
        use { 'CRAG666/code_runner.nvim', requires = 'nvim-lua/plenary.nvim' }
 
-  
+
+       -- Vim Which-key
+       -- use 'liuchengxu/vim-which-key'
+        use {
+        "folke/which-key.nvim",
+        config = function()
+            require("which-key").setup {
+            -- your configuration comes here
+            -- or leave it empty to use the default settings
+            -- refer to the configuration section below
+            }
+        end
+        }
+
+
     -- Automatically set up your configuration after cloning packer.nvim
     -- Put this at the end after all plugins
     if packer_bootstrap then
@@ -121,6 +135,8 @@
   vim.o.background = "dark" -- or "light" for light mode
   vim.cmd [[colorscheme gruvbox]]
   vim.cmd [[set autochdir]]
+  vim.cmd [[set pumblend=20]]
+  vim.cmd [[set winblend=20]]
   vim.cmd [[nnoremap <M-x> :]]
   vim.cmd [[nnoremap <C-space> :]]
   
@@ -330,8 +346,8 @@ vim.g.lightline = {
       position = "belowright",
       size = 4
     },
-    filetype_path = "/home/pykancha/.config/nvim/code_runner.json",
-    project_path = "/home/pykancha/.config/nvim/projects.json",
+    filetype_path = "$HOME/.config/nvim/code_runner.json",
+    project_path = "$HOME/.config/nvim/projects.json",
     -- project = {
     -- ["~/dev/manim/manim/mathgaps"] = {
     --     name = "Manim Mathgaps",
@@ -347,7 +363,7 @@ vim.g.lightline = {
      -- }
   }
   
-    vim.api.nvim_set_keymap('n', '<leader>r', ':RunCode<CR>', { noremap = true, silent = false })
+    vim.api.nvim_set_keymap('n', '<leader>rr', ':RunCode<CR>', { noremap = true, silent = false })
     vim.api.nvim_set_keymap('n', '<leader>rf', ':RunFile<CR>', { noremap = true, silent = false })
     vim.api.nvim_set_keymap('n', '<leader>rp', ':RunProject<CR>', { noremap = true, silent = false })
   
@@ -523,6 +539,11 @@ vim.g.lightline = {
   --]=====]
 #+end_src
 
+* Which Key
+#+begin_src lua
+  -- vim.cmd [[nnoremap <silent> <leader>   :<c-u>WhichKey '<Space>'<CR>]]
+
+#+end_src 
 * Example Custom Server
 #+begin_src lua
   --[=====[ 
