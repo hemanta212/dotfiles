@@ -1,9 +1,16 @@
+;; automatically generate the natively compiled files when Emacs loads a new .elc file.
+;; might freeze emacs for some time
+(setq comp-deferred-compilation t)
+
 ;; Initialize package sources
 (require 'package)
 
+
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
-                         ("org" . "https://orgmode.org/elpa/")
-                         ("elpa" . "https://elpa.gnu.org/packages/")))
+                         ("nongnu" . "https://elpa.nongnu.org/nongnu/")
+                         ("elpa" . "https://elpa.gnu.org/packages/")
+                         ;; ("org" . "https://orgmode.org/elpa/")
+                         ))
 
 (package-initialize)
 (unless package-archive-contents
@@ -17,6 +24,30 @@
 (setq use-package-always-ensure t)
 ;; To see which package load when to optimize the startup time
 (setq use-package-verbose t)
+
+;; Debug errors with more info
+(setq debug-on-error t)
+;; supress native comp warnings
+(setq native-comp-async-report-warnings-errors 'silent)
+
+;; Bootstrapping quelpa
+;; (unless (package-installed-p 'quelpa)
+;;   (with-temp-buffer
+;;     (url-insert-file-contents "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
+;;     (eval-buffer)
+;;     (quelpa-self-upgrade)))
+(use-package quelpa
+  :defer nil
+  :custom
+  (quelpa-checkout-melpa-p nil)
+  :config
+  (quelpa
+   '(quelpa-use-package
+     :fetcher git
+     :url "https://github.com/quelpa/quelpa-use-package.git"))
+  (require 'quelpa-use-package))
+(require 'quelpa)
+(quelpa-use-package-activate-advice)
 
 (setq inhibit-startup-message t)
 
@@ -209,6 +240,17 @@
 (rune/leader-keys
   "ts" '(hydra-text-scale/body :which-key "scale text"))
 
+(use-package visual-fill)
+
+(use-package adaptive-wrap
+:hook (eww-mode-hook . adaptive-wrap-prefix-mode))
+
+(add-hook 'eww-mode-hook 'visual-line-mode)
+
+(use-package svg-lib)
+
+(use-package nano-theme)
+
 (use-package dired
   :ensure nil
   :commands (dired dired-jump)
@@ -275,7 +317,7 @@
 
 (use-package org
   ;; :defer t
-  :pin org
+  ;;:pin org
   :commands (org-capture org-agenda)
   :hook (org-mode . efs/org-mode-setup)
   :config
@@ -329,12 +371,16 @@
 (defun efs/org-babel-tangle-neovim-config ()
   (when (string-equal (buffer-file-name)
                       (expand-file-name "~/dev/dotfiles/neovim/init.org"))
+
+
     ;; Dynamic scoping to the rescue
     (let ((org-confirm-babel-evaluate nil))
       (org-babel-tangle))))
 
-  (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)
-                             (add-hook 'after-save-hook #'efs/org-babel-tangle-neovim-config) ))
+  (add-hook 'org-mode-hook 
+      (lambda ()
+        (add-hook 'after-save-hook #'efs/org-babel-tangle-config)
+        (add-hook 'after-save-hook #'efs/org-babel-tangle-neovim-config)))
 
 (defun toggle-org-markdown-export-on-save ()
   (interactive)
@@ -346,18 +392,50 @@
     (message "Enabled org markdown export on save for current buffer...")))
 
 (use-package org-download
-;; Drag-and-drop to `dired`
-  :hook (dired-mode-hook . org-download-enable))
+;; Drag-and-drop to 'dired'
+ :hook (dired-mode-hook . org-download-enable))
 ;; (add-hook 'dired-mode-hook 'org-download-enable)
+
+;; (setq org-clock-persist 'history)
+;; (org-clock-persistence-insinuate)
 
 (use-package org-roam
   :after org-mode
   :init
   (setq org-roam-directory "~/org-roam")
+  (setq org-roam-v2-ack t)
   :custom
   (org-roam-db-update-method 'immediate)
   :config
   (org-roam-mode))
+
+(use-package pdf-tools
+:defer t
+:commands (pdf-view-mode pdf-tools-install)
+:mode ("\\.[pP][dD][fF]\\'" . pdf-view-mode)
+:magic ("%PDF" . pdf-view-mode)
+:config
+(pdf-tools-install)
+(define-pdf-cache-function pagelabels)
+:hook ((pdf-view-mode-hook . (lambda () (display-line-numbers-mode nil)))
+       (pdf-view-mode-hook . pdf-tools-enable-minor-mode)
+       (pdf-view-mode-hook . pdf-annot-list-follow-minor-mode)
+))
+
+(use-package org-pdftools
+:hook (org-load-hook . org-pdftools-setup-link))
+
+(quelpa
+'(pdf-continuous-scroll-mode  :fetcher github
+                              :repo "dalanicolai/pdf-continuous-scroll-mode.el"))
+(add-hook 'pdf-view-mode-hook 'pdf-continuous-scroll-mode)
+
+(use-package nov
+  :defer t
+  :commands nov-mode
+  :config
+  (evil-set-initial-state 'nov-mode 'emacs)
+  :mode ("\\.epub\\'" . nov-mode))
 
 (defun efs/lsp-mode-setup ()
     (setq lspheaderline-breadcumb-segments '(path-up-to-project file symbols))
@@ -394,6 +472,9 @@
    (setq flycheck-python-pyright-executable "~/.emacs.d/var/lsp/server/npm/pyright")
   :init (global-flycheck-mode))
 
+(use-package smartparens)
+(require 'smartparens-config)
+
 (use-package poetry
 :after python-mode)
 ;; :config
@@ -421,7 +502,7 @@
                         (expand-file-name "~/dev/manim/manim/mathgaps/test.py"))
            (string-equal (file-name-directory buffer-file-name)
                         (expand-file-name "~/dev/manim/manim/mathgaps/scripts/")))
-      (async-shell-command (format "cd ~/dev/manim/manim/mathgaps && poetry run python -m manim -ql %s" buffer-file-name))))
+      (async-shell-command (format "cd ~/dev/manim/manim/mathgaps && poetry run python -m manim -ql -r 1920,1080 %s" buffer-file-name))))
 
 (defun kivy-build ()
   "Build kivy app after saving a file"
@@ -477,6 +558,9 @@
     :config
     (setq lua-indent-level 3)
     (setq lua-documentation-function 'browse-web))
+
+(use-package racket-mode
+:hook (racket-xp-mode . racket-mode))
 
 (use-package company
   :after lsp-mode
@@ -556,3 +640,6 @@
 
 ;; Make gc pauses faster by decreasing the threshold.
 (setq gc-cons-threshold (* 1 1000 1000))
+
+;; (fset 'testhello
+;;    (kmacro-lambda-form [?i ?h ?e ?l ?l ?o ?\C-m ?h ?i ?\C-m ?g ?o ?o ?d ?b ?y ?e ?k ?j ?0 ?$ ?x ?0 ?x ?k ?x ?$ ?k ?x ?0] 0 "%d"))

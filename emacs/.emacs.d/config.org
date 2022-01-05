@@ -1,14 +1,21 @@
 #+Title: Emacs configuration file
-#+PROPERTY: header-args:emacs-lisp :tangle $HOME/dev/dotfiles/emacs/.emacs.d/init.el
+#+PROPERTY: header-args:emacs-lisp :tangle ~/dev/dotfiles/emacs/.emacs.d/init.el
 
 * Package init
 #+begin_src emacs-lisp 
+  ;; automatically generate the natively compiled files when Emacs loads a new .elc file.
+  ;; might freeze emacs for some time
+  (setq comp-deferred-compilation t)
+
   ;; Initialize package sources
   (require 'package)
 
+
   (setq package-archives '(("melpa" . "https://melpa.org/packages/")
-                           ("org" . "https://orgmode.org/elpa/")
-                           ("elpa" . "https://elpa.gnu.org/packages/")))
+                           ("nongnu" . "https://elpa.nongnu.org/nongnu/")
+                           ("elpa" . "https://elpa.gnu.org/packages/")
+                           ;; ("org" . "https://orgmode.org/elpa/")
+                           ))
 
   (package-initialize)
   (unless package-archive-contents
@@ -22,6 +29,34 @@
   (setq use-package-always-ensure t)
   ;; To see which package load when to optimize the startup time
   (setq use-package-verbose t)
+
+  ;; Debug errors with more info
+  (setq debug-on-error t)
+  ;; supress native comp warnings
+  (setq native-comp-async-report-warnings-errors 'silent)
+#+end_src
+* Quelpa 
+Testing quelpa and to install packages directly from their github repositories (and other places). I install quelpa using use-package first, and then install quelpa-use-package to allow using quelpa from within use-package declarations. Very recursive.
+#+begin_src emacs-lisp
+;; Bootstrapping quelpa
+;; (unless (package-installed-p 'quelpa)
+;;   (with-temp-buffer
+;;     (url-insert-file-contents "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
+;;     (eval-buffer)
+;;     (quelpa-self-upgrade)))
+(use-package quelpa
+  :defer nil
+  :custom
+  (quelpa-checkout-melpa-p nil)
+  :config
+  (quelpa
+   '(quelpa-use-package
+     :fetcher git
+     :url "https://github.com/quelpa/quelpa-use-package.git"))
+  (require 'quelpa-use-package))
+(require 'quelpa)
+(quelpa-use-package-activate-advice)
+
 #+end_src
 * Basic UI Configuration
 #+begin_src emacs-lisp
@@ -230,6 +265,8 @@ This Prescient configuration is optimized for use in System Crafters videos and 
     (ivy-prescient-mode 1))
 #+end_src
 
+** Avy
+Powerful jumper here is the blog: https://karthinks.com/software/avy-can-do-anything/
 ** Helpful help commands
 #+begin_src emacs-lisp
   (use-package helpful
@@ -256,6 +293,27 @@ This Prescient configuration is optimized for use in System Crafters videos and 
 
   (rune/leader-keys
     "ts" '(hydra-text-scale/body :which-key "scale text"))
+#+end_src
+** Visual Fill Mode
+#+begin_src emacs-lisp
+(use-package visual-fill)
+#+end_src
+** Adaptive Wrap
+#+begin_src emacs-lisp
+(use-package adaptive-wrap
+:hook (eww-mode-hook . adaptive-wrap-prefix-mode))
+#+end_src
+** Eww
+#+begin_src emacs-lisp
+(add-hook 'eww-mode-hook 'visual-line-mode)
+#+end_src
+** SVG lib
+#+begin_src emacs-lisp
+(use-package svg-lib)
+#+end_src
+** Nano Theme
+#+begin_src emacs-lisp
+(use-package nano-theme)
 #+end_src
 * File Management
 ** Dired
@@ -397,7 +455,7 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
 
   (use-package org
     ;; :defer t
-    :pin org
+    ;;:pin org
     :commands (org-capture org-agenda)
     :hook (org-mode . efs/org-mode-setup)
     :config
@@ -463,20 +521,24 @@ You can add more =src= block templates below by copying one of the lines and cha
     ;; Automatically tangle our Emacs.org config file when we save it
     (defun efs/org-babel-tangle-config ()
       (when (string-equal (buffer-file-name)
-                          (expand-file-name "$HOME/dev/dotfiles/emacs/.emacs.d/config.org"))
+                          (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org"))
         ;; Dynamic scoping to the rescue
         (let ((org-confirm-babel-evaluate nil))
           (org-babel-tangle))))
 
   (defun efs/org-babel-tangle-neovim-config ()
     (when (string-equal (buffer-file-name)
-                        (expand-file-name "$HOME/dev/dotfiles/neovim/init.org"))
+                        (expand-file-name "~/dev/dotfiles/neovim/init.org"))
+
+
       ;; Dynamic scoping to the rescue
       (let ((org-confirm-babel-evaluate nil))
         (org-babel-tangle))))
 
-    (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)
-                               (add-hook 'after-save-hook #'efs/org-babel-tangle-neovim-config) ))
+    (add-hook 'org-mode-hook 
+        (lambda ()
+          (add-hook 'after-save-hook #'efs/org-babel-tangle-config)
+          (add-hook 'after-save-hook #'efs/org-babel-tangle-neovim-config)))
 #+end_src
 
 ** Custom org utilities
@@ -494,18 +556,20 @@ You can add more =src= block templates below by copying one of the lines and cha
 
 ** Org-download
   Repo: https://github.com/abo-abo/org-download
+  
 #+begin_src emacs-lisp
   (use-package org-download
-  ;; Drag-and-drop to `dired`
-    :hook (dired-mode-hook . org-download-enable))
+  ;; Drag-and-drop to 'dired'
+   :hook (dired-mode-hook . org-download-enable))
   ;; (add-hook 'dired-mode-hook 'org-download-enable)
+#+end_src 
 
 ** Clocking Work times
 Org allows clocking time spend on task
 To save the clock history across Emacs sessions, use:
 #+begin_src emacs-lisp
-     (setq org-clock-persist 'history)
-     (org-clock-persistence-insinuate)
+     ;; (setq org-clock-persist 'history)
+     ;; (org-clock-persistence-insinuate)
 #+end_src
 * Org-roam
 ** General
@@ -514,10 +578,51 @@ To save the clock history across Emacs sessions, use:
       :after org-mode
       :init
       (setq org-roam-directory "~/org-roam")
+      (setq org-roam-v2-ack t)
       :custom
       (org-roam-db-update-method 'immediate)
       :config
       (org-roam-mode))
+#+end_src
+
+* Ebooks
+** Pdf-Tools
+#+begin_src emacs-lisp
+(use-package pdf-tools
+:defer t
+:commands (pdf-view-mode pdf-tools-install)
+:mode ("\\.[pP][dD][fF]\\'" . pdf-view-mode)
+:magic ("%PDF" . pdf-view-mode)
+:config
+(pdf-tools-install)
+(define-pdf-cache-function pagelabels)
+:hook ((pdf-view-mode-hook . (lambda () (display-line-numbers-mode nil)))
+       (pdf-view-mode-hook . pdf-tools-enable-minor-mode)
+       (pdf-view-mode-hook . pdf-annot-list-follow-minor-mode)
+))
+#+end_src
+
+*** Org Pdftools
+#+begin_src emacs-lisp
+(use-package org-pdftools
+:hook (org-load-hook . org-pdftools-setup-link))
+#+end_src
+
+*** Continuous scroll for Pdftools
+#+begin_src emacs-lisp
+(quelpa
+'(pdf-continuous-scroll-mode  :fetcher github
+                              :repo "dalanicolai/pdf-continuous-scroll-mode.el"))
+(add-hook 'pdf-view-mode-hook 'pdf-continuous-scroll-mode)
+#+end_src
+** Nov for EPUBS
+#+begin_src emacs-lisp
+(use-package nov
+  :defer t
+  :commands nov-mode
+  :config
+  (evil-set-initial-state 'nov-mode 'emacs)
+  :mode ("\\.epub\\'" . nov-mode))
 #+end_src
 
 * Development
@@ -598,6 +703,11 @@ Try these commands with =M-x=:
      (setq flycheck-python-pyright-executable "~/.emacs.d/var/lsp/server/npm/pyright")
     :init (global-flycheck-mode))
 #+end_src
+**** Smart Parens
+#+begin_src emacs-lisp
+(use-package smartparens)
+(require 'smartparens-config)
+#+end_src
 *** Python
 **** Poetry
 #+begin_src emacs-lisp
@@ -634,7 +744,7 @@ Try these commands with =M-x=:
                           (expand-file-name "~/dev/manim/manim/mathgaps/test.py"))
              (string-equal (file-name-directory buffer-file-name)
                           (expand-file-name "~/dev/manim/manim/mathgaps/scripts/")))
-        (async-shell-command (format "cd ~/dev/manim/manim/mathgaps && poetry run python -m manim -ql %s" buffer-file-name))))
+        (async-shell-command (format "cd ~/dev/manim/manim/mathgaps && poetry run python -m manim -ql -r 1920,1080 %s" buffer-file-name))))
   
   (defun kivy-build ()
     "Build kivy app after saving a file"
@@ -710,6 +820,11 @@ Try these commands with =M-x=:
       (setq lua-documentation-function 'browse-web))
 #+end_src
 
+*** Racket 
+#+begin_src emacs-lisp
+(use-package racket-mode
+:hook (racket-xp-mode . racket-mode))
+#+end_src
 ** Company Mode
 
 [[http://company-mode.github.io/][Company Mode]] provides a nicer in-buffer completion interface than =completion-at-point= which is more reminiscent of what you would expect from an IDE.  We add a simple configuration to make the keybindings a little more useful (=TAB= now completes the selection and initiates completion at the current location if needed).
@@ -836,4 +951,9 @@ Dial the GC threshold back down so that garbage collection happens more frequent
   ;; Make gc pauses faster by decreasing the threshold.
   (setq gc-cons-threshold (* 1 1000 1000))
 
+#+end_src
+* Macros
+#+begin_src emacs-lisp
+;; (fset 'testhello
+;;    (kmacro-lambda-form [?i ?h ?e ?l ?l ?o ?\C-m ?h ?i ?\C-m ?g ?o ?o ?d ?b ?y ?e ?k ?j ?0 ?$ ?x ?0 ?x ?k ?x ?$ ?k ?x ?0] 0 "%d"))
 #+end_src
