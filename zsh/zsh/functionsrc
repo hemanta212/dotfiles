@@ -21,6 +21,10 @@ cheatsh(){
     curl http://cheat.sh/$1
 }
 
+chemacs() {
+ echo $1 > ~/.config/chemacs/profile
+}
+
 neovim(){
     nvim $(fzf)
 }
