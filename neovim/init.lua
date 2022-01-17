@@ -65,10 +65,6 @@
      -- Snip Run 
      use { 'michaelb/sniprun', run = 'bash ./install.sh'}
 
-     -- Code runner
-     use { 'CRAG666/code_runner.nvim', requires = 'nvim-lua/plenary.nvim' }
-
-
      -- Vim Which-key
      -- use 'liuchengxu/vim-which-key'
       use {
@@ -317,35 +313,6 @@ vim.g.lightline = {
   active = { left = { { 'mode', 'paste' }, { 'gitbranch', 'readonly', 'filename', 'modified' } } },
   component_function = { gitbranch = 'fugitive#head' },
 }
-
-require('code_runner').setup {
-  term = {
-    position = "belowright",
-    size = 4
-  },
-  filetype_path = "$HOME/.config/nvim/code_runner.json",
-  project_path = "$HOME/.config/nvim/projects.json",
-  -- project = {
-  -- ["~/dev/manim/manim/mathgaps"] = {
-  --     name = "Manim Mathgaps",
-  --     description = "Build manim images",
-  --     file = file,
-  --     command = "poetry run python -m manim -qk"
-  -- },
-  -- ["~/cpp/example"] = {
-  --     name = "ExapleCpp"
-  --     description = "Project with make file",
-  --     command = "make buid & cd buid/ & ./compiled_file"
-  -- }
-   -- }
-}
-
-  vim.api.nvim_set_keymap('n', '<leader>rr', ':RunCode<CR>', { noremap = true, silent = false })
-  vim.api.nvim_set_keymap('n', '<leader>rf', ':RunFile<CR>', { noremap = true, silent = false })
-  vim.api.nvim_set_keymap('n', '<leader>rp', ':RunProject<CR>', { noremap = true, silent = false })
-
-  vim.api.nvim_set_keymap('n', '<leader>crf', ':CRFiletype<CR>', { noremap = true, silent = false })
-  vim.api.nvim_set_keymap('n', '<leader>crp', ':CRProjects<CR>', { noremap = true, silent = false })
 
 local configs = require('lspconfig/configs')
 local util = require('lspconfig/util')
