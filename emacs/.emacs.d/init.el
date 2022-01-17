@@ -1,34 +1,56 @@
-;; automatically generate the natively compiled files when Emacs loads a new .elc file.
-;; might freeze emacs for some time
-(setq comp-deferred-compilation t)
+;; -*- lexical-binding: t; -*-
+  (defun startup/display-startup-time ()
+    (message "Emacs loaded in %s with %d garbage collections."
+             (format "%.2f seconds"
+                     (float-time
+                       (time-subtract after-init-time before-init-time)))
+             gcs-done))
+
+  (add-hook 'emacs-startup-hook #'startup/display-startup-time)
+
+  ;; automatically generate the natively compiled files when Emacs loads a new .elc file.
+  ;; might freeze emacs for some time
+  (setq comp-deferred-compilation t)
+
+  ;; The default is 800 kilobytes.  Measured in bytes.
+  (setq gc-cons-threshold most-positive-fixnum)
+
+  ;; Debug errors with more info
+  (setq debug-on-error t)
+  ;; supress native comp warnings
+  (setq native-comp-async-report-warnings-errors 'silent)
+  ;; Suppress “ad-handle-definition: .. redefined” warnings during Emacs startup.
+  (custom-set-variables '(ad-redefinition-action (quote accept)))
 
 ;; Initialize package sources
 (require 'package)
-
-
-(setq package-archives '(("melpa" . "https://melpa.org/packages/")
-                         ("nongnu" . "https://elpa.nongnu.org/nongnu/")
-                         ("elpa" . "https://elpa.gnu.org/packages/")
-                         ;; ("org" . "https://orgmode.org/elpa/")
-                         ))
+(custom-set-variables '(package-archives
+                      '(("melpa"     . "https://melpa.org/packages/")
+                        ("nongnu" . "https://elpa.nongnu.org/nongnu/")
+                        ("elpa"      . "https://elpa.gnu.org/packages/"))))
 
 (package-initialize)
-(unless package-archive-contents
+
+(when (not package-archive-contents)
 (package-refresh-contents))
 
 ;; Initialize use-package on non-Linux platforms
-(unless (package-installed-p 'use-package)
-   (package-install 'use-package))
+(when (not (package-installed-p 'use-package))
+(package-install 'use-package))
 
+;; load use-package
 (require 'use-package)
-(setq use-package-always-ensure t)
-;; To see which package load when to optimize the startup time
-(setq use-package-verbose t)
 
-;; Debug errors with more info
-(setq debug-on-error t)
-;; supress native comp warnings
-(setq native-comp-async-report-warnings-errors 'silent)
+(custom-set-variables '(use-package-always-ensure t))
+;; unfortunately, causes problem with general custom rune/leader-keys func not defined
+;; (custom-set-variables '(use-package-always-defer t))
+;; To see which package load when to optimize the startup time
+(custom-set-variables '(use-package-verbose t))
+
+(custom-set-variables '(load-prefer-newer t))
+(use-package auto-compile
+:defer nil
+:config (auto-compile-on-load-mode))
 
 ;; Bootstrapping quelpa
 ;; (unless (package-installed-p 'quelpa)
@@ -62,28 +84,83 @@
 (menu-bar-mode -1)            ; Disable the menu bar
 ;; Set up the visible bell
 (setq visible-bell t)
+;; Change cursor color
+;; (set-cursor-color "#aaabbb")
 
 (dolist (mode '(org-mode-hook
                 term-mode-hook
-                  shell-mode-hook
+                shell-mode-hook
+                vterm-mode-hook
+                eww-mode-hook
                 treemacs-mode-hook
-                  eshell-mode-hook))
+                nov-mode-hook
+                pdf-view-mode-hook
+                lsp-ui-imenu-hook
+                eshell-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
 (column-number-mode)
-(global-display-line-numbers-mode t)
 
-;; The default is 800 kilobytes.  Measured in bytes.
-(setq gc-cons-threshold (* 50 10000 10000))
+;; Prevent asking for confirmation to kill processes when exiting.
+(custom-set-variables '(confirm-kill-processes nil))
 
-(defun efs/display-startup-time ()
-  (message "Emacs loaded in %s with %d garbage collections."
-           (format "%.2f seconds"
-                   (float-time
-                     (time-subtract after-init-time before-init-time)))
-           gcs-done))
+;; set default encoding
+(set-language-environment "UTF-8")
+(prefer-coding-system       'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(setq default-buffer-file-coding-system 'utf-8)
 
-(add-hook 'emacs-startup-hook #'efs/display-startup-time)
+;; line numbers
+(when (>= emacs-major-version 26)
+(use-package display-line-numbers
+  :defer nil
+  :ensure nil
+  :config
+  (global-display-line-numbers-mode)))
+
+;; Highlight trailing whitespace in red, so it’s easily visible
+;;(disabled for now as it created a lot of noise in some modes, e.g. the org-mode export screen)
+ (custom-set-variables '(show-trailing-whitespace nil))
+
+;; Highlight matching parenthesis
+(show-paren-mode)
+
+;; Make Asynchronous operations loaded to use later
+(use-package async)
+
+;; Start the emacs server
+;; (server-start)
+
+(add-hook 'before-save-hook 'time-stamp)
+
+;; When at the beginning of the line, make Ctrl-K remove the whole line, instead of just emptying it.
+(custom-set-variables '(kill-whole-line t))
+
+;; Paste text where the cursor is, not where the mouse is.
+(custom-set-variables '(mouse-yank-at-point t))
+
+;; Make completion case-insensitive.
+(setq completion-ignore-case t)
+(custom-set-variables
+ '(read-buffer-completion-ignore-case t)
+ '(read-file-name-completion-ignore-case t))
+
+;; Don’t use hard tabs
+(custom-set-variables '(indent-tabs-mode nil))
+
+;; Emacs automatically creates backup files, by default in the same folder as the original file, which often leaves backup files behind. This tells Emacs to put all backups in ~/.emacs.d/backups.
+;; creates problem with magit commit C-c C-c
+;; (custom-set-variables
+;;   '(backup-directory-alist
+;;    `(("." . ,(concat user-emacs-directory "backups")))))
+
+;; WinnerMode makes it possible to cycle and undo window configuration changes
+(when (fboundp 'winner-mode) (winner-mode))
+
+;; Delete trailing whitespace before saving a file.
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
 
 ;; NOTE: If you want to move everything out of the ~/.emacs.d folder
 ;; reliably, set `user-emacs-directory` before loading no-littering!
@@ -95,6 +172,48 @@
 (setq auto-save-file-name-transforms
       `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
 
+(use-package dired
+  :ensure nil
+  :commands (dired dired-jump)
+  :hook
+  (dired-mode . dired-hide-details-mode)
+  :config
+  (setq dired-dwim-target t)
+  (setq dired-listing-switches "-Alh1vD --group-directories-first")
+  (setq wdired-allow-to-change-permissions t)
+  (setq wdired-create-parent-directories t)
+  (evil-collection-define-key 'normal 'dired-mode-map
+    "h" 'dired-single-up-directory
+    "l" 'dired-single-buffer)
+ :bind (("C-x C-j" . dired-jump)
+            :map dired-mode-map
+             ("C-c o" . dired-open-file)))
+
+(use-package dired-single
+  :commands (dired dired-jump))
+
+(use-package all-the-icons-dired
+  :hook (dired-mode . all-the-icons-dired-mode))
+
+(use-package dired-open
+  :commands (dired dired-jump)
+  :config
+  ;; Doesn't work as expected!
+  ;; (add-to-list 'dired-open-functions #'dired-open-xdg t)
+  (setq dired-open-extensions '(("png" . "termux-open")
+                                ("jpg" . "termux-open")
+                                ("wav" . "termux-open")
+                                ("mp3" . "termux-open")
+                                ("mp4" . "termux-open"))))
+
+(use-package dired-hide-dotfiles
+  :hook (dired-mode . dired-hide-dotfiles-mode)
+  :config
+  (evil-collection-define-key 'normal 'dired-mode-map
+    "H" 'dired-hide-dotfiles-mode))
+
+;; Load the which key compatible bind-key
+(require 'bind-key)
 ;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 ;; Remap  Imenu to M-i
@@ -103,7 +222,6 @@
 (global-set-key (kbd "C-c C-x s") 'org-search-view)
 (global-set-key (kbd "M-w") 'scroll-other-window)
 (global-set-key (kbd "M-W") 'scroll-other-window-down)
-
 
 (use-package general
   :after evil
@@ -156,6 +274,37 @@
   (evil-escape-mode)
   (setq evil-escape-key-sequence "kj"))
 
+;; Already installed by org-download
+(use-package async
+  :config
+  (autoload 'dired-async-mode "dired-async.el" nil t)
+  (dired-async-mode 1)
+  ;; async compilation of melpa packages
+  (async-bytecomp-package-mode 1)
+  :custom
+  (setq async-bytecomp-allowed-packages '(all)))
+
+;;(setq message-send-mail-function 'async-smtpmail-send-it).
+
+(use-package paradox
+  :defer nil
+  :custom
+  (paradox-github-token t)
+  (paradox-column-width-package 27)
+  (paradox-column-width-version 13)
+  (paradox-execute-asynchronously t)
+  (paradox-hide-wiki-packages t)
+  :config
+  (paradox-enable)
+  (remove-hook 'paradox-after-execute-functions #'paradox--report-buffer-print))
+
+(use-package tree-sitter
+  :defer t)
+(use-package tree-sitter-langs
+  :after tree-sitter
+  :config
+  (global-tree-sitter-mode))
+
 (use-package command-log-mode
   :commands command-log-mode)
 
@@ -171,7 +320,7 @@
   :custom ((doom-modeline-height 15)))
 
 (use-package which-key
-  :defer 0
+  :defer nil
   :diminish which-key-mode
   :config
   (which-key-mode)
@@ -183,11 +332,13 @@
          :map ivy-minibuffer-map
          ("TAB" . ivy-alt-done)
          ("C-l" . ivy-alt-done)
+         ("C-M-j" . ivy-immediate-done)
          ("C-j" . ivy-next-line)
          ("C-k" . ivy-previous-line)
          :map ivy-switch-buffer-map
          ("C-k" . ivy-previous-line)
          ("C-l" . ivy-done)
+         ("C-M-j" . ivy-immediate-done)
          ("C-d" . ivy-switch-buffer-kill)
          :map ivy-reverse-i-search-map
          ("C-k" . ivy-previous-line)
@@ -201,10 +352,9 @@
   (ivy-rich-mode 1))
 
 (use-package counsel
-  :bind (("C-x b" . 'counsel-switch-buffer)
+  :bind (("C-x b" . 'persp-counsel-switch-buffer)
          :map minibuffer-local-map
          ("C-r" . 'counsel-minibuffer-history))
-
   :config
   (counsel-mode 1))
 
@@ -216,6 +366,38 @@
   ;; Uncomment the following line to have sorting remembered across sessions!
   (prescient-persist-mode 1)
   (ivy-prescient-mode 1))
+
+(use-package avy
+:ensure t)
+
+(rune/leader-keys
+    "SPC" 'avy-goto-char-2
+    "ac" 'avy-goto-char-word
+    "aw" 'avy-goto-char-word
+    "as" 'avy-goto-char-timer
+    "al" 'avy-goto-line
+    "ah" 'avy-org-goto-heading-timer
+    )
+
+(use-package ace-window
+  :custom
+  (aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+  :config
+  (setq aw-background nil))
+
+;; Customize the ace-window leading char display
+(set-face-attribute 'aw-leading-char-face nil :height 300 :foreground "chartreuse")
+
+(rune/leader-keys
+  "o" 'ace-window)
+
+(use-package frog-jump-buffer
+  :ensure t
+  :custom
+  (frog-jump-buffer-use-all-the-icons-ivy t))
+
+(rune/leader-keys
+  "b" 'frog-jump-buffer)
 
 (use-package helpful
   :commands (helpful-callable helpful-variable helpful-command helpful-key)
@@ -251,38 +433,38 @@
 
 (use-package nano-theme)
 
-(use-package dired
-  :ensure nil
-  :commands (dired dired-jump)
-  :bind (("C-x C-j" . dired-jump))
-  :custom ((dired-listing-switches "-agho --group-directories-first"))
+;; (use-package unfill
+;;   :bind
+;;   ("M-q" . unfill-toggle)
+;;   ("A-q" . unfill-paragraph))
+
+(use-package imenu-anywhere
+  :bind
+  ("M-i" . ivy-imenu-anywhere))
+
+(use-package smooth-scrolling
   :config
-  (evil-collection-define-key 'normal 'dired-mode-map
-    "h" 'dired-single-up-directory
-    "l" 'dired-single-buffer))
+  (smooth-scrolling-mode 1))
 
-(use-package dired-single
-  :commands (dired dired-jump))
+(use-package perspective
+:ensure t
+:bind (("C-x k" . persp-kill-buffer*))
+:init
+(persp-mode))
 
-(use-package all-the-icons-dired
-  :hook (dired-mode . all-the-icons-dired-mode))
-
-(use-package dired-open
-  :commands (dired dired-jump)
-  :config
-  ;; Doesn't work as expected!
-  ;; (add-to-list 'dired-open-functions #'dired-open-xdg t)
-  (setq dired-open-extensions '(("png" . "termux-open")
-                                ("jpg" . "termux-open")
-                                ("wav" . "termux-open")
-                                ("mp3" . "termux-open")
-                                ("mp4" . "termux-open"))))
-
-(use-package dired-hide-dotfiles
-  :hook (dired-mode . dired-hide-dotfiles-mode)
-  :config
-  (evil-collection-define-key 'normal 'dired-mode-map
-    "H" 'dired-hide-dotfiles-mode))
+(cond ((eq system-type 'darwin)
+       ;; <<Mac settings>>
+     (custom-set-variables
+       '(mac-command-modifier 'meta)
+       '(mac-option-modifier 'alt)
+       '(mac-right-option-modifier 'super))
+       )
+      ((eq system-type 'windows-nt)
+       ;; <<Windows settings>>
+       )
+      ((eq system-type 'gnu/linux)
+       ;; <<Linux settings>>
+       ))
 
 (defun efs/org-font-setup ()
   ;; Replace list hyphen with dot
@@ -322,8 +504,9 @@
   :hook (org-mode . efs/org-mode-setup)
   :config
   (setq org-ellipsis " ▾")
-    (setq org-agenda-files
+  (setq org-agenda-files
         '("~/dev/personal/org/track.org"))
+  (define-key org-mode-map (kbd "C-c C-r") verb-command-map)
   (efs/org-font-setup))
 
 (use-package org-bullets
@@ -340,16 +523,40 @@
 (use-package visual-fill-column
   :hook (org-mode . efs/org-mode-visual-fill))
 
-(with-eval-after-load 'org 
+(use-package ob-http)
+
+(with-eval-after-load 'org
  (org-babel-do-load-languages
    'org-babel-load-languages
    '((emacs-lisp . t)
      (C . t)
      (scheme . t)
+     (http . t)
+     (js . t)
      (python . t)))
 
  (push '("conf-unix" . conf-unix) org-src-lang-modes)
  (setq org-confirm-babel-evaluate nil))
+
+(defun org-babel-execute:json (body params)
+  (let ((jq (cdr (assoc :jq params)))
+        (node (cdr (assoc :node params))))
+    (cond
+     (jq
+      (with-temp-buffer
+        ;; Insert the JSON into the temp buffer
+        (insert body)
+        ;; Run jq command on the whole buffer, and replace the buffer
+        ;; contents with the result returned from jq
+        (shell-command-on-region (point-min) (point-max) (format "jq -r \"%s\"" jq) nil 't)
+        ;; Return the contents of the temp buffer as the result
+        (buffer-string)))
+     (node
+      (with-temp-buffer
+        (insert (format "const it = %s;" body))
+        (insert node)
+        (shell-command-on-region (point-min) (point-max) "node -p" nil 't)
+        (buffer-string))))))
 
 (with-eval-after-load 'org
   ;; This is needed as of Org 9.2
@@ -358,7 +565,8 @@
   (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
   (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
   (add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
-  (add-to-list 'org-structure-template-alist '("py" . "src python")))
+  (add-to-list 'org-structure-template-alist '("py" . "src python"))
+  (add-to-list 'org-structure-template-alist '("ht" . "src http")))
 
 ;; Automatically tangle our Emacs.org config file when we save it
   (defun efs/org-babel-tangle-config ()
@@ -377,7 +585,7 @@
     (let ((org-confirm-babel-evaluate nil))
       (org-babel-tangle))))
 
-  (add-hook 'org-mode-hook 
+  (add-hook 'org-mode-hook
       (lambda ()
         (add-hook 'after-save-hook #'efs/org-babel-tangle-config)
         (add-hook 'after-save-hook #'efs/org-babel-tangle-neovim-config)))
@@ -400,14 +608,172 @@
 ;; (org-clock-persistence-insinuate)
 
 (use-package org-roam
-  :after org-mode
+  :ensure t
+  :demand t
   :init
-  (setq org-roam-directory "~/org-roam")
   (setq org-roam-v2-ack t)
+  :bind
+  (("C-c n t" . org-roam-buffer-toggle)
+   ("C-c n f" . org-roam-node-find)
+   ("C-c n c" . org-roam-capture)
+   ("C-c n i" . org-roam-node-insert)
+   :map org-mode-map
+   ("C-M-i" . completion-at-point)
+   :map org-roam-dailies-map
+   ("Y" . org-roam-dailies-capture-yesterday)
+   ("T" . org-roam-dailies-capture-tommorow))
+  :bind-keymap
+  ("C-c n d" . org-roam-dailies-map)
   :custom
-  (org-roam-db-update-method 'immediate)
-  :config
-  (org-roam-mode))
+  (org-roam-directory "~/dev/personal/org/roam-notes")
+  (org-roam-completion-everywhere t)
+  (org-roam-capture-templates
+   '(("d" "default" plain
+      "%?"
+      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+date:%U\n")
+      :unnarrowed t)
+
+     ("l" "Programming languages" plain
+      "* Info\n\n- Family: %?\n\n* Resources:\n\n"
+      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+date:%U\n") :unnarrowed t)
+
+      ("c" "class notes" plain
+      "* ${title}\n\n- Chapter: %?"
+      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+date:%U\n#+category: %^{Subject}-Sem2\n#+filetags: Csit")
+      :unnarrowed t)
+
+     ("b" "Book Note" plain
+      (file "~/dev/personal/org/roam-notes/templates/book.org")
+      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+date:%U\n")
+      :unnarrowed t)
+
+
+     ("p" "Project" plain
+      (file "~/dev/personal/org/roam-notes/templates/project.org")
+      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+date:%U\n#+category: ${title}\n#+filetags: Project")
+      :unnarrowed t)
+     ))
+  (org-roam-dailies-capture-templates
+   '(("d" "default" entry "*  %?"
+      :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d: %A>\n"))
+
+     ("t" "Timed" entry "* %<%I:%M %p>: %?"
+      :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d: %A>\n"))))
+   :config
+   (require 'org-roam-dailies) ;; Ensure the keymap is available
+   (org-roam-db-autosync-mode)
+   (org-roam-setup))
+
+;; Bind this to C-c n I
+  (defun org-roam-node-insert-immediate (arg &rest args)
+    (interactive "P")
+    (let ((args (cons arg args))
+          (org-roam-capture-templates (list (append (car org-roam-capture-templates)
+                                                    '(:immediate-finish t)))))
+      (apply #'org-roam-node-insert args)))
+
+(global-set-key (kbd "C-c n I") #'org-roam-node-insert-immediate)
+
+;; The buffer you put this code in must have lexical-binding set to t!
+;; See the final configuration at the end for more details.
+
+(defun my/org-roam-filter-by-tag (tag-name)
+  (lambda (node)
+    (member tag-name (org-roam-node-tags node))))
+
+(defun my/org-roam-list-notes-by-tag (tag-name)
+  (mapcar #'org-roam-node-file
+          (seq-filter
+           (my/org-roam-filter-by-tag tag-name)
+           (org-roam-node-list))))
+
+(defun my/org-roam-refresh-agenda-list ()
+  (interactive)
+  (setq org-agenda-files (my/org-roam-list-notes-by-tag "Project")))
+
+;; Build the agenda list the first time for the session
+(my/org-roam-refresh-agenda-list)
+
+(defun my/org-roam-project-finalize-hook ()
+  "Adds the captured project file to `org-agenda-files' if the
+capture was not aborted."
+  ;; Remove the hook since it was added temporarily
+  (remove-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+  ;; Add project file to the agenda list if the capture was confirmed
+  (unless org-note-abort
+    (with-current-buffer (org-capture-get :buffer)
+      (add-to-list 'org-agenda-files (buffer-file-name)))))
+
+(defun my/org-roam-find-project ()
+  (interactive)
+  ;; Add the project file to the agenda after capture is finished
+  (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+  ;; Select a project file to open, creating it if necessary
+  (org-roam-node-find
+   nil
+   nil
+   (my/org-roam-filter-by-tag "Project")
+   :templates
+   '(("p" "project" plain "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
+      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
+      :unnarrowed t))))
+
+(global-set-key (kbd "C-c n p") #'my/org-roam-find-project)
+
+(defun my/org-roam-capture-inbox ()
+  (interactive)
+  (org-roam-capture- :node (org-roam-node-create)
+                     :templates '(("i" "inbox" plain "* %?"
+                                  :if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
+
+(global-set-key (kbd "C-c n b") #'my/org-roam-capture-inbox)
+
+(defun my/org-roam-capture-task ()
+  (interactive)
+  ;; Add the project file to the agenda after capture is finished
+  (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+  ;; Capture the new task, creating the project file if necessary
+  (org-roam-capture- :node (org-roam-node-read
+                            nil
+                            (my/org-roam-filter-by-tag "Project"))
+                     :templates '(("p" "project" plain "** TODO %?"
+                                   :if-new (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
+                                                          "#+title: ${title}\n#+category: ${title}\n#+filetags: Project"
+                                                          ("Tasks"))))))
+
+(global-set-key (kbd "C-c n t") #'my/org-roam-capture-task)
+
+(defun my/org-roam-copy-todo-to-today ()
+  (interactive)
+  (let ((org-refile-keep t) ;; Set this to nil to delete the original!
+        (org-roam-dailies-capture-templates
+          '(("t" "tasks" entry "%?"
+             :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d: %A>\n" ("Tasks")))))
+        (org-after-refile-insert-hook #'save-buffer)
+        today-file
+        pos)
+    (save-window-excursion
+      (org-roam-dailies--capture (current-time) t)
+      (setq today-file (buffer-file-name))
+      (setq pos (point)))
+
+    ;; Only refile if the target file is different than the current file
+    (unless (equal (file-truename today-file)
+                   (file-truename (buffer-file-name)))
+      (org-refile nil nil (list "Tasks" today-file nil pos)))))
+
+(add-to-list 'org-after-todo-state-change-hook
+             (lambda ()
+               (when (equal org-state "DONE")
+                 (my/org-roam-copy-todo-to-today))))
+
+(setq org-roam-capture-templates '(("d" "default" plain "%?"
+     :target (file+head "${slug}.org.gpg"
+                        "#+title: ${title}\n")
+     :unnarrowed t)))
 
 (use-package pdf-tools
 :defer t
@@ -422,20 +788,95 @@
        (pdf-view-mode-hook . pdf-annot-list-follow-minor-mode)
 ))
 
+(use-package org-noter
+  :after pdftools
+  :config
+  ;; Your org-noter config ........
+  (require 'org-noter-pdftools))
+
 (use-package org-pdftools
-:hook (org-load-hook . org-pdftools-setup-link))
+  :hook (org-mode . org-pdftools-setup-link))
+
+(use-package org-noter-pdftools
+  :after org-noter
+  :config
+  ;; Add a function to ensure precise note is inserted
+  (defun org-noter-pdftools-insert-precise-note (&optional toggle-no-questions)
+    (interactive "P")
+    (org-noter--with-valid-session
+     (let ((org-noter-insert-note-no-questions (if toggle-no-questions
+                                                   (not org-noter-insert-note-no-questions)
+                                                 org-noter-insert-note-no-questions))
+           (org-pdftools-use-isearch-link t)
+           (org-pdftools-use-freestyle-annot t))
+       (org-noter-insert-note (org-noter--get-precise-info)))))
+
+  ;; fix https://github.com/weirdNox/org-noter/pull/93/commits/f8349ae7575e599f375de1be6be2d0d5de4e6cbf
+  (defun org-noter-set-start-location (&optional arg)
+    "When opening a session with this document, go to the current location.
+With a prefix ARG, remove start location."
+    (interactive "P")
+    (org-noter--with-valid-session
+     (let ((inhibit-read-only t)
+           (ast (org-noter--parse-root))
+           (location (org-noter--doc-approx-location (when (called-interactively-p 'any) 'interactive))))
+       (with-current-buffer (org-noter--session-notes-buffer session)
+         (org-with-wide-buffer
+          (goto-char (org-element-property :begin ast))
+          (if arg
+              (org-entry-delete nil org-noter-property-note-location)
+            (org-entry-put nil org-noter-property-note-location
+                           (org-noter--pretty-print-location location))))))))
+  (with-eval-after-load 'pdf-annot
+    (add-hook 'pdf-annot-activate-handler-functions #'org-noter-pdftools-jump-to-note)))
 
 (quelpa
 '(pdf-continuous-scroll-mode  :fetcher github
                               :repo "dalanicolai/pdf-continuous-scroll-mode.el"))
 (add-hook 'pdf-view-mode-hook 'pdf-continuous-scroll-mode)
 
+;; Configure Elfeed
+ (use-package elfeed
+   :ensure t
+   :config
+   (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory)
+         elfeed-show-entry-switch 'display-buffer)
+   :bind
+   ("C-x w" . elfeed ))
+
+;; Configure Elfeed with org mode
+(use-package elfeed-org
+  :ensure t
+  :config
+ (setq elfeed-show-entry-switch 'display-buffer)
+ (setq rmh-elfeed-org-files (list "~/dev/personal/org/track.org")))
+
 (use-package nov
   :defer t
   :commands nov-mode
   :config
   (evil-set-initial-state 'nov-mode 'emacs)
+  (setq nov-text-width t)
+  (setq visual-fill-column-center-text t)
+  (add-hook 'nov-mode-hook 'visual-line-mode)
+  (add-hook 'nov-mode-hook 'visual-fill-column-mode)
   :mode ("\\.epub\\'" . nov-mode))
+
+(use-package wiki-summary
+  :defer 1
+  :bind ("C-c W" . wiki-summary))
+;;   :preface
+;;   (defun my/format-summary-in-buffer (summary)
+;;     "Given a summary, stick it in the *wiki-summary* buffer and display the buffer"
+;;     (let ((buf (generate-new-buffer "*wiki-summary*")))
+;;       (with-current-buffer buf
+;;         (princ summary buf)
+;;         (fill-paragraph)
+;;         (goto-char (point-min))
+;;         (text-mode)
+;;         (view-mode))
+;;       (pop-to-buffer buf))))
+;; (advice-add 'wiki-summary/format-summary-in-buffer :override #'my/format-summary-in-buffer)
 
 (defun efs/lsp-mode-setup ()
     (setq lspheaderline-breadcumb-segments '(path-up-to-project file symbols))
@@ -445,12 +886,15 @@
     :commands (lsp lsp-deferred)
     :hook (lsp-mode . efs/lsp-mode-setup)
     :init
-    (setq lsp-keymap-prefix "C-c l") 
-    (setq lsp-lens-enable t) 
-    (setq lsp-signature-auto-activate nil) 
+    (setq lsp-keymap-prefix "C-c l")
+    (setq lsp-lens-enable t)
+    (setq lsp-signature-auto-activate nil)
     ;; (setq lsp-enable-file-watchers nil)
     :config
     (lsp-enable-which-key-integration t))
+
+(use-package dap-mode
+:after lsp-mode)
 
 (use-package lsp-ui
   :hook (lsp-mode . lsp-ui-mode)
@@ -547,13 +991,22 @@
           hover-observatory-uri "http://0.0.0.0:50300"
           hover-clear-buffer-on-hot-restart t))
 
-;;(with-eval-after-load 'lsp-mode
-;;  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
+(with-eval-after-load 'lsp-mode
+ (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration)
+ (require 'dap-cpptools)
+ (yas-global-mode))
 (add-hook 'c-mode-hook 'lsp)
-(add-hook 'cpp-mode-hook 'lsp)
+(add-hook 'c++-mode-hook 'lsp)
+
+(use-package gdb-mi :quelpa (gdb-mi :fetcher git
+                                    :url "https://github.com/weirdNox/emacs-gdb.git"
+                                    :files ("*.el" "*.c" "*.h" "Makefile"))
+  :init
+  (fmakunbound 'gdb)
+  (fmakunbound 'gdb-enable-debug))
 
 (use-package lua-mode
-    :mode "\\.lua\\'" ;; only load/open for .ts file 
+    :mode "\\.lua\\'" ;; only load/open for .ts file
     :hook (lua-mode . lsp-deferred)
     :config
     (setq lua-indent-level 3)
@@ -630,9 +1083,22 @@
 (use-package yasnippet-snippets
   :after yasnippet)
 
-(use-package vterm
-  :commands vterm)
+;;(use-package vterm
+;;  :commands vterm)
   ;; (setq vterm-max-scrollback 10000))
+
+(use-package webpaste
+  ;; :bind (("C-c C-p C-b" . webpaste-paste-buffer)
+         ;; ("C-c C-p C-r" . webpaste-paste-region))
+  :custom (webpaste-provider-priority '("ix.io" "dpaste.com")))
+
+(use-package undo-tree
+:ensure t
+:config
+(global-undo-tree-mode))
+
+(use-package verb
+:after org-mode)
 
 (use-package edit-server
  :config
