@@ -35,3 +35,6 @@ alias egrep='egrep --color=auto'
 alias sudo='sudo '
 alias serve="browser-sync start -s -f . --no-notify --host 192.168.1.14 --port 9000"
 
+if uname -r | grep -q 'microsoft'; then
+	alias emacsg='DISPLAY=:0 emacs'
+fi

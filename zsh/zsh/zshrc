@@ -102,7 +102,6 @@ eval "$(zoxide init zsh)"
 
 # If inside wsl
 if uname -r | grep -q 'microsoft'; then
-	export LOCAL_IP=`ipconfig.exe getifaddr en0`
 	export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0 #GWSL
 	export HOST_IP="$(ip route |awk '/^default/{print $3}')"
 	export PULSE_SERVER="tcp:$HOST_IP"
