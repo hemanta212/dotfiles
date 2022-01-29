@@ -6,6 +6,7 @@
                        (time-subtract after-init-time before-init-time)))
              gcs-done))
 
+
   (add-hook 'emacs-startup-hook #'startup/display-startup-time)
 
   ;; automatically generate the natively compiled files when Emacs loads a new .elc file.
@@ -204,13 +205,46 @@
                                 ("jpg" . "termux-open")
                                 ("wav" . "termux-open")
                                 ("mp3" . "termux-open")
-                                ("mp4" . "termux-open"))))
+                                ("mp4" . "mpv"))))
 
 (use-package dired-hide-dotfiles
   :hook (dired-mode . dired-hide-dotfiles-mode)
   :config
   (evil-collection-define-key 'normal 'dired-mode-map
     "H" 'dired-hide-dotfiles-mode))
+
+(defun xah-open-in-external-app (&optional @fname)
+  "Open the current file or dired marked files in external app.
+When called in emacs lisp, if @fname is given, open that.
+URL `http://xahlee.info/emacs/emacs/emacs_dired_open_file_in_ext_apps.html'
+Version 2019-11-04 2021-02-16"
+  (interactive)
+  (let* (
+         ($file-list
+          (if @fname
+              (progn (list @fname))
+            (if (string-equal major-mode "dired-mode")
+                (dired-get-marked-files)
+              (list (buffer-file-name)))))
+         ($do-it-p (if (<= (length $file-list) 5)
+                       t
+                     (y-or-n-p "Open more than 5 files? "))))
+    (when $do-it-p
+      (cond
+       ((string-equal system-type "windows-nt")
+        (mapc
+         (lambda ($fpath)
+           (shell-command (concat "PowerShell -Command \"Invoke-Item -LiteralPath\" " "'" (shell-quote-argument (expand-file-name $fpath )) "'")))
+         $file-list))
+       ((string-equal system-type "darwin")
+        (mapc
+         (lambda ($fpath)
+           (shell-command
+            (concat "open " (shell-quote-argument $fpath))))  $file-list))
+       ((string-equal system-type "gnu/linux")
+        (mapc
+         (lambda ($fpath) (let ((process-connection-type nil))
+                            (start-process "" nil "xdg-open" $fpath))) $file-list))))))
 
 ;; Load the which key compatible bind-key
 (require 'bind-key)
@@ -234,8 +268,10 @@
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
     "tt" '(counsel-load-theme :which-key "choose theme")
-    "fo" '(lambda () (interactive) (find-file (expand-file-name "~/dev/personal/org/track.org")))
-    "fde" '(lambda () (interactive) (find-file (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org")))))
+    "f"  '(:ignore t :which-key "Imp Files")
+    "fo" '(lambda () (interactive) (find-file (expand-file-name "~/dev/personal/org/track.org"))) :which-key "track org"
+    "fd"  '(:ignore t :which-key "Dot files")
+    "fde" '(lambda () (interactive) (find-file (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org")) :which-key "emacs config")))
 
 
 (use-package evil
@@ -523,7 +559,10 @@
 (use-package visual-fill-column
   :hook (org-mode . efs/org-mode-visual-fill))
 
-(use-package ob-http)
+(use-package ob-http
+  :defer t
+  :after (org-mode)
+  )
 
 (with-eval-after-load 'org
  (org-babel-do-load-languages
@@ -532,6 +571,7 @@
      (C . t)
      (scheme . t)
      (http . t)
+     (ein . t)
      (js . t)
      (python . t)))
 
@@ -564,8 +604,12 @@
 
   (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
   (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+  (add-to-list 'org-structure-template-alist '("clang" . "src C :results output :exports both"))
+  (add-to-list 'org-structure-template-alist '("cpp" . "src C++ :results output :exports both"))
+  (add-to-list 'org-structure-template-alist '("c++" . "src C++ :include <iostream> :main no :results output :exports both :flags -std=c++17 -Wall --pedantic -Werror"))
   (add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
   (add-to-list 'org-structure-template-alist '("py" . "src python"))
+  (add-to-list 'org-structure-template-alist '("ein" . "src ein-python :session localhost :results output"))
   (add-to-list 'org-structure-template-alist '("ht" . "src http")))
 
 ;; Automatically tangle our Emacs.org config file when we save it
@@ -601,11 +645,43 @@
 
 (use-package org-download
 ;; Drag-and-drop to 'dired'
- :hook (dired-mode-hook . org-download-enable))
+ :hook (dired-mode-hook . org-download-enable)
+       (org-mode-hook . org-download-enable))
 ;; (add-hook 'dired-mode-hook 'org-download-enable)
 
 ;; (setq org-clock-persist 'history)
 ;; (org-clock-persistence-insinuate)
+
+(defun org-export-all (backend)
+  "Export all subtrees that are *not* tagged with :noexport: to
+separate files.
+
+Subtrees that do not have the :EXPORT_FILE_NAME: property set
+are exported to a filename derived from the headline text."
+  (interactive "sEnter backend: ")
+  (let ((fn (cond ((equal backend "html") 'org-html-export-to-html)
+                  ((equal backend "latex") 'org-latex-export-to-latex)
+                  ((equal backend "pdf") 'org-latex-export-to-pdf)))
+        (modifiedp (buffer-modified-p)))
+    (save-excursion
+      (set-mark (point-min))
+      (goto-char (point-max))
+      (org-map-entries
+       (lambda ()
+         (let ((export-file (org-entry-get (point) "EXPORT_FILE_NAME")))
+           (unless export-file
+             (org-set-property
+              "EXPORT_FILE_NAME"
+              (replace-regexp-in-string " " "_" (nth 4 (org-heading-components)))))
+           (funcall fn nil t)
+           (unless export-file (org-delete-property "EXPORT_FILE_NAME"))
+           (set-buffer-modified-p modifiedp)))
+       "-noexport" 'region-start-level))))
+
+(use-package org-make-toc
+:defer t
+:commands (org-make-toc)
+)
 
 (use-package org-roam
   :ensure t
@@ -613,7 +689,7 @@
   :init
   (setq org-roam-v2-ack t)
   :bind
-  (("C-c n t" . org-roam-buffer-toggle)
+  (("C-c n l" . org-roam-buffer-toggle)
    ("C-c n f" . org-roam-node-find)
    ("C-c n c" . org-roam-capture)
    ("C-c n i" . org-roam-node-insert)
@@ -770,10 +846,11 @@ capture was not aborted."
                (when (equal org-state "DONE")
                  (my/org-roam-copy-todo-to-today))))
 
-(setq org-roam-capture-templates '(("d" "default" plain "%?"
-     :target (file+head "${slug}.org.gpg"
-                        "#+title: ${title}\n")
-     :unnarrowed t)))
+;; DOt execute taskes over default capture Argghhh!
+;; (setq org-roam-capture-templates '(("d" "default" plain "%?"
+     ;; :target (file+head "${slug}.org.gpg"
+                        ;; "#+title: ${title}\n")
+     ;; :unnarrowed t)))
 
 (use-package pdf-tools
 :defer t
@@ -830,10 +907,10 @@ With a prefix ARG, remove start location."
   (with-eval-after-load 'pdf-annot
     (add-hook 'pdf-annot-activate-handler-functions #'org-noter-pdftools-jump-to-note)))
 
-(quelpa
-'(pdf-continuous-scroll-mode  :fetcher github
-                              :repo "dalanicolai/pdf-continuous-scroll-mode.el"))
-(add-hook 'pdf-view-mode-hook 'pdf-continuous-scroll-mode)
+(use-package pdf-continuous-scroll-mode
+  :quelpa (pdf-continuous-scroll-mode :fetcher git
+                              :repo "dalanicolai/pdf-continuous-scroll-mode.el")
+  :hook (pdf-view-mode-hook . pdf-continuous-scroll-mode))
 
 ;; Configure Elfeed
  (use-package elfeed
@@ -846,6 +923,8 @@ With a prefix ARG, remove start location."
 
 ;; Configure Elfeed with org mode
 (use-package elfeed-org
+  :defer t
+  :after (org-mode)
   :ensure t
   :config
  (setq elfeed-show-entry-switch 'display-buffer)
@@ -896,6 +975,9 @@ With a prefix ARG, remove start location."
 (use-package dap-mode
 :after lsp-mode)
 
+(rune/leader-keys
+  "d"  'dap-hydra :which-key "dap hydra")
+
 (use-package lsp-ui
   :hook (lsp-mode . lsp-ui-mode)
   :custom
@@ -919,6 +1001,17 @@ With a prefix ARG, remove start location."
 (use-package smartparens)
 (require 'smartparens-config)
 
+(use-package python-mode
+:ensure t
+:hook (python-mode . lsp-deferred)
+:custom
+(python-shell-interpreter "python3")
+(dap-python-executable "python3")
+(dap-python-debugger 'ptvsd)
+:config
+(require 'dap-python)
+)
+
 (use-package poetry
 :after python-mode)
 ;; :config
@@ -931,7 +1024,9 @@ With a prefix ARG, remove start location."
   :hook (python-mode . (lambda ()
                           (require 'lsp-pyright)
                           (lsp)  ; lsp or lsp-deferred
-                          (poetry-tracking-mode))))
+                          (poetry-tracking-mode)))
+
+  (ein:ipynb-mode . poetry-tracking-mode))
 
 (use-package blacken
   :demand t
@@ -1014,6 +1109,10 @@ With a prefix ARG, remove start location."
 
 (use-package racket-mode
 :hook (racket-xp-mode . racket-mode))
+
+(use-package ein)
+
+;;(use-package jupyter)
 
 (use-package company
   :after lsp-mode
@@ -1098,7 +1197,87 @@ With a prefix ARG, remove start location."
 (global-undo-tree-mode))
 
 (use-package verb
-:after org-mode)
+:ensure t)
+
+(use-package dashboard
+  :ensure t
+  :if (< (length command-line-args) 2)
+  :init
+  (dashboard-setup-startup-hook)
+  :config
+  (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
+
+  ;; Set the title
+(setq dashboard-banner-logo-title "Pykancha eMacs")
+;; Set the banner
+(setq dashboard-startup-banner 'logo)
+;; Value can be
+;; 'official which displays the official emacs logo
+;; 'logo which displays an alternative emacs logo
+;; 1, 2 or 3 which displays one of the text banners
+;; "path/to/your/image.gif", "path/to/your/image.png" or "path/to/your/text.txt" which displays whatever gif/image/text you would prefer
+
+;; Content is not centered by default. To center, set
+(setq dashboard-center-content t)
+
+;; To disable shortcut "jump" indicators for each section, set
+(setq dashboard-show-shortcuts nil)
+
+(setq dashboard-items '((recents  . 5)
+                      (bookmarks . 5)
+                      (agenda . 5)
+                      ))
+)
+
+;; Sent alert in emacs (useful for telegram alerts)
+(use-package alert
+  :defer t
+  )
+;; detect language automatically (telegram chats code highlight)
+(use-package language-detection)
+
+(use-package telega
+  :defer t
+  :commands (telega)
+  :config
+(telega-mode-line-mode 1)
+;; Attach org links to-fro telega chats
+(require 'ol-telega)
+
+;; Highlight telegram code blocks in emacs
+(require 'telega-mnz)
+(global-telega-mnz-mode 1)
+
+;; Open telega chat buffer and dired side by side and execute dired-do-copy after selecting files it will be sent
+(require 'telega-dired-dwim)
+
+;; Send alerts using alert.el
+(require 'telega-alert)
+(telega-alert-mode 1)
+
+;; beautify and shorted urls in chat eg: githubusername/repo
+(require 'telega-url-shorten)
+(global-telega-url-shorten-mode)
+(setq telega-url-shorten-use-images t)
+
+;; Block channel ads promotion
+(require 'telega-adblock)
+(telega-adblock-mode 1)
+
+;; Magit style transiet key
+(require 'telega-transient)
+(telega-transient-mode 1)
+
+(require 'telega-stories)
+(telega-stories-mode 1)
+;; "Emacs Stories" rootview
+;; (define-key telega-root-mode-map (kbd "v e") 'telega-view-emacs-stories)
+;; Emacs Dashboard
+(add-to-list 'dashboard-items '(telega-stories . 5))
+)
+(define-key global-map (kbd "C-c t") telega-prefix-map)
+
+(use-package speed-type)
 
 (use-package edit-server
  :config
@@ -1109,3 +1288,9 @@ With a prefix ARG, remove start location."
 
 ;; (fset 'testhello
 ;;    (kmacro-lambda-form [?i ?h ?e ?l ?l ?o ?\C-m ?h ?i ?\C-m ?g ?o ?o ?d ?b ?y ?e ?k ?j ?0 ?$ ?x ?0 ?x ?k ?x ?$ ?k ?x ?0] 0 "%d"))
+
+(if (daemonp)
+    (with-temp-buffer
+      "~/dev/dotfiles/emacs/.emacs.d/init.el"
+  (eval-buffer)
+  ))
