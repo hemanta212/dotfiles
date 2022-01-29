@@ -1,4 +1,4 @@
--- Self bootstrapping the packer.nvim 
+-- Self bootstrapping the packer.nvim
   local fn = vim.fn
   local install_path = fn.stdpath('data')..'/site/pack/packer/start/packer.nvim'
   if fn.empty(fn.glob(install_path)) > 0 then
@@ -31,11 +31,11 @@
   use 'L3MON4D3/LuaSnip' -- Snippets plugin
 
   -- NEOGIT (MAGIT for neovim)
-     use { 
-      'TimUntersberger/neogit', 
-      requires = { 
+     use {
+      'TimUntersberger/neogit',
+      requires = {
         'nvim-lua/plenary.nvim',
-        'sindrets/diffview.nvim' 
+        'sindrets/diffview.nvim'
       }
      }
 
@@ -62,7 +62,7 @@
      -- Github Copilot
      use 'github/copilot.vim'
 
-     -- Snip Run 
+     -- Snip Run
      use { 'michaelb/sniprun', run = 'bash ./install.sh'}
 
      -- Vim Which-key
@@ -164,7 +164,7 @@ vim.g.indent_blankline_show_trailing_blankline_indent = false
 
 -- TreeSitter Settings
     require'nvim-treesitter.configs'.setup {
-  
+
        -- Highlight
        highlight = {
           enable = true,
@@ -178,7 +178,7 @@ vim.g.indent_blankline_show_trailing_blankline_indent = false
           -- Instead of true it can also be a list of languages
           additional_vim_regex_highlighting = false,
        },
-  
+
        -- Incremental selection
        incremental_selection = {
           enable = true,
@@ -189,7 +189,7 @@ vim.g.indent_blankline_show_trailing_blankline_indent = false
              node_decremental = "grm",
           },
        },
-  
+
        -- Indentation
        indent = {
           enable = true
@@ -228,7 +228,7 @@ vim.g.indent_blankline_show_trailing_blankline_indent = false
           },
        },
      }
-  
+
 --    vim.cmd [[
 --  set foldmethod=expr
 --  set foldexpr=nvim_treesitter#foldexpr()
@@ -314,6 +314,10 @@ vim.g.lightline = {
   component_function = { gitbranch = 'fugitive#head' },
 }
 
+-- Set a venv for pynvim
+vim.cmd [[let g:python3_host_prog = '~/.local/pipx/venvs/ipython/bin/python']]
+-- Disable python2 provider
+vim.cmd[[let g:loaded_python_provider = 0]]
 local configs = require('lspconfig/configs')
 local util = require('lspconfig/util')
 
@@ -331,7 +335,7 @@ local function get_python_path(workspace)
   if match ~= '' then
      local venv = vim.fn.trim(vim.fn.system('poetry env info -p'))
      return path.join(venv, 'bin', 'python')
-  end 
+  end
   --]=====]
 
   -- Find and use virtualenv in workspace directory.
@@ -393,15 +397,15 @@ neogit.setup {
     -- The diffview integration enables the diff popup, which is a wrapper around `sindrets/diffview.nvim`.
     --
     -- Requires you to have `sindrets/diffview.nvim` installed.
-    -- use { 
-    --   'TimUntersberger/neogit', 
-    --   requires = { 
+    -- use {
+    --   'TimUntersberger/neogit',
+    --   requires = {
     --     'nvim-lua/plenary.nvim',
-    --     'sindrets/diffview.nvim' 
+    --     'sindrets/diffview.nvim'
     --   }
     -- }
     --
-    diffview = false  
+    diffview = false
   },
   -- Setting any section to `false` will make the section not render at all
   sections = {
@@ -439,9 +443,7 @@ neogit.setup {
   }
 }
 
---[=====[
 -- init.lua
-
 local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
 parser_config.org = {
   install_info = {
@@ -466,11 +468,10 @@ require('orgmode').setup({
 --  org_agenda_files = {'~/dev/personal/org/*', '~/my-orgs/**/*'},
   org_default_notes_file = '~/dev/personal/org/*',
 })
---]=====]
 
 -- vim.cmd [[nnoremap <silent> <leader>   :<c-u>WhichKey '<Space>'<CR>]]
 
---[=====[ 
+--[=====[
    -- Example custom server
    local sumneko_root_path = vim.fn.getenv 'HOME' .. '/.local/bin/sumneko_lua' -- Change to your sumneko root installation
    local sumneko_binary = sumneko_root_path .. '/bin/Linux/lua-language-server'
