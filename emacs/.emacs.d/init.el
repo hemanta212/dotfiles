@@ -1110,9 +1110,17 @@ With a prefix ARG, remove start location."
 (use-package racket-mode
 :hook (racket-xp-mode . racket-mode))
 
-(use-package ein)
+(use-package ein
+:defer t
+:custom
+(ein:output-area-inlined-images nil))
 
 ;;(use-package jupyter)
+
+(use-package math-preview
+:defer t
+:custom
+(math-preview-command "/home/pykancha/.config/nvm/versions/node/v14.17.6/bin/math-preview"))
 
 (use-package company
   :after lsp-mode
@@ -1198,6 +1206,24 @@ With a prefix ARG, remove start location."
 
 (use-package verb
 :ensure t)
+
+(use-package harpoon
+  :config
+    (rune/leader-keys
+      "hf" 'harpoon-toggle-file
+      "ha" 'harpoon-add-file
+      "hh" 'harpoon-toggle-quick-menu
+      "hd" 'harpoon-clear
+      "h1" 'harpoon-go-to-1
+      "h2" 'harpoon-go-to-2
+      "h3" 'harpoon-go-to-3
+      "h4" 'harpoon-go-to-4
+      "h5" 'harpoon-go-to-5
+      "h6" 'harpoon-go-to-6
+      "h7" 'harpoon-go-to-7
+      "h8" 'harpoon-go-to-8
+      "h9" 'harpoon-go-to-9
+      ))
 
 (use-package dashboard
   :ensure t
