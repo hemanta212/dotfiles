@@ -602,6 +602,7 @@ Version 2019-11-04 2021-02-16"
    '((emacs-lisp . t)
      (C . t)
      (scheme . t)
+     (shell . t)
      (http . t)
      (ein . t)
      (js . t)
@@ -630,6 +631,22 @@ Version 2019-11-04 2021-02-16"
         (shell-command-on-region (point-min) (point-max) "node -p" nil 't)
         (buffer-string))))))
 
+(defcustom path-to-8085 "~/dev/pyassm"
+  "Path to folder where 8085-interpreter was cloned")
+
+(defcustom org-babel-8085-command (concat
+                                   (concat path-to-8085 "/.venv/bin/python ")
+                                   (concat path-to-8085 "/main.py"))
+  "Name of the command for executing 8085 interpreter.")
+
+(defun org-babel-execute:8085 (body params)
+  (let ((args (cdr (assoc :args params))))
+    (org-babel-eval
+     (concat
+      org-babel-8085-command
+      (if args  (concat " -i " args) " -i " ))
+     body)))
+
 (with-eval-after-load 'org
   ;; This is needed as of Org 9.2
   (require 'org-tempo)
@@ -640,9 +657,12 @@ Version 2019-11-04 2021-02-16"
   (add-to-list 'org-structure-template-alist '("cpp" . "src C++ :results output :exports both"))
   (add-to-list 'org-structure-template-alist '("c++" . "src C++ :include <iostream> :main no :results output :exports both :flags -std=c++17 -Wall --pedantic -Werror"))
   (add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
+  (add-to-list 'org-structure-template-alist '("sasm" . "src 8085 :args -db /tmp/8085-session1"))
+  (add-to-list 'org-structure-template-alist '("asm" . "src 8085"))
   (add-to-list 'org-structure-template-alist '("py" . "src python"))
   (add-to-list 'org-structure-template-alist '("ein" . "src ein-python :session localhost :results output"))
   (add-to-list 'org-structure-template-alist '("ht" . "src http")))
+  ;; (setq org-structure-template-alist '())
 
 ;; Automatically tangle our Emacs.org config file when we save it
   (defun efs/org-babel-tangle-config ()

@@ -802,6 +802,7 @@ Workspaces inside emacs, group simiar file buffers together under a namespace. E
      '((emacs-lisp . t)
        (C . t)
        (scheme . t)
+       (shell . t)
        (http . t)
        (ein . t)
        (js . t)
@@ -811,26 +812,46 @@ Workspaces inside emacs, group simiar file buffers together under a namespace. E
    (setq org-confirm-babel-evaluate nil))
 #+end_src
 *** Custom Babel execute
+**** Json
 #+begin_src emacs-lisp
-(defun org-babel-execute:json (body params)
-  (let ((jq (cdr (assoc :jq params)))
-        (node (cdr (assoc :node params))))
-    (cond
-     (jq
-      (with-temp-buffer
-        ;; Insert the JSON into the temp buffer
-        (insert body)
-        ;; Run jq command on the whole buffer, and replace the buffer
-        ;; contents with the result returned from jq
-        (shell-command-on-region (point-min) (point-max) (format "jq -r \"%s\"" jq) nil 't)
-        ;; Return the contents of the temp buffer as the result
-        (buffer-string)))
-     (node
-      (with-temp-buffer
-        (insert (format "const it = %s;" body))
-        (insert node)
-        (shell-command-on-region (point-min) (point-max) "node -p" nil 't)
-        (buffer-string))))))
+  (defun org-babel-execute:json (body params)
+    (let ((jq (cdr (assoc :jq params)))
+          (node (cdr (assoc :node params))))
+      (cond
+       (jq
+        (with-temp-buffer
+          ;; Insert the JSON into the temp buffer
+          (insert body)
+          ;; Run jq command on the whole buffer, and replace the buffer
+          ;; contents with the result returned from jq
+          (shell-command-on-region (point-min) (point-max) (format "jq -r \"%s\"" jq) nil 't)
+          ;; Return the contents of the temp buffer as the result
+          (buffer-string)))
+       (node
+        (with-temp-buffer
+          (insert (format "const it = %s;" body))
+          (insert node)
+          (shell-command-on-region (point-min) (point-max) "node -p" nil 't)
+          (buffer-string))))))
+#+end_src
+
+**** 8085
+#+begin_src emacs-lisp
+  (defcustom path-to-8085 "~/dev/pyassm"
+    "Path to folder where 8085-interpreter was cloned")
+
+  (defcustom org-babel-8085-command (concat
+                                     (concat path-to-8085 "/.venv/bin/python ")
+                                     (concat path-to-8085 "/main.py"))
+    "Name of the command for executing 8085 interpreter.")
+
+  (defun org-babel-execute:8085 (body params)
+    (let ((args (cdr (assoc :args params))))
+      (org-babel-eval
+       (concat
+        org-babel-8085-command
+        (if args  (concat " -i " args) " -i " ))
+       body)))
 #+end_src
 
 ** Structure Templates
@@ -851,9 +872,12 @@ You can add more =src= block templates below by copying one of the lines and cha
     (add-to-list 'org-structure-template-alist '("cpp" . "src C++ :results output :exports both"))
     (add-to-list 'org-structure-template-alist '("c++" . "src C++ :include <iostream> :main no :results output :exports both :flags -std=c++17 -Wall --pedantic -Werror"))
     (add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
+    (add-to-list 'org-structure-template-alist '("sasm" . "src 8085 :args -db /tmp/8085-session1"))
+    (add-to-list 'org-structure-template-alist '("asm" . "src 8085"))
     (add-to-list 'org-structure-template-alist '("py" . "src python"))
     (add-to-list 'org-structure-template-alist '("ein" . "src ein-python :session localhost :results output"))
     (add-to-list 'org-structure-template-alist '("ht" . "src http")))
+    ;; (setq org-structure-template-alist '())
 #+end_src
 
 ** Auto tangle configuration file

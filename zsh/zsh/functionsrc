@@ -47,8 +47,9 @@ peredit(){
 
 persync(){
   cd ~/dev/personal/org
-  git checkout org && git commit -a -m "Updates org file"
   git pull origin org
+  git add roam-notes
+  git checkout org && git commit -a -m "Updates org file"
   git push origin org
 }
 
