@@ -94,7 +94,16 @@ Testing quelpa and to install packages directly from their github repositories (
   (quelpa-use-package-activate-advice)
 #+end_src
 * Basic UI Configuration
+
 #+begin_src emacs-lisp
+  ;; Define variables section
+  (defvar efs/default-font-size 160)
+  (defvar efs/default-variable-font-size 160)
+
+  ;; Make frame transparency overridable
+  (defvar efs/frame-transparency '(90 . 90))
+
+
   (setq inhibit-startup-message t)
 
   (if (display-graphic-p)
@@ -102,14 +111,19 @@ Testing quelpa and to install packages directly from their github repositories (
         (set-fringe-mode 10)        ; Give some breathing room
         (tooltip-mode -1)           ; Disable tooltips
         (tool-bar-mode -1)
-        (set-face-attribute 'default nil :font "Fira Code Retina" :height 140)
         (scroll-bar-mode -1)))
+
+  (set-face-attribute 'default nil :font "Fira Code Retina" :height efs/default-font-size)
+  ;; Set the fixed pitch face
+  (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height efs/default-font-size)
+  ;; Set the variable pitch face
+  (set-face-attribute 'variable-pitch nil :font "Cantarell" :height efs/default-variable-font-size :weight 'regular)
 
   (menu-bar-mode -1)            ; Disable the menu bar
   ;; Set up the visible bell
-  (setq visible-bell t)
+  (setq visible-bell nil)
   ;; Change cursor color
-  ;; (set-cursor-color "#aaabbb")
+  ;;(set-cursor-color "#000000")
 
   (dolist (mode '(org-mode-hook
                   term-mode-hook
@@ -152,9 +166,6 @@ Testing quelpa and to install packages directly from their github repositories (
   (show-paren-mode)
 #+end_src
 * Basic Editor behaviour
-- 3. This is probably one of my oldest settings - I remember adding it around 1993 when I started learning Emacs, and it has been in my config ever since. When time-stamp is run before every save, the string Time-stamp: <> in the first 8 lines of the file will be updated with the current timestamp
-
-
 #+begin_src emacs-lisp
   ;; Make Asynchronous operations loaded to use later
   (use-package async)
@@ -214,7 +225,6 @@ We use the [[https://github.com/emacscollective/no-littering/blob/master/no-litt
 Dired is a built-in file manager for Emacs that does some pretty amazing things!  Here are some key bindings you should try out:
 
 *** Key Bindings
-
 **** Navigation
 
 *Emacs* / *Evil*
@@ -354,7 +364,6 @@ Version 2019-11-04 2021-02-16"
 * Key-bindings
 - I use the bind-key package to more easily keep track and manage user keybindings. bind-key comes with use-package so we just load it. The main advantage of using this over define-key or global-set-key is that you can use M-x describe-personal-keybindings to see a list of all the customized keybindings you have defined.
 
-  -
 #+begin_src emacs-lisp
   ;; Load the which key compatible bind-key
   (require 'bind-key)
@@ -477,10 +486,20 @@ Giving a try to Paradox for an enhanced package management interface. We set par
     :commands command-log-mode)
 #+end_src
 ** Color theme
+*** Doom Themes
 #+begin_src emacs-lisp
   (use-package doom-themes
     :init (load-theme 'doom-gruvbox t))
 #+end_src
+*** Berry's Theme
+Light theme (esp for org)
+   #+begin_src emacs-lisp
+     (use-package berrys-theme
+       :ensure t
+       :config ;; for good measure and clarity
+       (setq-default cursor-type '(bar . 2))
+       (setq-default line-spacing 5))
+   #+end_src
 ** Better modeline
 #+begin_src emacs-lisp
   (use-package all-the-icons)
@@ -699,10 +718,10 @@ Workspaces inside emacs, group simiar file buffers together under a namespace. E
                                (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
 
     ;; Set faces for heading levels
-    (dolist (face '((org-level-1 . 1.2)
-                    (org-level-2 . 1.1)
-                    (org-level-3 . 1.05)
-                    (org-level-4 . 1.0)
+    (dolist (face '((org-level-1 . 1.4)
+                    (org-level-2 . 1.2)
+                    (org-level-3 . 1.2)
+                    (org-level-4 . 1.2)
                     (org-level-5 . 1.1)
                     (org-level-6 . 1.1)
                     (org-level-7 . 1.1)
@@ -710,13 +729,17 @@ Workspaces inside emacs, group simiar file buffers together under a namespace. E
       (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
 
     ;; Ensure that anything that should be fixed-pitch in Org files appears that way
-    (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
-    (set-face-attribute 'org-code nil   :inherit '(shadow fixed-pitch))
-    (set-face-attribute 'org-table nil   :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-block nil    :foreground nil :inherit 'fixed-pitch)
+    (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
+    (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
+    (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
     (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
     (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
     (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
-    (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
+    (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
+    (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
+    (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch))
 #+end_src
 
 ** General
@@ -733,9 +756,17 @@ Workspaces inside emacs, group simiar file buffers together under a namespace. E
     :hook (org-mode . efs/org-mode-setup)
     :config
     (setq org-ellipsis " ▾")
+    (setq org-agenda-start-with-log-mode t)
+    (setq org-log-done 'time)
+    (setq org-log-into-drawer t)
     (setq org-agenda-files
           '("~/dev/personal/org/track.org"))
     (define-key org-mode-map (kbd "C-c C-r") verb-command-map)
+
+    (setq org-todo-keywords
+    '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
+      (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
+
     (efs/org-font-setup))
 #+end_src
 ** Nicer Bullets
@@ -744,7 +775,8 @@ Workspaces inside emacs, group simiar file buffers together under a namespace. E
     :after org
     :hook (org-mode . org-bullets-mode)
     :custom
-    (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+    (org-bullets-bullet-list '("◉" "○" "✸" "✿")))
+    ;; (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")
 #+end_src
 
 ** Center Org buffers
@@ -1669,16 +1701,6 @@ Yasnippet is the snippet tool for emacs. It doesnot bundle the snippets itself t
   (use-package yasnippet-snippets
     :after yasnippet)
 #+end_src
-** Vterm
-Creates conflict with magit, specially when updating and recompiling from melpa
-Utrafast modern terminal written in C libvterm.
-#+begin_src emacs-lisp
-
-  ;;(use-package vterm
-  ;;  :commands vterm)
-    ;; (setq vterm-max-scrollback 10000))
-#+end_src
-
 ** WebPaste
 Paste a selected region or buffer and get the link
 #+begin_src emacs-lisp
@@ -1722,6 +1744,131 @@ Inspired by the legend primeagen some vim inspired goodness in my emacs config o
         "h9" 'harpoon-go-to-9
         ))
 #+end_src
+* Terminals
+** Term Mode
+
+One important thing to understand is =line-mode= versus =char-mode=.  =line-mode= enables you to use normal Emacs keybindings while moving around in the terminal buffer while =char-mode= sends most of your keypresses to the underlying terminal.  While using =term-mode=, you will want to be in =char-mode= for any terminal applications that have their own keybindings.  If you're just in your usual shell, =line-mode= is sufficient and feels more integrated with Emacs.
+
+With =evil-collection= installed, you will automatically switch to =char-mode= when you enter Evil's insert mode (press =i=).  You will automatically be switched back to =line-mode= when you enter Evil's normal mode (press =ESC=).
+
+*Useful key bindings:*
+
+- =C-c C-p= / =C-c C-n= - go back and forward in the buffer's prompts (also =[[= and =]]= with evil-mode)
+- =C-c C-k= - Enter char-mode
+- =C-c C-j= - Return to line-mode
+- If you have =evil-collection= installed, =term-mode= will enter char mode when you use Evil's Insert mode
+
+#+begin_src emacs-lisp
+  (use-package term
+  :commands term
+  :config
+  (setq explicit-shell-file-name "zsh"))
+  ;; Change this to zsh, etc
+  ;;(setq explicit-zsh-args '())
+  ;; Use 'explicit-<shell>-args for shell-specific args
+
+    ;; Match the default Bash shell prompt.  Update this if you have a custom prompt
+    ;; (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *"))
+
+#+end_src
+*** Better term-mode colors
+
+The =eterm-256color= package enhances the output of =term-mode= to enable handling of a wider range of color codes so that many popular terminal applications look as you would expect them to.  Keep in mind that this package requires =ncurses= to be installed on your machine so that it has access to the =tic= program.  Most Linux distributions come with this program installed already so you may not have to do anything extra to use it.
+
+#+begin_src emacs-lisp
+;; Bad support in WSL with X11 server
+;;  (use-package eterm-256color
+;;    :hook (term-mode . eterm-256color-mode))
+
+#+end_src
+
+** Vterm
+[[https://github.com/akermu/emacs-libvterm/][vterm]] is an improved terminal emulator package which uses a compiled native module to interact with the underlying terminal applications.  This enables it to be much faster than =term-mode= and to also provide a more complete terminal emulation experience.
+
+Make sure that you have the [[https://github.com/akermu/emacs-libvterm/#requirements][necessary dependencies]] installed before trying to use =vterm= because there is a module that will need to be compiled before you can use it successfully.
+
+Creates conflict with magit, specially when updating and recompiling from melpa
+Utrafast modern terminal written in C libvterm.
+#+begin_src emacs-lisp
+  ;; (use-package vterm
+  ;;   :commands vterm
+  ;;   :config
+  ;;   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
+    ;;(setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
+    ;; (setq vterm-max-scrollback 10000))
+#+end_src
+
+** shell-mode
+
+[[https://www.gnu.org/software/emacs/manual/html_node/emacs/Interactive-Shell.html#Interactive-Shell][shell-mode]] is a middle ground between =term-mode= and Eshell.  It is *not* a terminal emulator so more complex terminal programs will not run inside of it.  It does have much better integration with Emacs because all command input in this mode is handled by Emacs and then sent to the underlying shell once you press Enter.  This means that you can use =evil-mode='s editing motions on the command line, unlike in the terminal emulator modes above.
+
+*Useful key bindings:*
+
+- =C-c C-p= / =C-c C-n= - go back and forward in the buffer's prompts (also =[[= and =]]= with evil-mode)
+- =M-p= / =M-n= - go back and forward in the input history
+- =C-c C-u= - delete the current input string backwards up to the cursor
+- =counsel-shell-history= - A searchable history of commands typed into the shell
+
+One advantage of =shell-mode= on Windows is that it's the only way to run =cmd.exe=, PowerShell, Git Bash, etc from within Emacs.  Here's an example of how you would set up =shell-mode= to run PowerShell on Windows:
+
+#+begin_src emacs-lisp
+
+  (when (eq system-type 'windows-nt)
+    (setq explicit-shell-file-name "powershell.exe")
+    (setq explicit-powershell.exe-args '()))
+
+#+end_src
+
+** Eshell
+
+[[https://www.gnu.org/software/emacs/manual/html_mono/eshell.html#Contributors-to-Eshell][Eshell]] is Emacs' own shell implementation written in Emacs Lisp.  It provides you with a cross-platform implementation (even on Windows!) of the common GNU utilities you would find on Linux and macOS (=ls=, =rm=, =mv=, =grep=, etc).  It also allows you to call Emacs Lisp functions directly from the shell and you can even set up aliases (like aliasing =vim= to =find-file=).  Eshell is also an Emacs Lisp REPL which allows you to evaluate full expressions at the shell.
+
+The downsides to Eshell are that it can be harder to configure than other packages due to the particularity of where you need to set some options for them to go into effect, the lack of shell completions (by default) for some useful things like Git commands, and that REPL programs sometimes don't work as well.  However, many of these limitations can be dealt with by good configuration and installing external packages, so don't let that discourage you from trying it!
+
+*Useful key bindings:*
+
+- =C-c C-p= / =C-c C-n= - go back and forward in the buffer's prompts (also =[[= and =]]= with evil-mode)
+- =M-p= / =M-n= - go back and forward in the input history
+- =C-c C-u= - delete the current input string backwards up to the cursor
+- =counsel-esh-history= - A searchable history of commands typed into Eshell
+
+For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
+- https://ambrevar.xyz/emacs-eshell/index.html
+- https://ambrevar.xyz/emacs-eshell-versus-shell/index.html
+
+#+begin_src emacs-lisp
+
+  (defun efs/configure-eshell ()
+    ;; Save command history when commands are entered
+    (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
+
+    ;; Truncate buffer for performance
+    (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
+
+    ;; Bind some useful keys for evil-mode
+    (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
+    (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
+    (evil-normalize-keymaps)
+
+    (setq eshell-history-size         10000
+          eshell-buffer-maximum-lines 10000
+          eshell-hist-ignoredups t
+          eshell-scroll-to-bottom-on-input t))
+
+  (use-package eshell-git-prompt
+    :after eshell)
+
+  (use-package eshell
+    :hook (eshell-first-time-mode . efs/configure-eshell)
+    :config
+
+    (with-eval-after-load 'esh-opt
+      (setq eshell-destroy-buffer-when-process-dies t)
+      (setq eshell-visual-commands '("htop" "zsh" "vim")))
+    (eshell-git-prompt-use-theme 'powerline))
+
+#+end_src
+
 * Apps
 ** Dashboard
 #+begin_src emacs-lisp
@@ -1825,9 +1972,11 @@ Dial the GC threshold back down so that garbage collection happens more frequent
   (setq gc-cons-threshold (* 1 1000 1000))
 #+end_src
 * Macros
+** Decorate sh and example code
+When copy pasted from repl interaction. This decorates cmd (one line) as sh and result with example.
 #+begin_src emacs-lisp
-  ;; (fset 'testhello
-  ;;    (kmacro-lambda-form [?i ?h ?e ?l ?l ?o ?\C-m ?h ?i ?\C-m ?g ?o ?o ?d ?b ?y ?e ?k ?j ?0 ?$ ?x ?0 ?x ?k ?x ?$ ?k ?x ?0] 0 "%d"))
+(fset 'sh\ and\ example\ decorate
+   (kmacro-lambda-form [escape ?k ?j ?\" ?2 escape ?@ ?q ?2 ?@ ?q ?@ ?q ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j] 0 "%d"))
 #+end_src
 
 * Custom Daemon config
@@ -1837,4 +1986,5 @@ Dial the GC threshold back down so that garbage collection happens more frequent
         "~/dev/dotfiles/emacs/.emacs.d/init.el"
     (eval-buffer)
     ))
+
 #+end_src

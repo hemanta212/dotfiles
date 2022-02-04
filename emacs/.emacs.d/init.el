@@ -72,6 +72,14 @@
 (require 'quelpa)
 (quelpa-use-package-activate-advice)
 
+;; Define variables section
+(defvar efs/default-font-size 160)
+(defvar efs/default-variable-font-size 160)
+
+;; Make frame transparency overridable
+(defvar efs/frame-transparency '(90 . 90))
+
+
 (setq inhibit-startup-message t)
 
 (if (display-graphic-p)
@@ -79,14 +87,19 @@
       (set-fringe-mode 10)        ; Give some breathing room
       (tooltip-mode -1)           ; Disable tooltips
       (tool-bar-mode -1)
-      (set-face-attribute 'default nil :font "Fira Code Retina" :height 140)
       (scroll-bar-mode -1)))
+
+(set-face-attribute 'default nil :font "Fira Code Retina" :height efs/default-font-size)
+;; Set the fixed pitch face
+(set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height efs/default-font-size)
+;; Set the variable pitch face
+(set-face-attribute 'variable-pitch nil :font "Cantarell" :height efs/default-variable-font-size :weight 'regular)
 
 (menu-bar-mode -1)            ; Disable the menu bar
 ;; Set up the visible bell
-(setq visible-bell t)
+(setq visible-bell nil)
 ;; Change cursor color
-;; (set-cursor-color "#aaabbb")
+;;(set-cursor-color "#000000")
 
 (dolist (mode '(org-mode-hook
                 term-mode-hook
@@ -347,6 +360,12 @@ Version 2019-11-04 2021-02-16"
 (use-package doom-themes
   :init (load-theme 'doom-gruvbox t))
 
+(use-package berrys-theme
+  :ensure t
+  :config ;; for good measure and clarity
+  (setq-default cursor-type '(bar . 2))
+  (setq-default line-spacing 5))
+
 (use-package all-the-icons)
 (use-package all-the-icons-ivy
   :after (all-the-icons ivy))
@@ -509,10 +528,10 @@ Version 2019-11-04 2021-02-16"
                              (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
 
   ;; Set faces for heading levels
-  (dolist (face '((org-level-1 . 1.2)
-                  (org-level-2 . 1.1)
-                  (org-level-3 . 1.05)
-                  (org-level-4 . 1.0)
+  (dolist (face '((org-level-1 . 1.4)
+                  (org-level-2 . 1.2)
+                  (org-level-3 . 1.2)
+                  (org-level-4 . 1.2)
                   (org-level-5 . 1.1)
                   (org-level-6 . 1.1)
                   (org-level-7 . 1.1)
@@ -520,13 +539,17 @@ Version 2019-11-04 2021-02-16"
     (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
 
   ;; Ensure that anything that should be fixed-pitch in Org files appears that way
-  (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
-  (set-face-attribute 'org-code nil   :inherit '(shadow fixed-pitch))
-  (set-face-attribute 'org-table nil   :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-block nil    :foreground nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
+  (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
+  (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
   (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
   (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
   (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
-  (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
+  (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
+  (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
+  (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch))
 
 (defun efs/org-mode-setup ()
   (org-indent-mode)
@@ -540,16 +563,25 @@ Version 2019-11-04 2021-02-16"
   :hook (org-mode . efs/org-mode-setup)
   :config
   (setq org-ellipsis " ▾")
+  (setq org-agenda-start-with-log-mode t)
+  (setq org-log-done 'time)
+  (setq org-log-into-drawer t)
   (setq org-agenda-files
         '("~/dev/personal/org/track.org"))
   (define-key org-mode-map (kbd "C-c C-r") verb-command-map)
+
+  (setq org-todo-keywords
+  '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
+    (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
+
   (efs/org-font-setup))
 
 (use-package org-bullets
   :after org
   :hook (org-mode . org-bullets-mode)
   :custom
-  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+  (org-bullets-bullet-list '("◉" "○" "✸" "✿")))
+  ;; (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")
 
 (defun efs/org-mode-visual-fill ()
   (setq visual-fill-column-width 100
@@ -1190,10 +1222,6 @@ With a prefix ARG, remove start location."
 (use-package yasnippet-snippets
   :after yasnippet)
 
-;;(use-package vterm
-;;  :commands vterm)
-  ;; (setq vterm-max-scrollback 10000))
-
 (use-package webpaste
   ;; :bind (("C-c C-p C-b" . webpaste-paste-buffer)
          ;; ("C-c C-p C-r" . webpaste-paste-region))
@@ -1224,6 +1252,61 @@ With a prefix ARG, remove start location."
       "h8" 'harpoon-go-to-8
       "h9" 'harpoon-go-to-9
       ))
+
+(use-package term
+:commands term
+:config
+(setq explicit-shell-file-name "zsh"))
+;; Change this to zsh, etc
+;;(setq explicit-zsh-args '())
+;; Use 'explicit-<shell>-args for shell-specific args
+
+  ;; Match the default Bash shell prompt.  Update this if you have a custom prompt
+  ;; (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *"))
+
+;; Bad support in WSL with X11 server
+;;  (use-package eterm-256color
+;;    :hook (term-mode . eterm-256color-mode))
+
+;; (use-package vterm
+;;   :commands vterm
+;;   :config
+;;   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
+  ;;(setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
+  ;; (setq vterm-max-scrollback 10000))
+
+(when (eq system-type 'windows-nt)
+  (setq explicit-shell-file-name "powershell.exe")
+  (setq explicit-powershell.exe-args '()))
+
+(defun efs/configure-eshell ()
+  ;; Save command history when commands are entered
+  (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
+
+  ;; Truncate buffer for performance
+  (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
+
+  ;; Bind some useful keys for evil-mode
+  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
+  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
+  (evil-normalize-keymaps)
+
+  (setq eshell-history-size         10000
+        eshell-buffer-maximum-lines 10000
+        eshell-hist-ignoredups t
+        eshell-scroll-to-bottom-on-input t))
+
+(use-package eshell-git-prompt
+  :after eshell)
+
+(use-package eshell
+  :hook (eshell-first-time-mode . efs/configure-eshell)
+  :config
+
+  (with-eval-after-load 'esh-opt
+    (setq eshell-destroy-buffer-when-process-dies t)
+    (setq eshell-visual-commands '("htop" "zsh" "vim")))
+  (eshell-git-prompt-use-theme 'powerline))
 
 (use-package dashboard
   :ensure t
@@ -1312,8 +1395,8 @@ With a prefix ARG, remove start location."
 ;; Make gc pauses faster by decreasing the threshold.
 (setq gc-cons-threshold (* 1 1000 1000))
 
-;; (fset 'testhello
-;;    (kmacro-lambda-form [?i ?h ?e ?l ?l ?o ?\C-m ?h ?i ?\C-m ?g ?o ?o ?d ?b ?y ?e ?k ?j ?0 ?$ ?x ?0 ?x ?k ?x ?$ ?k ?x ?0] 0 "%d"))
+(fset 'sh\ and\ example\ decorate
+   (kmacro-lambda-form [escape ?k ?j ?\" ?2 escape ?@ ?q ?2 ?@ ?q ?@ ?q ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j] 0 "%d"))
 
 (if (daemonp)
     (with-temp-buffer
