@@ -479,10 +479,10 @@ Version 2019-11-04 2021-02-16"
 
 (use-package visual-fill)
 
-(use-package adaptive-wrap
-:hook (eww-mode-hook . adaptive-wrap-prefix-mode))
+(use-package adaptive-wrap)
 
 (add-hook 'eww-mode-hook 'visual-line-mode)
+(add-hook 'eww-mode-hook 'adaptive-wrap-prefix-mode)
 
 (use-package svg-lib)
 
@@ -564,6 +564,7 @@ Version 2019-11-04 2021-02-16"
   :config
   (setq org-ellipsis " ▾")
   (setq org-agenda-start-with-log-mode t)
+  (setq org-src-tab-acts-natively t)
   (setq org-log-done 'time)
   (setq org-log-into-drawer t)
   (setq org-agenda-files
@@ -647,22 +648,58 @@ Version 2019-11-04 2021-02-16"
       (if args  (concat " -i " args) " -i " ))
      body)))
 
+;; place holder major mode wip
+;; (require 'rx)
+;; (defvar 8085-mode-map
+;;   (let ((map (make-sparse-keymap)))
+;;     map))
+
+;; (defconst 8085--font-lock-defaults
+;;   (let (
+;;         (instructions '("MVI" "MOV" "ADD" "SUB" "ADI"
+;;                         "SUI" "JNZ" "JNC" "JZ" "JC" "LXI"
+;;                         "LXAD" "INR" "DCR" "INX" "DCX" "OUT"
+;;                         "HLT" "CPI" "CMP" "STA" "LDA"))
+;;         (registers '(" A " " B " " C " " D " " E " " M ")))
+;;     `(((,(rx-to-string `(: (or ,@instructions))) 0 font-lock-keyword-face)
+;;        ("\\([[:word:]]+\\):" 1 font-lock-function-name-face)
+;;        ;(,(rx-to-string `(: (or ,@registers))) 0 font-lock-type-face)
+;;        ))))
+
+;; ;; (defvar 8085-mode-syntax-table
+;;   (let ((st (make-syntax-table)))
+;;     ;; - and _ are word constituents
+;;     (modify-syntax-entry ?_ "w" st)
+;;     (modify-syntax-entry ?- "w" st)
+
+;;     ;; add comments. lua-mode does something similar, so it shouldn't
+;;     ;; bee *too* wrong.
+;;     (modify-syntax-entry ?\; "<" st)
+;;     (modify-syntax-entry ?\n ">" st)
+;;     st))
+
+(define-derived-mode 8085-mode asm-mode "8085"
+  "Major mode for 8085.")
+
 (with-eval-after-load 'org
   ;; This is needed as of Org 9.2
   (require 'org-tempo)
 
-  (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
+  (add-to-list 'org-structure-template-alist '("draw" . "src artist"))
+  (add-to-list 'org-structure-template-alist '("art" . "src artist"))
+  (add-to-list 'org-structure-template-alist '("ex" . "example"))
   (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+  (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
   (add-to-list 'org-structure-template-alist '("clang" . "src C :results output :exports both"))
   (add-to-list 'org-structure-template-alist '("cpp" . "src C++ :results output :exports both"))
   (add-to-list 'org-structure-template-alist '("c++" . "src C++ :include <iostream> :main no :results output :exports both :flags -std=c++17 -Wall --pedantic -Werror"))
   (add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
-  (add-to-list 'org-structure-template-alist '("sasm" . "src 8085 :args -db /tmp/8085-session1"))
+  (add-to-list 'org-structure-template-alist '("sasm" . "src 8085 :export both :args -db /tmp/8085-session1"))
   (add-to-list 'org-structure-template-alist '("asm" . "src 8085"))
-  (add-to-list 'org-structure-template-alist '("py" . "src python"))
+  (add-to-list 'org-structure-template-alist '("py" . "src python :exports both :results output"))
   (add-to-list 'org-structure-template-alist '("ein" . "src ein-python :session localhost :results output"))
   (add-to-list 'org-structure-template-alist '("ht" . "src http")))
-  ;; (setq org-structure-template-alist '())
+  ;;(setq org-structure-template-alist '())
 
 ;; Automatically tangle our Emacs.org config file when we save it
   (defun efs/org-babel-tangle-config ()
@@ -1408,6 +1445,8 @@ With a prefix ARG, remove start location."
 
 (use-package speed-type)
 
+(use-package ascii-art-to-unicode)
+
 (use-package edit-server
  :config
   (edit-server-start))
@@ -1417,6 +1456,9 @@ With a prefix ARG, remove start location."
 
 (fset 'sh\ and\ example\ decorate
    (kmacro-lambda-form [escape ?k ?j ?\" ?2 escape ?@ ?q ?2 ?@ ?q ?@ ?q ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?k ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j ?j] 0 "%d"))
+
+(fset 'around_literal_equal
+   (kmacro-lambda-form [?v ?i ?o escape ?b ?i ?= escape ?e ?a ?= escape] 0 "%d"))
 
 (if (daemonp)
     (with-temp-buffer
