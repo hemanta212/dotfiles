@@ -4,6 +4,7 @@ alias pg='ping google.com'
 alias memfree='echo "sync && echo 3 > /proc/sys/vm/drop_caches" | sudo sh'
 alias cat='bat'
 alias ytdl='youtube-dl'
+alias stinfo='~/.termux/api_info.py all'
 
 
 alias ll='ls -alF'
