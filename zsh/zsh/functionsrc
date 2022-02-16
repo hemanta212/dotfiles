@@ -32,7 +32,7 @@ neovim(){
 ec(){
     if [ $# -eq 0 ]
     then
-	cat $HOME/dev/dotfiles/emacs/ec | zsh 
+	cat $HOME/dev/dotfiles/emacs/ec | zsh
    fi
    if [ $# -eq 1 ]
    then
@@ -106,7 +106,7 @@ colabarg(){
     PORT=`mystatus | awk '/Server/ { print $2;}'`;
     REGION=`mystatus | awk '/Server/ {split($NF, DATA, "["); split(DATA[2], D, "]"); $FS="["; print D[1];}'`;
     echo ":: $PORT : $REGION ...";
-    ssh -X -m hmac-sha1 -c aes128-gcm@openssh.com -C -L 3389:localhost:3389 -L 50080:localhost:5050 -R 5037:localhost:5037 -R 60262:localhost:60262 -p $PORT pykancha@0.tcp.$REGION.ngrok.io $@
+    ssh -Y -m hmac-sha1 -c aes128-gcm@openssh.com -C -L 3389:localhost:3389 -L 50080:localhost:5050 -R 5037:localhost:5037 -R 60262:localhost:60262 -p $PORT pykancha@0.tcp.$REGION.ngrok.io $@
     return
 }
 
@@ -114,7 +114,7 @@ colab_ssh(){
     PORT=`mystatus | awk '/Server/ { print $2;}'`;
     REGION=`mystatus | awk '/Server/ {split($NF, DATA, "["); split(DATA[2], D, "]"); $FS="["; print D[1];}'`;
     echo ":: $PORT : $REGION ...";
-    ssh -X -m hmac-sha1 -c aes128-gcm@openssh.com -C -p $PORT pykancha@0.tcp.$REGION.ngrok.io -L 5000:localhost:5000
+    ssh -Y -m hmac-sha1 -c aes128-gcm@openssh.com -C -p $PORT pykancha@0.tcp.$REGION.ngrok.io -L 5000:localhost:5000
 }
 
 colab_c_con (){
@@ -123,20 +123,26 @@ colab_c_con (){
           PORT=`mystatus | awk '/Server/ { print $2;}'`;
           REGION=`mystatus | awk '/Server/ {split($NF, DATA, "["); split(DATA[2], D, "]"); $FS="["; print D[1];}'`;
           echo ":: $PORT : $REGION ...";
-	  ssh -X -m hmac-sha1 -c aes128-gcm@openssh.com -C -L 3389:localhost:3389 -L 50080:localhost:5050 -R 5037:localhost:5037 -R 60262:localhost:60262 -p $PORT pykancha@0.tcp.$REGION.ngrok.io
+	  ssh -Y -m hmac-sha1 -c aes128-gcm@openssh.com -C -L 3389:localhost:3389 -L 50080:localhost:5050 -R 5037:localhost:5037 -R 60262:localhost:60262 -p $PORT pykancha@0.tcp.$REGION.ngrok.io
           return
     fi
 
     if [ $# -eq 1 ]
         then
-           ssh -X -m hmac-sha1 -c aes128-gcm@openssh.com -C -L 3389:localhost:3389 -L 50080:localhost:5050 -R 5037:localhost:5037 -R 60262:localhost:60262 -p $1 pykancha@0.tcp.ngrok.io
+           ssh -Y -m hmac-sha1 -c aes128-gcm@openssh.com -C -L 3389:localhost:3389 -L 50080:localhost:5050 -R 5037:localhost:5037 -R 60262:localhost:60262 -p $1 pykancha@0.tcp.ngrok.io
     fi
     if [ $# -eq 2 ]
         then
-           ssh -X -m hmac-sha1 -c aes128-gcm@openssh.com -C -L 3389:localhost:3389 -L 50080:localhost:5050 -R 5037:localhost:5037 -R 60262:localhost:60262 -p $1 pykancha@0.tcp.$2.ngrok.io
+           ssh -Y -m hmac-sha1 -c aes128-gcm@openssh.com -C -L 3389:localhost:3389 -L 50080:localhost:5050 -R 5037:localhost:5037 -R 60262:localhost:60262 -p $1 pykancha@0.tcp.$2.ngrok.io
     fi
 }
 
 cloud_c_con(){
-	  ssh -X -m hmac-sha1 -c aes128-gcm@openssh.com -C -L 3389:localhost:3389 -L 50080:localhost:5050 -R 5037:localhost:5037 -R 60262:localhost:60262 -p 22 pykancha@$1
+	  ssh -Y -m hmac-sha1 -c aes128-gcm@openssh.com -C -L 3389:localhost:3389 -L 50080:localhost:5050 -R 5037:localhost:5037 -R 60262:localhost:60262 -p 22 pykancha@$1
+}
+
+pc_ssh(){
+    PORT=$1
+    REGION=$2
+    ssh -Y -m hmac-sha1 -c aes128-gcm@openssh.com -C -p $PORT pykancha@0.tcp.$REGION.ngrok.io -L 5000:localhost:5000
 }
