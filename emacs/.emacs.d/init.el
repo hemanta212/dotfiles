@@ -1132,10 +1132,10 @@ With a prefix ARG, remove start location."
 (defun manim-build-img ()
     "Build manim image after saving a file"
     (when (or (string-equal (buffer-file-name)
-                        (expand-file-name "~/dev/manim/manim/mathgaps/test.py"))
+                        (expand-file-name "~/dev/tutero-math/tutero/test.py"))
            (string-equal (file-name-directory buffer-file-name)
-                        (expand-file-name "~/dev/manim/manim/mathgaps/scripts/")))
-      (async-shell-command (format "cd ~/dev/manim/manim/mathgaps && poetry run python -m manim -ql -r 1920,1080 %s" buffer-file-name))))
+                        (expand-file-name "~/dev/tutero-math/tutero/scripts/")))
+      (async-shell-command (format "cd ~/dev/tutero-math/tutero && poetry run python -m manim -ql -r 1920,1080 %s" buffer-file-name))))
 
 (defun kivy-build ()
   "Build kivy app after saving a file"
