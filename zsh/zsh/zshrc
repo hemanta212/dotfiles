@@ -107,7 +107,7 @@ if uname -r | grep -q 'microsoft'; then
 	export PULSE_SERVER="tcp:$HOST_IP"
 	#export PULSE_SERVER=tcp:$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}') #GWSL
 	#export PULSE_COOKIE=/mnt/c/Users/Dell/.pulse-cookie
-	export LIBGL_ALWAYS_INDIRECT=1 #GWSL
+	# export LIBGL_ALWAYS_INDIRECT=1 #GWSL
 	# WSLD X11 session persist
 	#if ! pgrep wsld >> /dev/null 2>&1 ; then
 	#    nohup wsld > /dev/null < /dev/null 2>&1 &

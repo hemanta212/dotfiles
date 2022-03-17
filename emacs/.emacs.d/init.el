@@ -98,22 +98,23 @@
   (menu-bar-mode -1)            ; Disable the menu bar
   ;; Set up the visible bell
   (setq visible-bell nil)
+  ;; Disable line numbers globally for everything
+  (setq display-line-numbers-type nil)
   ;; Change cursor color
   ;;(set-cursor-color "#000000")
+  ;; (dolist (mode '(org-mode-hook
+  ;;                 term-mode-hook
+  ;;                 shell-mode-hook
+  ;;                 vterm-mode-hook
+  ;;                 eww-mode-hook
+  ;;                 treemacs-mode-hook
+  ;;                 nov-mode-hook
+  ;;                 pdf-view-mode-hook
+  ;;                 lsp-ui-imenu-hook
+  ;;                 eshell-mode-hook))
+  ;;   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
-  (dolist (mode '(org-mode-hook
-                  term-mode-hook
-                  shell-mode-hook
-                  vterm-mode-hook
-                  eww-mode-hook
-                  treemacs-mode-hook
-                  nov-mode-hook
-                  pdf-view-mode-hook
-                  lsp-ui-imenu-hook
-                  eshell-mode-hook))
-    (add-hook mode (lambda () (display-line-numbers-mode 0))))
-
-  (column-number-mode)
+  ;; (column-number-mode)
 
   ;; Prevent asking for confirmation to kill processes when exiting.
   (custom-set-variables '(confirm-kill-processes nil))
@@ -1135,7 +1136,7 @@ With a prefix ARG, remove start location."
                         (expand-file-name "~/dev/tutero-math/tutero/test.py"))
            (string-equal (file-name-directory buffer-file-name)
                         (expand-file-name "~/dev/tutero-math/tutero/scripts/")))
-      (async-shell-command (format "cd ~/dev/tutero-math/tutero && poetry run python -m manim -ql -r 1920,1080 %s" buffer-file-name))))
+      (async-shell-command (format "cd ~/dev/tutero-math/tutero && poetry run manim -ql -r 1920,1080 %s" buffer-file-name))))
 
 (defun kivy-build ()
   "Build kivy app after saving a file"
@@ -1238,7 +1239,7 @@ With a prefix ARG, remove start location."
   ;; Number the candidates (use M-1, M-2 etc to select completions).
   (setq company-show-numbers t)
   )
-(add-to-list 'company-backends #'company-tabnine)
+;; (add-to-list 'company-backends #'company-tabnine)
 
 (use-package projectile
   :diminish projectile-mode
