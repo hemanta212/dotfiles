@@ -812,6 +812,7 @@ Workspaces inside emacs, group simiar file buffers together under a namespace. E
        (shell . t)
        (http . t)
        (ein . t)
+       (racket . t)
        (js . t)
        (python . t)))
 
@@ -1647,9 +1648,15 @@ Try these commands with =M-x=:
 #+end_src
 
 *** Racket
+**** Racket Mode
 #+begin_src emacs-lisp
   (use-package racket-mode
   :hook (racket-xp-mode . racket-mode))
+#+end_src
+
+**** Ob-Racket
+#+begin_src emacs-lisp
+(add-to-list 'load-path "/home/pykancha/Downloads/emacs-ob-racket/")
 #+end_src
 *** EIN
 IPYTHON babyyy!

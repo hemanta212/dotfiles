@@ -612,6 +612,7 @@ Version 2019-11-04 2021-02-16"
      (shell . t)
      (http . t)
      (ein . t)
+     (racket . t)
      (js . t)
      (python . t)))
 
@@ -1204,6 +1205,8 @@ With a prefix ARG, remove start location."
 
 (use-package racket-mode
 :hook (racket-xp-mode . racket-mode))
+
+(add-to-list 'load-path "/home/pykancha/Downloads/emacs-ob-racket/")
 
 (use-package ein
 :defer t
