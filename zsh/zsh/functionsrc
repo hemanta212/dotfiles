@@ -53,6 +53,19 @@ persync(){
   git push origin org
 }
 
+gen-changelog(){
+  echo "# Changelog" > CHANGELOG.txt
+  echo "\n## What's New" >> CHANGELOG.txt
+  git log $(git describe --tags --abbrev=0 @^)..HEAD --pretty=format:"%h: %s" -i -E --grep="^(feat|fix)*feat" >> CHANGELOG.txt
+  echo "\n\n## Bug Fixes" >> CHANGELOG.txt
+  git log $(git describe --tags --abbrev=0 @^)..HEAD --pretty=format:"%h: %s" -i -E --grep="^(feat|fix)*fix" >> CHANGELOG.txt
+}
+
+gen-changelog-plain(){
+  echo "# Changelog\n" > CHANGELOG.txt
+  git log $(git describe --tags --abbrev=0 @^)..HEAD --pretty=format:"%h: %s" >> CHANGELOG.txt
+}
+
 colab_con (){
     if [ $# -eq 0 ]
         then
