@@ -112,6 +112,10 @@ fi
 export _ZO_DATA_DIR="$HOME/.config/zsh/"
 eval "$(zoxide init zsh)"
 
+# Fzf history search and keybindings:
+[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
+[ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
+
 # If inside wsl
 if uname -r | grep -q 'microsoft'; then
 	export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0 #GWSL
@@ -145,5 +149,7 @@ if echo $OSTYPE | grep -q 'android' ; then
     export PATH="$PATH":"$HOME/.cargo/bin/"
     export DISPLAY=127.0.0.1:0
 fi
+
+
 
 
