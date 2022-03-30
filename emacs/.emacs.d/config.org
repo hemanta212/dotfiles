@@ -506,6 +506,14 @@ Light theme (esp for org)
        (setq-default cursor-type '(bar . 2))
        (setq-default line-spacing 5))
    #+end_src
+
+*** Modus Operandi
+Light theme (esp for org)
+   #+begin_src emacs-lisp
+     (use-package modus-themes
+       :ensure t)
+   #+end_src
+
 ** Better modeline
 #+begin_src emacs-lisp
   (use-package all-the-icons)
@@ -789,36 +797,30 @@ Workspaces inside emacs, group simiar file buffers together under a namespace. E
 ** Center Org buffers
 #+begin_src emacs-lisp
   (defun efs/org-mode-visual-fill ()
+    (interactive)
     (setq visual-fill-column-width 100
           visual-fill-column-center-text t)
     (visual-fill-column-mode 1))
 
   (use-package visual-fill-column
-    :hook (org-mode . efs/org-mode-visual-fill))
+    :hook ((org-mode . efs/org-mode-visual-fill)
+           (info-mode . efs/org-mode-visual-fill)))
 #+end_src
 ** Configure babel languages
+*** Local lang loads
+**** Ob-Racket
+#+begin_src emacs-lisp
+(add-to-list 'load-path "/home/pykancha/Downloads/emacs-ob-racket/")
+#+end_src
+
+**** Ob-http
 #+begin_src emacs-lisp
   (use-package ob-http
     :defer t
     :after (org-mode)
     )
-
-  (with-eval-after-load 'org
-   (org-babel-do-load-languages
-     'org-babel-load-languages
-     '((emacs-lisp . t)
-       (C . t)
-       (scheme . t)
-       (shell . t)
-       (http . t)
-       (ein . t)
-       (racket . t)
-       (js . t)
-       (python . t)))
-
-   (push '("conf-unix" . conf-unix) org-src-lang-modes)
-   (setq org-confirm-babel-evaluate nil))
 #+end_src
+
 *** Custom Babel execute
 **** Json
 #+begin_src emacs-lisp
@@ -895,6 +897,24 @@ Workspaces inside emacs, group simiar file buffers together under a namespace. E
     "Major mode for 8085.")
 #+end_src
 
+*** Load languages modules
+#+begin_src emacs-lisp
+  (with-eval-after-load 'org
+   (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((emacs-lisp . t)
+       (C . t)
+       (scheme . t)
+       (shell . t)
+       (http . t)
+       (ein . t)
+       (racket . t)
+       (js . t)
+       (python . t)))
+
+   (push '("conf-unix" . conf-unix) org-src-lang-modes)
+   (setq org-confirm-babel-evaluate nil))
+#+end_src
 ** Structure Templates
 
 Org Mode's [[https://orgmode.org/manual/Structure-Templates.html][structure templates]] feature enables you to quickly insert code blocks into your Org files in combination with =org-tempo= by typing =<= followed by the template name like =el= or =py= and then press =TAB=.  For example, to insert an empty =emacs-lisp= block below, you can type =<el= and press =TAB= to expand into such a block.
@@ -1015,6 +1035,13 @@ are exported to a filename derived from the headline text."
   :commands (org-make-toc)
   )
 #+end_src
+** Theme Org-Modern
+#+begin_src emacs-lisp
+  (use-package org-modern
+    :after org
+    :hook (org-mode . org-modern-mode))
+#+end_src
+
 * Org-roam
 ** General
 #+begin_src emacs-lisp
@@ -1501,7 +1528,7 @@ Try these commands with =M-x=:
     :ensure t
     :defer t
     :config
-     (setq flycheck-python-pyright-executable "~/.emacs.d/var/lsp/server/npm/pyright")
+    ;;(setq flycheck-python-pyright-executable "~/.emacs.d/var/lsp/server/npm/pyright")
     :init (global-flycheck-mode))
 #+end_src
 **** Smart Parens
@@ -1510,38 +1537,25 @@ Try these commands with =M-x=:
   (require 'smartparens-config)
 #+end_src
 *** Python
-**** Python Mode
-#+begin_src emacs-lisp
-    (use-package python-mode
-    :ensure t
-    :hook (python-mode . lsp-deferred)
-    :custom
-    (python-shell-interpreter "python3")
-    (dap-python-executable "python3")
-    (dap-python-debugger 'ptvsd)
-    :config
-    (require 'dap-python)
-    )
-#+end_src
 **** Poetry
 #+begin_src emacs-lisp
   (use-package poetry
   :after python-mode)
-  ;; :config
-  ;; (message "Poetry loaded")
+  ;;  :config
   ;; (poetry-tracking-mode))
+  ;; (message "Poetry loaded")
 #+end_src
 **** Lsp-pyright
 #+begin_src emacs-lisp
-  (use-package lsp-pyright
-    :defer t
-    :ensure t
-    :hook (python-mode . (lambda ()
-                            (require 'lsp-pyright)
-                            (lsp)  ; lsp or lsp-deferred
-                            (poetry-tracking-mode)))
+  ;; (use-package lsp-pyright
+  ;;   :defer t
+  ;;   :ensure t
+  ;;   :hook (python-mode . (lambda ()
+  ;;                           (require 'lsp-pyright)
+  ;;                           (lsp)  ; lsp or lsp-deferred
+  ;;                           (poetry-tracking-mode)))
 
-    (ein:ipynb-mode . poetry-tracking-mode))
+  ;;   (ein:ipynb-mode . poetry-tracking-mode))
 #+end_src
 **** Black Formatting
 #+begin_src emacs-lisp
@@ -1551,6 +1565,20 @@ Try these commands with =M-x=:
     :hook (poetry-tracking-mode . blacken-mode))
     ;;:customize
     ;;(blacken-only-if-project-is-blackened))
+#+end_src
+**** Python Mode
+#+begin_src emacs-lisp
+  (use-package python-mode
+  :ensure t
+  :hook ((python-mode . lsp-deferred)
+         (python-mode . poetry-tracking-mode))
+  :custom
+  (python-shell-interpreter "python3")
+  (dap-python-executable "python3")
+  (dap-python-debugger 'ptvsd)
+  :config
+  (require 'dap-python)
+  )
 #+end_src
 **** Manim build after save
 #+begin_src emacs-lisp
@@ -2035,6 +2063,26 @@ Artist mode companion:
 #+begin_src emacs-lisp
 (use-package ascii-art-to-unicode)
 #+end_src
+** OSM
+#+begin_src emacs-lisp
+(use-package osm
+  :bind (("C-c m h" . osm-home)
+         ("C-c m s" . osm-search)
+         ("C-c m v" . osm-server)
+         ("C-c m t" . osm-goto)
+         ("C-c m x" . osm-gpx-show)
+         ("C-c m j" . osm-bookmark-jump))
+
+  :custom
+  ;; Take a look at the customization group `osm' for more options.
+  (osm-server 'default) ;; Configure the tile server
+  (osm-copyright t)     ;; Display the copyright information
+
+  :init
+  ;; Load Org link support
+  (with-eval-after-load 'org
+    (require 'osm-ol)))
+#+end_src
 * Emacs Outside
 ** Edit Server
 #+begin_src emacs-lisp
@@ -2071,4 +2119,21 @@ When copy pasted from repl interaction. This decorates cmd (one line) as sh and 
     (eval-buffer)
     ))
 
+#+end_src
+
+* Experimental
+** Copilot
+https://github.com/zerolfx/copilot.el
+#+begin_src emacs-lisp
+  ;; Load copilot.el, modify this path to your local path.
+  ;; (load-file "~/Downloads/copilot.el/copilot.el")
+
+  ;; Use tab for completion. Assumes that you use company-mode for completion.
+  ;; (define-key company-mode-map (kbd "<tab>") (lambda ()
+  ;;                                               (interactive)
+  ;;                                               (or (copilot-accept-completion)
+  ;;                                                   (company-indent-or-complete-common nil))))
+  ;; Enable copilot
+  ;; (copilot-enable)
+  ;; (global-set-key (kbd "M-r") 'copilot-accept-completion)
 #+end_src

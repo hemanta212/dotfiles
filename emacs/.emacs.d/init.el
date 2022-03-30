@@ -372,6 +372,9 @@ Version 2019-11-04 2021-02-16"
   (setq-default cursor-type '(bar . 2))
   (setq-default line-spacing 5))
 
+(use-package modus-themes
+  :ensure t)
+
 (use-package all-the-icons)
 (use-package all-the-icons-ivy
   :after (all-the-icons ivy))
@@ -591,33 +594,21 @@ Version 2019-11-04 2021-02-16"
   ;; (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")
 
 (defun efs/org-mode-visual-fill ()
+  (interactive)
   (setq visual-fill-column-width 100
         visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
 
 (use-package visual-fill-column
-  :hook (org-mode . efs/org-mode-visual-fill))
+  :hook ((org-mode . efs/org-mode-visual-fill)
+         (info-mode . efs/org-mode-visual-fill)))
+
+(add-to-list 'load-path "/home/pykancha/Downloads/emacs-ob-racket/")
 
 (use-package ob-http
   :defer t
   :after (org-mode)
   )
-
-(with-eval-after-load 'org
- (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((emacs-lisp . t)
-     (C . t)
-     (scheme . t)
-     (shell . t)
-     (http . t)
-     (ein . t)
-     (racket . t)
-     (js . t)
-     (python . t)))
-
- (push '("conf-unix" . conf-unix) org-src-lang-modes)
- (setq org-confirm-babel-evaluate nil))
 
 (defun org-babel-execute:json (body params)
   (let ((jq (cdr (assoc :jq params)))
@@ -687,6 +678,22 @@ Version 2019-11-04 2021-02-16"
 
 (define-derived-mode 8085-mode asm-mode "8085"
   "Major mode for 8085.")
+
+(with-eval-after-load 'org
+ (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t)
+     (C . t)
+     (scheme . t)
+     (shell . t)
+     (http . t)
+     (ein . t)
+     (racket . t)
+     (js . t)
+     (python . t)))
+
+ (push '("conf-unix" . conf-unix) org-src-lang-modes)
+ (setq org-confirm-babel-evaluate nil))
 
 (with-eval-after-load 'org
   ;; This is needed as of Org 9.2
@@ -778,6 +785,10 @@ are exported to a filename derived from the headline text."
 :defer t
 :commands (org-make-toc)
 )
+
+(use-package org-modern
+  :after org
+  :hook (org-mode . org-modern-mode))
 
 (use-package org-roam
   :ensure t
@@ -1091,38 +1102,27 @@ With a prefix ARG, remove start location."
   :ensure t
   :defer t
   :config
-   (setq flycheck-python-pyright-executable "~/.emacs.d/var/lsp/server/npm/pyright")
+  ;;(setq flycheck-python-pyright-executable "~/.emacs.d/var/lsp/server/npm/pyright")
   :init (global-flycheck-mode))
 
 (use-package smartparens)
 (require 'smartparens-config)
 
-(use-package python-mode
-:ensure t
-:hook (python-mode . lsp-deferred)
-:custom
-(python-shell-interpreter "python3")
-(dap-python-executable "python3")
-(dap-python-debugger 'ptvsd)
-:config
-(require 'dap-python)
-)
-
 (use-package poetry
 :after python-mode)
-;; :config
-;; (message "Poetry loaded")
+;;  :config
 ;; (poetry-tracking-mode))
+;; (message "Poetry loaded")
 
-(use-package lsp-pyright
-  :defer t
-  :ensure t
-  :hook (python-mode . (lambda ()
-                          (require 'lsp-pyright)
-                          (lsp)  ; lsp or lsp-deferred
-                          (poetry-tracking-mode)))
+;; (use-package lsp-pyright
+;;   :defer t
+;;   :ensure t
+;;   :hook (python-mode . (lambda ()
+;;                           (require 'lsp-pyright)
+;;                           (lsp)  ; lsp or lsp-deferred
+;;                           (poetry-tracking-mode)))
 
-  (ein:ipynb-mode . poetry-tracking-mode))
+;;   (ein:ipynb-mode . poetry-tracking-mode))
 
 (use-package blacken
   :demand t
@@ -1130,6 +1130,18 @@ With a prefix ARG, remove start location."
   :hook (poetry-tracking-mode . blacken-mode))
   ;;:customize
   ;;(blacken-only-if-project-is-blackened))
+
+(use-package python-mode
+:ensure t
+:hook ((python-mode . lsp-deferred)
+       (python-mode . poetry-tracking-mode))
+:custom
+(python-shell-interpreter "python3")
+(dap-python-executable "python3")
+(dap-python-debugger 'ptvsd)
+:config
+(require 'dap-python)
+)
 
 (defun manim-build-img ()
     "Build manim image after saving a file"
@@ -1456,6 +1468,24 @@ With a prefix ARG, remove start location."
 
 (use-package ascii-art-to-unicode)
 
+(use-package osm
+  :bind (("C-c m h" . osm-home)
+         ("C-c m s" . osm-search)
+         ("C-c m v" . osm-server)
+         ("C-c m t" . osm-goto)
+         ("C-c m x" . osm-gpx-show)
+         ("C-c m j" . osm-bookmark-jump))
+
+  :custom
+  ;; Take a look at the customization group `osm' for more options.
+  (osm-server 'default) ;; Configure the tile server
+  (osm-copyright t)     ;; Display the copyright information
+
+  :init
+  ;; Load Org link support
+  (with-eval-after-load 'org
+    (require 'osm-ol)))
+
 (use-package edit-server
  :config
   (edit-server-start))
@@ -1474,3 +1504,15 @@ With a prefix ARG, remove start location."
       "~/dev/dotfiles/emacs/.emacs.d/init.el"
   (eval-buffer)
   ))
+
+;; Load copilot.el, modify this path to your local path.
+;; (load-file "~/Downloads/copilot.el/copilot.el")
+
+;; Use tab for completion. Assumes that you use company-mode for completion.
+;; (define-key company-mode-map (kbd "<tab>") (lambda ()
+;;                                               (interactive)
+;;                                               (or (copilot-accept-completion)
+;;                                                   (company-indent-or-complete-common nil))))
+;; Enable copilot
+;; (copilot-enable)
+;; (global-set-key (kbd "M-r") 'copilot-accept-completion)
