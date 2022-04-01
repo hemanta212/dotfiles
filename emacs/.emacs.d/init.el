@@ -1,5 +1,5 @@
 ;; -*- lexical-binding: t; -*-
-  (defun startup/display-startup-time ()
+(defun startup/display-startup-time ()
     (message "Emacs loaded in %s with %d garbage collections."
              (format "%.2f seconds"
                      (float-time
@@ -22,6 +22,10 @@
   (setq native-comp-async-report-warnings-errors 'silent)
   ;; Suppress “ad-handle-definition: .. redefined” warnings during Emacs startup.
   (custom-set-variables '(ad-redefinition-action (quote accept)))
+
+(require 'subr-x)
+(setq dw/is-termux
+      (string-suffix-p "Android" (string-trim (shell-command-to-string "uname -a"))))
 
 ;; Initialize package sources
 (require 'package)
@@ -74,7 +78,7 @@
 
 ;; Define variables section
   (defvar efs/default-font-size 160)
-  (defvar efs/default-variable-font-size 160)
+  (defvar efs/default-variable-font-size 180)
 
   ;; Make frame transparency overridable
   (defvar efs/frame-transparency '(90 . 90))
@@ -82,20 +86,21 @@
 
   (setq inhibit-startup-message t)
 
+  (menu-bar-mode -1)            ; Disable the menu bar
   (if (display-graphic-p)
       (progn
         (set-fringe-mode 10)        ; Give some breathing room
         (tooltip-mode -1)           ; Disable tooltips
         (tool-bar-mode -1)
+        (menu-bar-mode 1)
         (scroll-bar-mode -1)))
 
   (set-face-attribute 'default nil :font "Fira Code Retina" :height efs/default-font-size)
   ;; Set the fixed pitch face
   (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height efs/default-font-size)
   ;; Set the variable pitch face
-  (set-face-attribute 'variable-pitch nil :font "Cantarell" :height efs/default-variable-font-size :weight 'regular)
+  (set-face-attribute 'variable-pitch nil :font "Segoe UI" :height efs/default-variable-font-size :weight 'regular)
 
-  (menu-bar-mode -1)            ; Disable the menu bar
   ;; Set up the visible bell
   (setq visible-bell nil)
   ;; Disable line numbers globally for everything
@@ -143,6 +148,13 @@
   ;; Highlight trailing whitespace in red, so it’s easily visible
   ;;(disabled for now as it created a lot of noise in some modes, e.g. the org-mode export screen)
    (custom-set-variables '(show-trailing-whitespace nil))
+
+  (unless dw/is-termux
+  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
+  (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
+  (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+  (add-to-list 'default-frame-alist '(fullscreen . maximized)))
+
 
   ;; Highlight matching parenthesis
   (show-paren-mode)
@@ -231,6 +243,30 @@
   :config
   (evil-collection-define-key 'normal 'dired-mode-map
     "H" 'dired-hide-dotfiles-mode))
+
+(use-package dired-rainbow
+  :after dired
+  :config
+ (dired-rainbow-define-chmod directory "#6cb2eb" "d.*")
+ (dired-rainbow-define html "#eb5286" ("css" "less" "sass" "scss" "htm" "html" "jhtm" "mht" "eml" "mustache" "xhtml"))
+ (dired-rainbow-define xml "#f2d024" ("xml" "xsd" "xsl" "xslt" "wsdl" "bib" "json" "msg" "pgn" "rss" "yaml" "yml" "rdata"))
+ (dired-rainbow-define document "#9561e2" ("docm" "doc" "docx" "odb" "odt" "pdb" "pdf" "ps" "rtf" "djvu" "epub" "odp" "ppt" "pptx"))
+ (dired-rainbow-define markdown "#ffed4a" ("org" "etx" "info" "markdown" "md" "mkd" "nfo" "pod" "rst" "tex" "textfile" "txt"))
+ (dired-rainbow-define database "#6574cd" ("xlsx" "xls" "csv" "accdb" "db" "mdb" "sqlite" "nc"))
+ (dired-rainbow-define media "#de751f" ("mp3" "mp4" "mkv" "MP3" "MP4" "avi" "mpeg" "mpg" "flv" "ogg" "mov" "mid" "midi" "wav" "aiff" "flac"))
+ (dired-rainbow-define image "#f66d9b" ("tiff" "tif" "cdr" "gif" "ico" "jpeg" "jpg" "png" "psd" "eps" "svg"))
+ (dired-rainbow-define log "#c17d11" ("log"))
+ (dired-rainbow-define shell "#f6993f" ("awk" "bash" "bat" "sed" "sh" "zsh" "vim"))
+ (dired-rainbow-define interpreted "#38c172" ("py" "ipynb" "rb" "pl" "t" "msql" "mysql" "pgsql" "sql" "r" "clj" "cljs" "scala" "js"))
+ (dired-rainbow-define compiled "#4dc0b5" ("asm" "cl" "lisp" "el" "c" "h" "c++" "h++" "hpp" "hxx" "m" "cc" "cs" "cp" "cpp" "go" "f" "for" "ftn" "f90" "f95" "f03" "f08" "s" "rs" "hi" "hs" "pyc" ".java"))
+ (dired-rainbow-define executable "#8cc4ff" ("exe" "msi"))
+ (dired-rainbow-define compressed "#51d88a" ("7z" "zip" "bz2" "tgz" "txz" "gz" "xz" "z" "Z" "jar" "war" "ear" "rar" "sar" "xpi" "apk" "xz" "tar"))
+ (dired-rainbow-define packaged "#faad63" ("deb" "rpm" "apk" "jad" "jar" "cab" "pak" "pk3" "vdf" "vpk" "bsp"))
+ (dired-rainbow-define encrypted "#ffed4a" ("gpg" "pgp" "asc" "bfe" "enc" "signature" "sig" "p12" "pem"))
+ (dired-rainbow-define fonts "#6cb2eb" ("afm" "fon" "fnt" "pfb" "pfm" "ttf" "otf"))
+ (dired-rainbow-define partition "#e3342f" ("dmg" "iso" "bin" "nrg" "qcow" "toast" "vcd" "vmdk" "bak"))
+ (dired-rainbow-define vc "#0074d9" ("git" "gitignore" "gitattributes" "gitmodules"))
+ (dired-rainbow-define-chmod executable-unix "#38c172" "-.*x.*"))
 
 (defun xah-open-in-external-app (&optional @fname)
   "Open the current file or dired marked files in external app.
@@ -342,7 +378,7 @@ Version 2019-11-04 2021-02-16"
 ;;(setq message-send-mail-function 'async-smtpmail-send-it).
 
 (use-package paradox
-  :defer nil
+  :defer t
   :custom
   (paradox-github-token t)
   (paradox-column-width-package 27)
@@ -363,8 +399,12 @@ Version 2019-11-04 2021-02-16"
 (use-package command-log-mode
   :commands command-log-mode)
 
-(use-package doom-themes
-  :init (load-theme 'doom-gruvbox t))
+(use-package spacegray-theme)
+
+(use-package doom-themes)
+(unless dw/is-termux
+(load-theme 'doom-ir-black t)
+(doom-themes-visual-bell-config))
 
 (use-package berrys-theme
   :ensure t
@@ -375,6 +415,8 @@ Version 2019-11-04 2021-02-16"
 (use-package modus-themes
   :ensure t)
 
+;; You must run (all-the-icons-install-fonts) one time after
+;; installing this package!
 (use-package all-the-icons)
 (use-package all-the-icons-ivy
   :after (all-the-icons ivy))
@@ -382,6 +424,11 @@ Version 2019-11-04 2021-02-16"
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
   :custom ((doom-modeline-height 15)))
+
+(use-package diminish)
+
+(use-package minions
+:hook (doom-modeline-mode . minions-mode))
 
 (use-package which-key
   :defer nil
@@ -430,6 +477,18 @@ Version 2019-11-04 2021-02-16"
   ;; Uncomment the following line to have sorting remembered across sessions!
   (prescient-persist-mode 1)
   (ivy-prescient-mode 1))
+
+;; replaces ivy rich
+;; Enable richer annotations using the Marginalia package
+;; (use-package marginalia
+;;   ;; Either bind `marginalia-cycle` globally or only in the minibuffer
+;;   :bind (:map minibuffer-local-map
+;;          ("M-A" . marginalia-cycle))
+;;   ;; The :init configuration is always executed (Not lazy!)
+;;   :init
+;;   ;; Must be in the :init section of use-package such that the mode gets
+;;   ;; enabled right away. Note that this forces loading the package.
+;;   (marginalia-mode))
 
 (use-package avy
 :ensure t)
@@ -512,9 +571,21 @@ Version 2019-11-04 2021-02-16"
 
 (use-package perspective
 :ensure t
-:bind (("C-x k" . persp-kill-buffer*))
+:bind (("C-x k" . persp-kill-buffer*)
+          ("C-M-n" . persp-next)
+          ("C-M-k" . persp-switch)
+       )
 :init
 (persp-mode))
+
+(use-package emojify
+  :hook (after-init . global-emojify-mode))
+
+;; Set transparency of emacs
+(defun transparency (value)
+  "Sets the transparency of the frame window. 0=transparent/100=opaque"
+  (interactive "nTransparency Value 0 - 100 opaque:")
+  (set-frame-parameter (selected-frame) 'alpha value))
 
 (cond ((eq system-type 'darwin)
        ;; <<Mac settings>>
@@ -537,15 +608,15 @@ Version 2019-11-04 2021-02-16"
                              (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
 
   ;; Set faces for heading levels
-  (dolist (face '((org-level-1 . 1.4)
-                  (org-level-2 . 1.2)
-                  (org-level-3 . 1.2)
-                  (org-level-4 . 1.2)
-                  (org-level-5 . 1.1)
-                  (org-level-6 . 1.1)
-                  (org-level-7 . 1.1)
-                  (org-level-8 . 1.1)))
-    (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
+  (dolist (face '((org-level-1 . 1.1)
+                  (org-level-2 . 1.0)
+                  (org-level-3 . 1.0)
+                  (org-level-4 . 1.0)
+                  (org-level-5 . 1.0)
+                  (org-level-6 . 1.0)
+                  (org-level-7 . 1.0)
+                  (org-level-8 . 1.0)))
+    (set-face-attribute (car face) nil :font "Fira Code Retina" :weight 'regular :height (cdr face)))
 
   ;; Ensure that anything that should be fixed-pitch in Org files appears that way
   (set-face-attribute 'org-block nil    :foreground nil :inherit 'fixed-pitch)
@@ -558,40 +629,64 @@ Version 2019-11-04 2021-02-16"
   (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
   (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
   (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
-  (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch))
+  (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch)
 
+    ;; Get rid of the background on column views
+  (set-face-attribute 'org-column nil :background nil)
+  (set-face-attribute 'org-column-title nil :background nil))
+
+;; Turn on indentation and auto-fill mode for Org files
 (defun efs/org-mode-setup ()
   (org-indent-mode)
   (variable-pitch-mode 1)
-  (visual-line-mode 1))
+  (auto-fill-mode 0)
+  (visual-line-mode 1)
+  (setq evil-auto-indent nil)
+  (diminish org-indent-mode))
 
-(use-package org
-  ;; :defer t
-  ;;:pin org
-  :commands (org-capture org-agenda)
-  :hook (org-mode . efs/org-mode-setup)
-  :config
-  (setq org-ellipsis " ▾")
-  (setq org-agenda-start-with-log-mode t)
-  (setq org-src-tab-acts-natively t)
-  (setq org-log-done 'time)
-  (setq org-log-into-drawer t)
-  (setq org-agenda-files
-        '("~/dev/personal/org/track.org"))
-  (define-key org-mode-map (kbd "C-c C-r") verb-command-map)
+  (use-package org
+    :commands (org-capture org-agenda)
+    :hook (org-mode . efs/org-mode-setup)
+    :config
+    (setq org-ellipsis " ▾"
+          org-hide-emphasis-markers t
+          org-hide-block-startup nil
+          org-fontify-quote-and-verse-blocks t
+          org-src-fontify-natively t
+          org-src-tab-acts-natively t
+          org-src-preserve-indentation nil
+          org-edit-src-content-indentation 2
+          org-startup-folded 'content
+          org-cycle-separator-lines 2
+          org-log-done 'time
+          org-log-into-drawer t
+          org-agenda-start-with-log-mode t
+          org-agenda-files
+          '("~/dev/personal/org/track.org"))
+    (define-key org-mode-map (kbd "C-c C-r") verb-command-map)
 
-  (setq org-todo-keywords
-  '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
-    (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
+      (evil-define-key '(normal insert visual) org-mode-map (kbd "C-j") 'org-next-visible-heading)
+(evil-define-key '(normal insert visual) org-mode-map (kbd "C-k") 'org-previous-visible-heading)
 
-  (efs/org-font-setup))
+  (evil-define-key '(normal insert visual) org-mode-map (kbd "M-j") 'org-metadown)
+  (evil-define-key '(normal insert visual) org-mode-map (kbd "M-k") 'org-metaup)
+
+    (setq org-todo-keywords
+    '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
+      (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
+
+    (efs/org-font-setup))
 
 (use-package org-bullets
   :after org
-  :hook (org-mode . org-bullets-mode)
-  :custom
-  (org-bullets-bullet-list '("◉" "○" "✸" "✿")))
+  :hook (org-mode . org-bullets-mode))
+  ;; Overridden by org-mordern
+  ;;:custom
+  ;;(org-bullets-bullet-list '("◉" "○" "✸" "✿")))
   ;; (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")
+
+(use-package org-appear
+  :hook (org-mode . org-appear-mode))
 
 (defun efs/org-mode-visual-fill ()
   (interactive)
@@ -601,6 +696,7 @@ Version 2019-11-04 2021-02-16"
 
 (use-package visual-fill-column
   :hook ((org-mode . efs/org-mode-visual-fill)
+         (dashboard-mode . efs/org-mode-visual-fill)
          (info-mode . efs/org-mode-visual-fill)))
 
 (add-to-list 'load-path "/home/pykancha/Downloads/emacs-ob-racket/")
@@ -783,14 +879,15 @@ are exported to a filename derived from the headline text."
 
 (use-package org-make-toc
 :defer t
-:commands (org-make-toc)
-)
+:hook (org-mode . org-make-toc-mode)
+:commands (org-make-toc))
 
 (use-package org-modern
   :after org
   :hook (org-mode . org-modern-mode))
 
 (use-package org-roam
+  :defer t
   :ensure t
   :demand t
   :init
@@ -848,6 +945,7 @@ are exported to a filename derived from the headline text."
    (org-roam-setup))
 
 ;; Bind this to C-c n I
+  (with-eval-after-load 'org-roam
   (defun org-roam-node-insert-immediate (arg &rest args)
     (interactive "P")
     (let ((args (cons arg args))
@@ -855,11 +953,12 @@ are exported to a filename derived from the headline text."
                                                     '(:immediate-finish t)))))
       (apply #'org-roam-node-insert args)))
 
-(global-set-key (kbd "C-c n I") #'org-roam-node-insert-immediate)
+(global-set-key (kbd "C-c n I") #'org-roam-node-insert-immediate))
 
 ;; The buffer you put this code in must have lexical-binding set to t!
 ;; See the final configuration at the end for more details.
 
+(with-eval-after-load 'org-roam
 (defun my/org-roam-filter-by-tag (tag-name)
   (lambda (node)
     (member tag-name (org-roam-node-tags node))))
@@ -875,7 +974,7 @@ are exported to a filename derived from the headline text."
   (setq org-agenda-files (my/org-roam-list-notes-by-tag "Project")))
 
 ;; Build the agenda list the first time for the session
-(my/org-roam-refresh-agenda-list)
+(my/org-roam-refresh-agenda-list))
 
 (defun my/org-roam-project-finalize-hook ()
   "Adds the captured project file to `org-agenda-files' if the
@@ -948,10 +1047,11 @@ capture was not aborted."
                    (file-truename (buffer-file-name)))
       (org-refile nil nil (list "Tasks" today-file nil pos)))))
 
+(with-eval-after-load 'org-roam
 (add-to-list 'org-after-todo-state-change-hook
              (lambda ()
                (when (equal org-state "DONE")
-                 (my/org-roam-copy-todo-to-today))))
+                 (my/org-roam-copy-todo-to-today)))))
 
 ;; DOt execute taskes over default capture Argghhh!
 ;; (setq org-roam-capture-templates '(("d" "default" plain "%?"
@@ -960,7 +1060,7 @@ capture was not aborted."
      ;; :unnarrowed t)))
 
 (use-package pdf-tools
-:defer t
+:defer 4
 :commands (pdf-view-mode pdf-tools-install)
 :mode ("\\.[pP][dD][fF]\\'" . pdf-view-mode)
 :magic ("%PDF" . pdf-view-mode)
@@ -1025,6 +1125,14 @@ With a prefix ARG, remove start location."
    :config
    (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory)
          elfeed-show-entry-switch 'display-buffer)
+   (setq elfeed-feeds
+        '("https://nullprogram.com/feed/"
+          "https://ambrevar.xyz/atom.xml"
+          "https://guix.gnu.org/feeds/blog.atom"
+          "https://valdyas.org/fading/feed/"
+          "https://lucidmanager.org/tags/emacs/index.xml"
+          "https://blog.tecosaur.com/tmio/rss.xml"
+          "https://www.reddit.com/r/emacs/.rss"))
    :bind
    ("C-x w" . elfeed ))
 
@@ -1232,6 +1340,9 @@ With a prefix ARG, remove start location."
 :custom
 (math-preview-command "/home/pykancha/.config/nvm/versions/node/v14.17.6/bin/math-preview"))
 
+(use-package yaml-mode
+  :mode "\\.ya?ml\\'")
+
 (use-package company
   :after lsp-mode
   :hook (lsp-mode . company-mode)
@@ -1285,6 +1396,21 @@ With a prefix ARG, remove start location."
 ;; :config
 ;; (add-hook 'magit-mode-hook (lambda () (magit-delta-mode +1))))
 
+(use-package magit-todos
+  :after magit)
+
+;; Show + - icons for git changes in gutter/fringe
+;; git-gutter-fringe -> works in gui only (supports along with linum mode)
+;; git-gutter -> works in both (doesnot go along with linum mode :(
+(use-package git-gutter
+ :defer t)
+;; disable on org buffers (interferes with drop down arrow makes look like big space)
+(defun activate-gutter ()
+  (unless (eq major-mode 'org-mode)
+    (git-gutter-mode 1)))
+(add-hook 'prog-mode-hook 'activate-gutter)
+(add-hook 'text-mode-hook 'activate-gutter)
+
 (use-package evil-nerd-commenter
   :bind ("M-/" . evilnc-comment-or-uncomment-lines))
 
@@ -1305,13 +1431,14 @@ With a prefix ARG, remove start location."
          ;; ("C-c C-p C-r" . webpaste-paste-region))
   :custom (webpaste-provider-priority '("ix.io" "dpaste.com")))
 
-(use-package undo-tree
-:ensure t
-:config
-(global-undo-tree-mode))
+;; (use-package undo-tree
+;; :ensure t
+;; :config
+;; (global-undo-tree-mode))
 
 (use-package verb
-:ensure t)
+ :after org-mode
+ :ensure t)
 
 (use-package harpoon
   :config
@@ -1330,6 +1457,34 @@ With a prefix ARG, remove start location."
       "h8" 'harpoon-go-to-8
       "h9" 'harpoon-go-to-9
       ))
+
+(setq display-time-world-list
+  '(
+    ("Australia/Melbourne" "Melbourne")
+    ("Asia/Calcutta" "India")
+    ("America/Chicago" "Chicago")
+    ("Asia/Kathmandu" "Kathmandu")
+    ("Etc/UTC" "UTC")))
+
+(setq display-time-world-time-format "%a, %d %b %I:%M %p %Z")
+
+(use-package origami
+  :defer t
+  :config
+  (global-origami-mode 1)
+  :bind ("C-c l f" . origami-toggle-node))
+
+(use-package lsp-origami
+  :hook (lsp-after-open-hook . lsp-origami-try-enable))
+
+(use-package savehist
+:custom
+(history-length 25)
+(savehist-mode 1))
+;; Individual history elements can be configured separately
+;;(put 'minibuffer-history 'history-length 25)
+;;(put 'evil-ex-history 'history-length 50)
+;;(put 'kill-ring 'history-length 25))
 
 (use-package term
 :commands term
@@ -1516,3 +1671,16 @@ With a prefix ARG, remove start location."
 ;; Enable copilot
 ;; (copilot-enable)
 ;; (global-set-key (kbd "M-r") 'copilot-accept-completion)
+
+;; Emacs 29 ships with an improved global minor mode for scrolling with a mouse or a touchpad,
+;; that you might want to enable as well:
+(when (>= emacs-major-version 29)
+  (pixel-scroll-precision-mode))
+
+(setq my-state nil)
+(defun efs/my-toggle()
+  (interactive)
+    (if (eq my-state nil)
+        (setq my-state 't)
+    (setq my-state nil))
+  (message "%s" my-state))
