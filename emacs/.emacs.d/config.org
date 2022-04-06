@@ -34,7 +34,7 @@ Add a function to =emacs-startup-hook= to print out the duration of Emacs startu
 * System Settings
 #+begin_src emacs-lisp
    (require 'subr-x)
-   (setq dw/is-termux
+   (setq efs/is-termux
          (string-suffix-p "Android" (string-trim (shell-command-to-string "uname -a"))))
 #+end_src
 
@@ -115,6 +115,7 @@ Testing quelpa and to install packages directly from their github repositories (
     (setq inhibit-startup-message t)
 
     (menu-bar-mode -1)            ; Disable the menu bar
+    (display-battery-mode 1)
     (if (display-graphic-p)
         (progn
           (set-fringe-mode 10)        ; Give some breathing room
@@ -177,9 +178,9 @@ Testing quelpa and to install packages directly from their github repositories (
     ;;(disabled for now as it created a lot of noise in some modes, e.g. the org-mode export screen)
      (custom-set-variables '(show-trailing-whitespace nil))
 
-    (unless dw/is-termux
-    (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
-    (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
+    (unless efs/is-termux
+    (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
+    (add-to-list 'default-frame-alist '(alpha . (100 . 100)))
     (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
     (add-to-list 'default-frame-alist '(fullscreen . maximized)))
 
@@ -547,9 +548,12 @@ Giving a try to Paradox for an enhanced package management interface. We set par
 *** Doom Themes
 #+begin_src emacs-lisp
   (use-package doom-themes)
-  (unless dw/is-termux
-  (load-theme 'doom-ir-black t)
-  (doom-themes-visual-bell-config))
+  (unless efs/is-termux
+   (if (eq (display-graphic-p) nil)
+       (load-theme 'modus-vivendi t)
+       (progn
+       (load-theme 'doom-one t)
+       (doom-themes-visual-bell-config))))
 #+end_src
 
 *** Berry's Theme
@@ -1627,9 +1631,8 @@ Provides a summary on any topic from wikipedia. Previously it opened in separate
 #+end_src
 
 * Development
-** Languages
-*** IDE features with LSP Mode
-**** Lsp-mode
+** IDE features with LSP Mode
+*** Lsp-mode
 #+begin_src emacs-lisp
   (defun efs/lsp-mode-setup ()
       (setq lspheaderline-breadcumb-segments '(path-up-to-project file symbols))
@@ -1647,7 +1650,7 @@ Provides a summary on any topic from wikipedia. Previously it opened in separate
       (lsp-enable-which-key-integration t))
 #+end_src
 
-**** Dap-mode
+*** Dap-mode
 #+begin_src emacs-lisp
      (use-package dap-mode
     :after lsp-mode)
@@ -1656,7 +1659,7 @@ Provides a summary on any topic from wikipedia. Previously it opened in separate
       "d"  'dap-hydra :which-key "dap hydra")
 #+end_src
 
-**** lsp-ui
+*** lsp-ui
 
 [[https://emacs-lsp.github.io/lsp-ui/][lsp-ui]] is a set of UI enhancements built on top of =lsp-mode= which make Emacs feel even more like an IDE.  Check out the screenshots on the =lsp-ui= homepage (linked at the beginning of this paragraph) to see examples of what it can do.
 
@@ -1668,7 +1671,7 @@ Provides a summary on any topic from wikipedia. Previously it opened in separate
     (lsp-ui-doc-position 'bottom))
 #+end_src
 
-**** lsp-treemacs
+*** lsp-treemacs
 
 [[https://github.com/emacs-lsp/lsp-treemacs][lsp-treemacs]] provides nice tree views for different aspects of your code like symbols in a file, references of a symbol, or diagnostic messages (errors and warnings) that are found in your code.
 
@@ -1688,7 +1691,7 @@ This package is built on the [[https://github.com/Alexander-Miller/treemacs][tre
     (treemacs-resize-icons 15))
 #+end_src
 
-**** lsp-ivy
+*** lsp-ivy
 
 [[https://github.com/emacs-lsp/lsp-ivy][lsp-ivy]] integrates Ivy with =lsp-mode= to make it easy to search for things by name in your code.  When you run these commands, a prompt will appear in the minibuffer allowing you to type part of the name of a symbol in your code.  Results will be populated in the minibuffer so that you can find what you're looking for and jump to that location in the code upon selecting the result.
 
@@ -1703,22 +1706,7 @@ Try these commands with =M-x=:
   :after lsp)
 #+end_src
 
-**** FlyCheck
-#+begin_src emacs-lisp
-  (use-package flycheck
-    :ensure t
-    :defer t
-    :config
-    ;;(setq flycheck-python-pyright-executable "~/.emacs.d/var/lsp/server/npm/pyright")
-    :init (global-flycheck-mode))
-#+end_src
-
-**** Smart Parens
-#+begin_src emacs-lisp
-  (use-package smartparens)
-  (require 'smartparens-config)
-#+end_src
-
+** Languages
 *** Python
 **** Poetry
 #+begin_src emacs-lisp
@@ -1744,12 +1732,42 @@ Try these commands with =M-x=:
 
 **** Black Formatting
 #+begin_src emacs-lisp
-  (use-package blacken
-    :demand t
-    :after poetry
-    :hook (poetry-tracking-mode . blacken-mode))
+  ;; (use-package blacken
+  ;;   :demand t
+  ;;   :after poetry
+  ;;   :hook (poetry-tracking-mode . blacken-mode))
     ;;:customize
     ;;(blacken-only-if-project-is-blackened))
+#+end_src
+
+**** Manim build after save
+#+begin_src emacs-lisp
+   (defun manim-build-img ()
+       "Build manim image after saving a file"
+       (save-buffer)
+       (when (or (string-equal (buffer-file-name)
+                           (expand-file-name "~/dev/tutero-math/tutero/test.py"))
+              (string-equal (file-name-directory buffer-file-name)
+                           (expand-file-name "~/dev/tutero-math/tutero/scripts/")))
+         (async-shell-command (format "cd ~/dev/tutero-math/tutero && poetry run manim -ql -r 1920,1080 %s" buffer-file-name))))
+
+   (defun kivy-build ()
+     "Build kivy app after saving a file"
+       (when (string-equal (file-name-directory buffer-file-name)
+                           (expand-file-name "~/dev/kivy/test/"))
+       (shell-command-to-string "cp main.py /mnt/d/projects/kivy/test/ && cd /mnt/d/projects/kivy/test && poetry.exe run python main.py")))
+
+   (defun sphinx-build ()
+       "Build sphinx html builds after saving a file"
+       (when (string-equal (file-name-directory buffer-file-name)
+                           (expand-file-name "~/dev/c-practice/cipher-site/"))
+         (async-shell-command (format "rm -rf _build/html && poetry run make html" buffer-file-name))))
+
+  (defun python-mr-builds ()
+    "Build function checks to bind to M-r key"
+        (interactive)
+    (manim-build-img)
+        (sphinx-build))
 #+end_src
 
 **** Python Mode
@@ -1764,33 +1782,8 @@ Try these commands with =M-x=:
   (dap-python-debugger 'ptvsd)
   :config
   (require 'dap-python)
-  )
-#+end_src
-
-**** Manim build after save
-#+begin_src emacs-lisp
-  (defun manim-build-img ()
-      "Build manim image after saving a file"
-      (when (or (string-equal (buffer-file-name)
-                          (expand-file-name "~/dev/tutero-math/tutero/test.py"))
-             (string-equal (file-name-directory buffer-file-name)
-                          (expand-file-name "~/dev/tutero-math/tutero/scripts/")))
-        (async-shell-command (format "cd ~/dev/tutero-math/tutero && poetry run manim -ql -r 1920,1080 %s" buffer-file-name))))
-
-  (defun kivy-build ()
-    "Build kivy app after saving a file"
-      (when (string-equal (file-name-directory buffer-file-name)
-                          (expand-file-name "~/dev/kivy/test/"))
-      (shell-command-to-string "cp main.py /mnt/d/projects/kivy/test/ && cd /mnt/d/projects/kivy/test && poetry.exe run python main.py")))
-
-  (defun sphinx-build ()
-      "Build sphinx html builds after saving a file"
-      (when (string-equal (file-name-directory buffer-file-name)
-                          (expand-file-name "~/dev/c-practice/cipher-site/"))
-        (async-shell-command (format "rm -rf _build/html && poetry run make html" buffer-file-name))))
-
-    (add-hook 'after-save-hook #'manim-build-img)
-    (add-hook 'after-save-hook #'sphinx-build)
+  :bind (:map python-mode-map
+         ("M-r" . manim-mr-builds)))
 #+end_src
 
 *** Flutter/Dart
@@ -1906,6 +1899,39 @@ IPYTHON babyyy!
 #+begin_src emacs-lisp
 (use-package yaml-mode
   :mode "\\.ya?ml\\'")
+#+end_src
+
+** FlyCheck
+#+begin_src emacs-lisp
+  (use-package flycheck
+    :ensure t
+    :defer t
+    :config
+    ;;(setq flycheck-python-pyright-executable "~/.emacs.d/var/lsp/server/npm/pyright")
+    :init (global-flycheck-mode))
+#+end_src
+
+** Smart Parens
+#+begin_src emacs-lisp
+  (use-package smartparens)
+  (require 'smartparens-config)
+#+end_src
+
+** Formatting
+Some lanaguage servers include formatting capabilities, for others who dont we call out formatting tools.
+Apheleia makes calling external tools asychronous and non-blocking as possible.
+By default supports: black, [[https://prettier.io][prettier]], gofmt
+#+begin_src emacs-lisp
+  (use-package apheleia
+  :config
+  ;; for python
+  (setf (alist-get 'isort apheleia-formatters)
+      '("isort" "--stdout" "-"))
+  (setf (alist-get 'black apheleia-formatters)
+      '("black" "-"))
+  (setf (alist-get 'python-mode apheleia-mode-alist)
+      '(isort black))
+  (apheleia-global-mode))
 #+end_src
 
 ** Company Mode
@@ -2030,6 +2056,20 @@ Paste a selected region or buffer and get the link
     ;; :bind (("C-c C-p C-b" . webpaste-paste-buffer)
            ;; ("C-c C-p C-r" . webpaste-paste-region))
     :custom (webpaste-provider-priority '("ix.io" "dpaste.com")))
+#+end_src
+
+** Undo-Fu
+#+begin_src emacs-lisp
+  (use-package undo-fu
+    :after evil
+    :config
+        (setq evil-undo-system 'undo-fu))
+
+  (use-package undo-fu-session
+    :after undo-fu
+    :config
+    (setq undo-fu-session-incompatible-files '("/COMMIT_EDITMSG\\'" "/git-rebase-todo\\'"))
+        (global-undo-fu-session-mode))
 #+end_src
 
 ** Undo-Tree
@@ -2363,6 +2403,19 @@ Artist mode companion:
     (require 'osm-ol)))
 #+end_src
 
+** Nepali Romanized
+#+begin_src emacs-lisp
+    (unless efs/is-termux
+      (load-file "~/Downloads/emacs-nepali-romanized/nepali-romanized.el"))
+#+end_src
+
+** Redacted mode
+#+begin_src emacs-lisp
+(use-package redacted
+  :defer t
+  :commands (redacted-mode))
+#+end_src
+
 * Emacs Outside
 ** Edit Server
 #+begin_src emacs-lisp
@@ -2408,17 +2461,34 @@ When copy pasted from repl interaction. This decorates cmd (one line) as sh and 
 ** Copilot
 https://github.com/zerolfx/copilot.el
 #+begin_src emacs-lisp
+  ;; dependency editorconfig
+  (use-package editorconfig)
   ;; Load copilot.el, modify this path to your local path.
-  ;; (load-file "~/Downloads/copilot.el/copilot.el")
+  (load-file "~/Downloads/copilot.el/copilot.el")
 
-  ;; Use tab for completion. Assumes that you use company-mode for completion.
-  ;; (define-key company-mode-map (kbd "<tab>") (lambda ()
-  ;;                                               (interactive)
-  ;;                                               (or (copilot-accept-completion)
-  ;;                                                   (company-indent-or-complete-common nil))))
-  ;; Enable copilot
-  ;; (copilot-enable)
-  ;; (global-set-key (kbd "M-r") 'copilot-accept-completion)
+  ; complete by copilot first, then company-mode
+  (defun my-tab ()
+    (interactive)
+    (or (copilot-accept-completion)
+        (company-indent-or-complete-common nil)))
+
+  ; modify company-mode behaviors
+  (with-eval-after-load 'company
+    ; disable inline previews
+    (delq 'company-preview-if-just-one-frontend company-frontends)
+    ; enable tab completion
+    (define-key company-mode-map (kbd "<tab>") 'my-tab)
+    (define-key company-mode-map (kbd "TAB") 'my-tab)
+    (define-key company-active-map (kbd "<tab>") 'my-tab)
+    (define-key company-active-map (kbd "TAB") 'my-tab))
+
+  ; provide completion when typing
+  (add-hook 'post-command-hook (lambda ()
+                                 (copilot-clear-overlay)
+                                 (when (evil-insert-state-p)
+                                   (copilot-complete))))
+
+  (global-set-key (kbd "M-r") 'copilot-accept-completion)
 #+end_src
 
 ** Emacs 29 features
@@ -2428,6 +2498,26 @@ https://emacsredux.com/blog/2021/12/19/using-emacs-on-windows-11-with-wsl2/
   ;; that you might want to enable as well:
   (when (>= emacs-major-version 29)
     (pixel-scroll-precision-mode))
+#+end_src
+
+** EAF
+#+begin_src emacs-lisp
+  ;; (unless efs/is-termux
+  ;; (use-package eaf
+  ;;   :load-path "~/.cache/emacs/.emacs.custom/site-lisp/emacs-application-framework/"
+  ;;   :custom
+  ;;   ; See https://github.com/emacs-eaf/emacs-application-framework/wiki/Customization
+  ;;   (eaf-browser-continue-where-left-off t)
+  ;;   (eaf-browser-enable-adblocker t)
+  ;;   :config
+  ;;   (setq eaf-apps-to-install '(browser image-viewer pdf-viewer rss-reader markdown-previewer
+  ;;                               org-previewer))
+  ;;   (require 'eaf-image-viewer)
+  ;;   (require 'eaf-pdf-viewer)
+  ;;   (require 'eaf-org-previewer)
+  ;;   (require 'eaf-markdown-previewer)
+  ;;   (require 'eaf-rss-reader)
+  ;;   (require 'eaf-browser)))
 #+end_src
 
 ** Toggle

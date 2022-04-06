@@ -1,5 +1,5 @@
 ;; -*- lexical-binding: t; -*-
-(defun startup/display-startup-time ()
+  (defun startup/display-startup-time ()
     (message "Emacs loaded in %s with %d garbage collections."
              (format "%.2f seconds"
                      (float-time
@@ -24,7 +24,7 @@
   (custom-set-variables '(ad-redefinition-action (quote accept)))
 
 (require 'subr-x)
-(setq dw/is-termux
+(setq efs/is-termux
       (string-suffix-p "Android" (string-trim (shell-command-to-string "uname -a"))))
 
 ;; Initialize package sources
@@ -87,6 +87,7 @@
   (setq inhibit-startup-message t)
 
   (menu-bar-mode -1)            ; Disable the menu bar
+  (display-battery-mode 1)
   (if (display-graphic-p)
       (progn
         (set-fringe-mode 10)        ; Give some breathing room
@@ -149,9 +150,9 @@
   ;;(disabled for now as it created a lot of noise in some modes, e.g. the org-mode export screen)
    (custom-set-variables '(show-trailing-whitespace nil))
 
-  (unless dw/is-termux
-  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
-  (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
+  (unless efs/is-termux
+  (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
+  (add-to-list 'default-frame-alist '(alpha . (100 . 100)))
   (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
   (add-to-list 'default-frame-alist '(fullscreen . maximized)))
 
@@ -402,9 +403,12 @@ Version 2019-11-04 2021-02-16"
 (use-package spacegray-theme)
 
 (use-package doom-themes)
-(unless dw/is-termux
-(load-theme 'doom-ir-black t)
-(doom-themes-visual-bell-config))
+(unless efs/is-termux
+ (if (eq (display-graphic-p) nil)
+     (load-theme 'modus-vivendi t)
+     (progn
+     (load-theme 'doom-one t)
+     (doom-themes-visual-bell-config))))
 
 (use-package berrys-theme
   :ensure t
@@ -1206,16 +1210,6 @@ With a prefix ARG, remove start location."
 (use-package lsp-ivy
 :after lsp)
 
-(use-package flycheck
-  :ensure t
-  :defer t
-  :config
-  ;;(setq flycheck-python-pyright-executable "~/.emacs.d/var/lsp/server/npm/pyright")
-  :init (global-flycheck-mode))
-
-(use-package smartparens)
-(require 'smartparens-config)
-
 (use-package poetry
 :after python-mode)
 ;;  :config
@@ -1232,12 +1226,39 @@ With a prefix ARG, remove start location."
 
 ;;   (ein:ipynb-mode . poetry-tracking-mode))
 
-(use-package blacken
-  :demand t
-  :after poetry
-  :hook (poetry-tracking-mode . blacken-mode))
+;; (use-package blacken
+;;   :demand t
+;;   :after poetry
+;;   :hook (poetry-tracking-mode . blacken-mode))
   ;;:customize
   ;;(blacken-only-if-project-is-blackened))
+
+(defun manim-build-img ()
+     "Build manim image after saving a file"
+     (save-buffer)
+     (when (or (string-equal (buffer-file-name)
+                         (expand-file-name "~/dev/tutero-math/tutero/test.py"))
+            (string-equal (file-name-directory buffer-file-name)
+                         (expand-file-name "~/dev/tutero-math/tutero/scripts/")))
+       (async-shell-command (format "cd ~/dev/tutero-math/tutero && poetry run manim -ql -r 1920,1080 %s" buffer-file-name))))
+
+ (defun kivy-build ()
+   "Build kivy app after saving a file"
+     (when (string-equal (file-name-directory buffer-file-name)
+                         (expand-file-name "~/dev/kivy/test/"))
+     (shell-command-to-string "cp main.py /mnt/d/projects/kivy/test/ && cd /mnt/d/projects/kivy/test && poetry.exe run python main.py")))
+
+ (defun sphinx-build ()
+     "Build sphinx html builds after saving a file"
+     (when (string-equal (file-name-directory buffer-file-name)
+                         (expand-file-name "~/dev/c-practice/cipher-site/"))
+       (async-shell-command (format "rm -rf _build/html && poetry run make html" buffer-file-name))))
+
+(defun python-mr-builds ()
+  "Build function checks to bind to M-r key"
+      (interactive)
+  (manim-build-img)
+      (sphinx-build))
 
 (use-package python-mode
 :ensure t
@@ -1249,30 +1270,8 @@ With a prefix ARG, remove start location."
 (dap-python-debugger 'ptvsd)
 :config
 (require 'dap-python)
-)
-
-(defun manim-build-img ()
-    "Build manim image after saving a file"
-    (when (or (string-equal (buffer-file-name)
-                        (expand-file-name "~/dev/tutero-math/tutero/test.py"))
-           (string-equal (file-name-directory buffer-file-name)
-                        (expand-file-name "~/dev/tutero-math/tutero/scripts/")))
-      (async-shell-command (format "cd ~/dev/tutero-math/tutero && poetry run manim -ql -r 1920,1080 %s" buffer-file-name))))
-
-(defun kivy-build ()
-  "Build kivy app after saving a file"
-    (when (string-equal (file-name-directory buffer-file-name)
-                        (expand-file-name "~/dev/kivy/test/"))
-    (shell-command-to-string "cp main.py /mnt/d/projects/kivy/test/ && cd /mnt/d/projects/kivy/test && poetry.exe run python main.py")))
-
-(defun sphinx-build ()
-    "Build sphinx html builds after saving a file"
-    (when (string-equal (file-name-directory buffer-file-name)
-                        (expand-file-name "~/dev/c-practice/cipher-site/"))
-      (async-shell-command (format "rm -rf _build/html && poetry run make html" buffer-file-name))))
-
-  (add-hook 'after-save-hook #'manim-build-img)
-  (add-hook 'after-save-hook #'sphinx-build)
+:bind (:map python-mode-map
+       ("M-r" . manim-mr-builds)))
 
 (use-package dart-mode
   :defer t
@@ -1342,6 +1341,27 @@ With a prefix ARG, remove start location."
 
 (use-package yaml-mode
   :mode "\\.ya?ml\\'")
+
+(use-package flycheck
+  :ensure t
+  :defer t
+  :config
+  ;;(setq flycheck-python-pyright-executable "~/.emacs.d/var/lsp/server/npm/pyright")
+  :init (global-flycheck-mode))
+
+(use-package smartparens)
+(require 'smartparens-config)
+
+(use-package apheleia
+:config
+;; for python
+(setf (alist-get 'isort apheleia-formatters)
+    '("isort" "--stdout" "-"))
+(setf (alist-get 'black apheleia-formatters)
+    '("black" "-"))
+(setf (alist-get 'python-mode apheleia-mode-alist)
+    '(isort black))
+(apheleia-global-mode))
 
 (use-package company
   :after lsp-mode
@@ -1430,6 +1450,17 @@ With a prefix ARG, remove start location."
   ;; :bind (("C-c C-p C-b" . webpaste-paste-buffer)
          ;; ("C-c C-p C-r" . webpaste-paste-region))
   :custom (webpaste-provider-priority '("ix.io" "dpaste.com")))
+
+(use-package undo-fu
+  :after evil
+  :config
+      (setq evil-undo-system 'undo-fu))
+
+(use-package undo-fu-session
+  :after undo-fu
+  :config
+  (setq undo-fu-session-incompatible-files '("/COMMIT_EDITMSG\\'" "/git-rebase-todo\\'"))
+      (global-undo-fu-session-mode))
 
 ;; (use-package undo-tree
 ;; :ensure t
@@ -1641,6 +1672,13 @@ With a prefix ARG, remove start location."
   (with-eval-after-load 'org
     (require 'osm-ol)))
 
+(unless efs/is-termux
+  (load-file "~/Downloads/emacs-nepali-romanized/nepali-romanized.el"))
+
+(use-package redacted
+  :defer t
+  :commands (redacted-mode))
+
 (use-package edit-server
  :config
   (edit-server-start))
@@ -1660,22 +1698,56 @@ With a prefix ARG, remove start location."
   (eval-buffer)
   ))
 
+;; dependency editorconfig
+(use-package editorconfig)
 ;; Load copilot.el, modify this path to your local path.
-;; (load-file "~/Downloads/copilot.el/copilot.el")
+(load-file "~/Downloads/copilot.el/copilot.el")
 
-;; Use tab for completion. Assumes that you use company-mode for completion.
-;; (define-key company-mode-map (kbd "<tab>") (lambda ()
-;;                                               (interactive)
-;;                                               (or (copilot-accept-completion)
-;;                                                   (company-indent-or-complete-common nil))))
-;; Enable copilot
-;; (copilot-enable)
-;; (global-set-key (kbd "M-r") 'copilot-accept-completion)
+; complete by copilot first, then company-mode
+(defun my-tab ()
+  (interactive)
+  (or (copilot-accept-completion)
+      (company-indent-or-complete-common nil)))
+
+; modify company-mode behaviors
+(with-eval-after-load 'company
+  ; disable inline previews
+  (delq 'company-preview-if-just-one-frontend company-frontends)
+  ; enable tab completion
+  (define-key company-mode-map (kbd "<tab>") 'my-tab)
+  (define-key company-mode-map (kbd "TAB") 'my-tab)
+  (define-key company-active-map (kbd "<tab>") 'my-tab)
+  (define-key company-active-map (kbd "TAB") 'my-tab))
+
+; provide completion when typing
+(add-hook 'post-command-hook (lambda ()
+                               (copilot-clear-overlay)
+                               (when (evil-insert-state-p)
+                                 (copilot-complete))))
+
+(global-set-key (kbd "M-r") 'copilot-accept-completion)
 
 ;; Emacs 29 ships with an improved global minor mode for scrolling with a mouse or a touchpad,
 ;; that you might want to enable as well:
 (when (>= emacs-major-version 29)
   (pixel-scroll-precision-mode))
+
+;; (unless efs/is-termux
+;; (use-package eaf
+;;   :load-path "~/.cache/emacs/.emacs.custom/site-lisp/emacs-application-framework/"
+;;   :custom
+;;   ; See https://github.com/emacs-eaf/emacs-application-framework/wiki/Customization
+;;   (eaf-browser-continue-where-left-off t)
+;;   (eaf-browser-enable-adblocker t)
+;;   :config
+;;   (setq eaf-apps-to-install '(browser image-viewer pdf-viewer rss-reader markdown-previewer
+;;                               org-previewer))
+;;   (require 'eaf-image-viewer)
+;;   (require 'eaf-pdf-viewer)
+;;   (require 'eaf-org-previewer)
+;;   (require 'eaf-markdown-previewer)
+;;   (require 'eaf-rss-reader)
+;;   (require 'eaf-browser)))
 
 (setq my-state nil)
 (defun efs/my-toggle()
