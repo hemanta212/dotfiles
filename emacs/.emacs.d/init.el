@@ -302,6 +302,10 @@ Version 2019-11-04 2021-02-16"
          (lambda ($fpath) (let ((process-connection-type nil))
                             (start-process "" nil "xdg-open" $fpath))) $file-list))))))
 
+;; Repeat mode set to on (C-x o o o) or (C-x { { {) to resize
+;; Helps with window switching/resizing
+(repeat-mode 1)
+
 ;; Load the which key compatible bind-key
 (require 'bind-key)
 ;; Make ESC quit prompts
@@ -811,6 +815,7 @@ Version 2019-11-04 2021-02-16"
   (add-to-list 'org-structure-template-alist '("sasm" . "src 8085 :export both :args -db /tmp/8085-session1"))
   (add-to-list 'org-structure-template-alist '("asm" . "src 8085"))
   (add-to-list 'org-structure-template-alist '("py" . "src python :exports both :results output"))
+  (add-to-list 'org-structure-template-alist '("rak" . "src racket :exports both :results output"))
   (add-to-list 'org-structure-template-alist '("ein" . "src ein-python :session localhost :results output"))
   (add-to-list 'org-structure-template-alist '("ht" . "src http")))
   ;;(setq org-structure-template-alist '())
@@ -1271,7 +1276,7 @@ With a prefix ARG, remove start location."
 :config
 (require 'dap-python)
 :bind (:map python-mode-map
-       ("M-r" . manim-mr-builds)))
+       ("C-c C-r" . python-mr-builds)))
 
 (use-package dart-mode
   :defer t
@@ -1679,6 +1684,78 @@ With a prefix ARG, remove start location."
   :defer t
   :commands (redacted-mode))
 
+(setq erc-server "irc.libera.chat"
+      erc-nick "hemanta212"
+      erc-user-full-name " "
+      erc-track-shorten-start 8
+      erc-autojoin-channel-alist '(("irc.libera.chat" "#systemcrafters" "#emacs"))
+      erc-kill-buffer-on-part t
+      erc-auto-query 'bury)
+
+(defun dw/org-present-prepare-slide ()
+  (org-overview)
+  (org-show-entry)
+  (org-show-children))
+
+(defun dw/org-present-hook ()
+  (setq-local face-remapping-alist '((default (:height 1.5) variable-pitch)
+                                     (header-line (:height 4.5) variable-pitch)
+                                     (org-code (:height 1.55) org-code)
+                                     (org-verbatim (:height 1.55) org-verbatim)
+                                     (org-block (:height 1.25) org-block)
+                                     (org-block-begin-line (:height 0.7) org-block)))
+  (setq header-line-format " ")
+  (org-display-inline-images)
+  (dw/org-present-prepare-slide))
+
+(defun dw/org-present-quit-hook ()
+  (setq-local face-remapping-alist '((default variable-pitch default)))
+  (setq header-line-format nil)
+  (org-present-small)
+  (org-remove-inline-images))
+
+(defun dw/org-present-prev ()
+  (interactive)
+  (org-present-prev)
+  (dw/org-present-prepare-slide))
+
+(defun dw/org-present-next ()
+  (interactive)
+  (org-present-next)
+  (dw/org-present-prepare-slide))
+
+(use-package org-present
+  :bind (:map org-present-mode-keymap
+         ("C-c C-j" . dw/org-present-next)
+         ("C-c C-k" . dw/org-present-prev))
+  :hook ((org-present-mode . dw/org-present-hook)
+         (org-present-mode-quit . dw/org-present-quit-hook)))
+
+(defun dw/org-start-presentation ()
+  (interactive)
+  (org-tree-slide-mode 1)
+  (setq text-scale-mode-amount 3)
+  (text-scale-mode 1))
+
+(defun dw/org-end-presentation ()
+  (interactive)
+  (text-scale-mode 0)
+  (org-tree-slide-mode 0))
+
+(use-package org-tree-slide
+  :defer t
+  :after org
+  :commands org-tree-slide-mode
+  :config
+  (evil-define-key 'normal org-tree-slide-mode-map
+    (kbd "q") 'dw/org-end-presentation
+    (kbd "C-j") 'org-tree-slide-move-next-tree
+    (kbd "C-k") 'org-tree-slide-move-previous-tree)
+  (setq org-tree-slide-slide-in-effect nil
+        org-tree-slide-activate-message "Presentation started."
+        org-tree-slide-deactivate-message "Presentation ended."
+        org-tree-slide-header t))
+
 (use-package edit-server
  :config
   (edit-server-start))
@@ -1698,10 +1775,17 @@ With a prefix ARG, remove start location."
   (eval-buffer)
   ))
 
-;; dependency editorconfig
+;; dependency s, dash, editorconfig
 (use-package editorconfig)
+(use-package dash)
+(use-package s)
 ;; Load copilot.el, modify this path to your local path.
 (load-file "~/Downloads/copilot.el/copilot.el")
+
+; enable copilot in programming modes
+(add-hook 'prog-mode-hook 'copilot-mode)
+;;For evil users, you will want to add this line to have completions only when in insert state:
+(customize-set-variable 'copilot-enable-predicates '(evil-insert-state-p))
 
 ; complete by copilot first, then company-mode
 (defun my-tab ()
@@ -1719,13 +1803,7 @@ With a prefix ARG, remove start location."
   (define-key company-active-map (kbd "<tab>") 'my-tab)
   (define-key company-active-map (kbd "TAB") 'my-tab))
 
-; provide completion when typing
-(add-hook 'post-command-hook (lambda ()
-                               (copilot-clear-overlay)
-                               (when (evil-insert-state-p)
-                                 (copilot-complete))))
-
-(global-set-key (kbd "M-r") 'copilot-accept-completion)
+;;(global-set-key (kbd "M-r") 'copilot-accept-completion)
 
 ;; Emacs 29 ships with an improved global minor mode for scrolling with a mouse or a touchpad,
 ;; that you might want to enable as well:
