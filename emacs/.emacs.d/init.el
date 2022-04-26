@@ -77,8 +77,8 @@
 (quelpa-use-package-activate-advice)
 
 ;; Define variables section
-  (defvar efs/default-font-size 160)
-  (defvar efs/default-variable-font-size 180)
+  (defvar efs/default-font-size 140)
+  (defvar efs/default-variable-font-size 145)
 
   ;; Make frame transparency overridable
   (defvar efs/frame-transparency '(90 . 90))
@@ -583,6 +583,8 @@ Version 2019-11-04 2021-02-16"
           ("C-M-n" . persp-next)
           ("C-M-k" . persp-switch)
        )
+:custom
+(persp-mode-prefix-key (kbd "C-x p"))  ; pick your own prefix key here
 :init
 (persp-mode))
 
@@ -616,14 +618,14 @@ Version 2019-11-04 2021-02-16"
                              (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
 
   ;; Set faces for heading levels
-  (dolist (face '((org-level-1 . 1.1)
-                  (org-level-2 . 1.0)
-                  (org-level-3 . 1.0)
-                  (org-level-4 . 1.0)
-                  (org-level-5 . 1.0)
-                  (org-level-6 . 1.0)
-                  (org-level-7 . 1.0)
-                  (org-level-8 . 1.0)))
+  (dolist (face '((org-level-1 . 1.2)
+                  (org-level-2 . 1.1)
+                  (org-level-3 . 1.1)
+                  (org-level-4 . 1.1)
+                  (org-level-5 . 1.1)
+                  (org-level-6 . 1.1)
+                  (org-level-7 . 1.1)
+                  (org-level-8 . 1.1)))
     (set-face-attribute (car face) nil :font "Fira Code Retina" :weight 'regular :height (cdr face)))
 
   ;; Ensure that anything that should be fixed-pitch in Org files appears that way
@@ -1276,7 +1278,7 @@ With a prefix ARG, remove start location."
 :config
 (require 'dap-python)
 :bind (:map python-mode-map
-       ("C-c C-r" . python-mr-builds)))
+       ("C-c r" . python-mr-builds)))
 
 (use-package dart-mode
   :defer t
@@ -1803,7 +1805,7 @@ With a prefix ARG, remove start location."
   (define-key company-active-map (kbd "<tab>") 'my-tab)
   (define-key company-active-map (kbd "TAB") 'my-tab))
 
-;;(global-set-key (kbd "M-r") 'copilot-accept-completion)
+(define-key global-map (kbd "M-r") 'my-tab)
 
 ;; Emacs 29 ships with an improved global minor mode for scrolling with a mouse or a touchpad,
 ;; that you might want to enable as well:

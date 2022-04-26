@@ -7,6 +7,12 @@ alias ytdl='youtube-dl'
 alias stinfo='~/.termux/api_info.py all'
 #alias changelog="git log --pretty=format:'%s' $(git describe --tags --abbrev=0 @^)..@"
 
+alias Ss='apt search'
+alias Syu='sudo apt-get update && sudo apt-get upgrade -y'
+alias syu='sudo apt-get update && sudo apt-get upgrade'
+alias su='sudo apt-get update'
+alias si='sudo apt-get install'
+
 
 alias ll='ls -alF'
 alias la='ls -A'
