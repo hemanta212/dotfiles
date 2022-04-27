@@ -57,24 +57,23 @@
 :defer nil
 :config (auto-compile-on-load-mode))
 
-;; Bootstrapping quelpa
-;; (unless (package-installed-p 'quelpa)
-;;   (with-temp-buffer
-;;     (url-insert-file-contents "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
-;;     (eval-buffer)
-;;     (quelpa-self-upgrade)))
-(use-package quelpa
-  :defer nil
-  :custom
-  (quelpa-checkout-melpa-p nil)
-  :config
-  (quelpa
-   '(quelpa-use-package
-     :fetcher git
-     :url "https://github.com/quelpa/quelpa-use-package.git"))
-  (require 'quelpa-use-package))
-(require 'quelpa)
-(quelpa-use-package-activate-advice)
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+
+;; tells use-package to use straight as an installer
+(straight-use-package 'use-package)
+;; If using the use-package-always-ensure customization, equivalent variable is
+(setq straight-use-package-by-default t)
 
 ;; Define variables section
   (defvar efs/default-font-size 140)
@@ -142,7 +141,7 @@
   (when (>= emacs-major-version 26)
   (use-package display-line-numbers
     :defer nil
-    :ensure nil
+    :straight nil
     :config
     (global-display-line-numbers-mode)))
 
@@ -206,7 +205,7 @@
       `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
 
 (use-package dired
-  :ensure nil
+  :straight (:type built-in)
   :commands (dired dired-jump)
   :hook
   (dired-mode . dired-hide-details-mode)
@@ -415,13 +414,13 @@ Version 2019-11-04 2021-02-16"
      (doom-themes-visual-bell-config))))
 
 (use-package berrys-theme
-  :ensure t
+  :straight t
   :config ;; for good measure and clarity
   (setq-default cursor-type '(bar . 2))
   (setq-default line-spacing 5))
 
 (use-package modus-themes
-  :ensure t)
+  :straight t)
 
 ;; You must run (all-the-icons-install-fonts) one time after
 ;; installing this package!
@@ -499,7 +498,7 @@ Version 2019-11-04 2021-02-16"
 ;;   (marginalia-mode))
 
 (use-package avy
-:ensure t)
+:straight t)
 
 (rune/leader-keys
     "SPC" 'avy-goto-char-2
@@ -523,7 +522,7 @@ Version 2019-11-04 2021-02-16"
   "o" 'ace-window)
 
 (use-package frog-jump-buffer
-  :ensure t
+  :straight t
   :custom
   (frog-jump-buffer-use-all-the-icons-ivy t))
 
@@ -578,7 +577,7 @@ Version 2019-11-04 2021-02-16"
   (smooth-scrolling-mode 1))
 
 (use-package perspective
-:ensure t
+:straight t
 :bind (("C-x k" . persp-kill-buffer*)
           ("C-M-n" . persp-next)
           ("C-M-k" . persp-switch)
@@ -709,7 +708,14 @@ Version 2019-11-04 2021-02-16"
          (dashboard-mode . efs/org-mode-visual-fill)
          (info-mode . efs/org-mode-visual-fill)))
 
-(add-to-list 'load-path "/home/pykancha/Downloads/emacs-ob-racket/")
+(use-package ob-racket
+  :after org
+  :config
+  (add-hook 'ob-racket-pre-runtime-library-load-hook
+	      #'ob-racket-raco-make-runtime-library)
+  :straight (ob-racket
+	       :type git :host github :repo "hasu/emacs-ob-racket"
+	       :files ("*.el" "*.rkt")))
 
 (use-package ob-http
   :defer t
@@ -899,7 +905,7 @@ are exported to a filename derived from the headline text."
 
 (use-package org-roam
   :defer t
-  :ensure t
+  :straight t
   :demand t
   :init
   (setq org-roam-v2-ack t)
@@ -1125,14 +1131,15 @@ With a prefix ARG, remove start location."
   (with-eval-after-load 'pdf-annot
     (add-hook 'pdf-annot-activate-handler-functions #'org-noter-pdftools-jump-to-note)))
 
-(use-package pdf-continuous-scroll-mode
-  :quelpa (pdf-continuous-scroll-mode :fetcher git
-                              :repo "dalanicolai/pdf-continuous-scroll-mode.el")
-  :hook (pdf-view-mode-hook . pdf-continuous-scroll-mode))
+;; TODO
+;;(use-package pdf-continuous-scroll-mode
+;;  :quelpa (pdf-continuous-scroll-mode :fetcher git
+;;                              :repo "dalanicolai/pdf-continuous-scroll-mode.el")
+;;  :hook (pdf-view-mode-hook . pdf-continuous-scroll-mode))
 
 ;; Configure Elfeed
  (use-package elfeed
-   :ensure t
+   :straight t
    :config
    (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory)
          elfeed-show-entry-switch 'display-buffer)
@@ -1151,7 +1158,7 @@ With a prefix ARG, remove start location."
 (use-package elfeed-org
   :defer t
   :after (org-mode)
-  :ensure t
+  :straight t
   :config
  (setq elfeed-show-entry-switch 'display-buffer)
  (setq rmh-elfeed-org-files (list "~/dev/personal/org/track.org")))
@@ -1225,7 +1232,7 @@ With a prefix ARG, remove start location."
 
 ;; (use-package lsp-pyright
 ;;   :defer t
-;;   :ensure t
+;;   :straight t
 ;;   :hook (python-mode . (lambda ()
 ;;                           (require 'lsp-pyright)
 ;;                           (lsp)  ; lsp or lsp-deferred
@@ -1268,7 +1275,7 @@ With a prefix ARG, remove start location."
       (sphinx-build))
 
 (use-package python-mode
-:ensure t
+:straight t
 :hook ((python-mode . lsp-deferred)
        (python-mode . poetry-tracking-mode))
 :custom
@@ -1288,7 +1295,7 @@ With a prefix ARG, remove start location."
 
 (use-package lsp-dart
     :defer t
-    :ensure t
+    :straight t
     :hook (dart-mode . (lambda ()
                           (require 'lsp-dart)
                           (lsp))))  ; lsp or lsp-deferred
@@ -1315,12 +1322,13 @@ With a prefix ARG, remove start location."
 (add-hook 'c-mode-hook 'lsp)
 (add-hook 'c++-mode-hook 'lsp)
 
-(use-package gdb-mi :quelpa (gdb-mi :fetcher git
-                                    :url "https://github.com/weirdNox/emacs-gdb.git"
-                                    :files ("*.el" "*.c" "*.h" "Makefile"))
-  :init
-  (fmakunbound 'gdb)
-  (fmakunbound 'gdb-enable-debug))
+;; TODO
+;;(use-package gdb-mi :quelpa (gdb-mi :fetcher git
+;;                                    :url "https://github.com/weirdNox/emacs-gdb.git"
+;;                                    :files ("*.el" "*.c" "*.h" "Makefile"))
+;;  :init
+;;  (fmakunbound 'gdb)
+;;  (fmakunbound 'gdb-enable-debug))
 
 (use-package lua-mode
     :mode "\\.lua\\'" ;; only load/open for .ts file
@@ -1331,8 +1339,6 @@ With a prefix ARG, remove start location."
 
 (use-package racket-mode
 :hook (racket-xp-mode . racket-mode))
-
-(add-to-list 'load-path "/home/pykancha/Downloads/emacs-ob-racket/")
 
 (use-package ein
 :defer t
@@ -1350,7 +1356,7 @@ With a prefix ARG, remove start location."
   :mode "\\.ya?ml\\'")
 
 (use-package flycheck
-  :ensure t
+  :straight t
   :defer t
   :config
   ;;(setq flycheck-python-pyright-executable "~/.emacs.d/var/lsp/server/npm/pyright")
@@ -1385,7 +1391,7 @@ With a prefix ARG, remove start location."
   :hook (company-mode . company-box-mode))
 
 (use-package company-tabnine
-  :ensure t
+  :straight t
   :config
   ;; Trigger completion immediately.
   (setq company-idle-delay 0)
@@ -1470,13 +1476,13 @@ With a prefix ARG, remove start location."
       (global-undo-fu-session-mode))
 
 ;; (use-package undo-tree
-;; :ensure t
+;; :straight t
 ;; :config
 ;; (global-undo-tree-mode))
 
 (use-package verb
  :after org-mode
- :ensure t)
+ :straight t)
 
 (use-package harpoon
   :config
@@ -1580,7 +1586,7 @@ With a prefix ARG, remove start location."
   (eshell-git-prompt-use-theme 'powerline))
 
 (use-package dashboard
-  :ensure t
+  :straight t
   :if (< (length command-line-args) 2)
   :init
   (dashboard-setup-startup-hook)
@@ -1679,8 +1685,10 @@ With a prefix ARG, remove start location."
   (with-eval-after-load 'org
     (require 'osm-ol)))
 
-(unless efs/is-termux
-  (load-file "~/Downloads/emacs-nepali-romanized/nepali-romanized.el"))
+(use-package nepali-romanized
+    :straight (nepali-romanized
+             :type git :host github :repo "bishesh/emacs-nepali-romanized"
+             :files ("nepali-romanized.el")))
 
 (use-package redacted
   :defer t
@@ -1758,6 +1766,72 @@ With a prefix ARG, remove start location."
         org-tree-slide-deactivate-message "Presentation ended."
         org-tree-slide-header t))
 
+;; (load-file "~/.cache/emacs/.emacs.custom/misc-exts/byte-run.el")
+;; (add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
+;; (require 'mu4e)
+
+;;   (use-package mu4e
+;;     :load-path "/usr/share/emacs/site-lisp/mu4e"
+;;     :config
+;;   ;; list of your email adresses:
+;;   (setq mu4e-personal-addresses '("hemantasharma.212@gmail.com"))
+
+;;   (setq mu4e-maildir (expand-file-name "~/Mail"))
+
+;;   (setq mu4e-contexts
+;;         `(,(make-mu4e-context
+;;             :name "Gmail" ;; Give it a unique name. I recommend they start with a different letter than the second one.
+;;             :enter-func (lambda () (mu4e-message "Entering gmail context"))
+;;             :leave-func (lambda () (mu4e-message "Leaving gmail context"))
+;;             :match-func (lambda (msg)
+;;                           (when msg
+;;                             (string= (mu4e-message-field msg :maildir) "/hemantasharma.212@gmail")))
+;;             :vars '((user-mail-address . "hemantasharma.212@gmail.com")
+;;                     (user-full-name . "Hemanta Sharma")
+;;                     (mu4e-drafts-folder . "/hemantasharma.212@gmail/[Gmail].Drafts")
+;;                     (mu4e-refile-folder . "/hemantasharma.212@gmail/[Gmail].All Mail")
+;;                     (mu4e-sent-folder . "/hemantasharma.212@gmail/[Gmail].Sent Mail")
+;;                     (mu4e-trash-folder . "/hemantasharma.212@gmail/[Gmail].Bin")
+;;                     ;; SMTP configuration
+;;                     (starttls-use-gnutls . t)
+;;                     (smtpmail-starttls-credentials . '(("smtp.gmail.com" 587 nil nil)))
+;;                     (smtpmail-smtp-user . "hemantasharma.212@gmail.com")
+;;                     (smtpmail-auth-credentials .
+;;                                                '(("smtp.gmail.com" 587 "hemantasharma.212@gmail.com" nil)))
+;;                     (smtpmail-default-smtp-server . "smtp.gmail.com")
+;;                     (smtpmail-smtp-server . "smtp.gmail.com")
+;;                     (smtpmail-smtp-service . 587)))
+;;           ;; ,(make-mu4e-context
+;;           ;;   :name "Business Address" ;; Or any other name you like.
+;;           ;;   :enter-func (lambda () (mu4e-message "Entering cablecar context"))
+;;           ;;   :leave-func (lambda () (mu4e-message "Leaving cablecar context"))
+
+;;           ;;   :match-func (lambda (msg)
+;;           ;;                 (when msg
+;;           ;;                   (string= (mu4e-message-field msg :maildir) "/address2@gmail")))
+;;           ;;   :vars '((user-mail-address . "address2@gmail.com")
+;;           ;;           (user-full-name . "Your Name Here")
+;;           ;;           (mu4e-drafts-folder . "/address2@gmail/[Gmail].Drafts")
+;;           ;;           (mu4e-refile-folder . "/address2@gmail/[Gmail].All Mail")
+;;           ;;           (mu4e-sent-folder . "/address2@gmail/[Gmail].Sent Mail")
+;;           ;;           (mu4e-trash-folder . "/address2@gmail/[Gmail].Bin")
+;;           ;;           ;; SMTP configuration
+;;           ;;           (starttls-use-gnutls . t)
+;;           ;;           (smtpmail-starttls-credentials . '(("smtp.gmail.com" 587 nil nil)))
+;;           ;;           (smtpmail-smtp-user . "address2@gmail.com")
+;;           ;;           (smtpmail-auth-credentials .
+;;           ;;                                      '(("smtp.gmail.com" 587 "address2@gmail.com" nil)))
+;;           ;;           (smtpmail-default-smtp-server . "smtp.gmail.com")
+;;           ;;           (smtpmail-smtp-server . "smtp.gmail.com")
+;;           ;;           (smtpmail-smtp-service . 587)))
+;;           ))
+
+;;   (setq mu4e-maildir-shortcuts  '((:maildir "/hemantasharma.212@gmail/INBOX"               :key ?i)
+;;                                   (:maildir "/hemantasharma.212@gmail/[Gmail].Sent Mail"   :key ?s)
+;;                                   (:maildir "/hemantasharma.212@gmail/[Gmail].Drafts"      :key ?d)
+;;                                   (:maildir "/hemantasharma.212@gmail/[Gmail].Bin"       :key ?t)
+;;                                   (:maildir "/hemantasharma.212@gmail/[Gmail].All Mail"    :key ?a))))
+
 (use-package edit-server
  :config
   (edit-server-start))
@@ -1777,35 +1851,33 @@ With a prefix ARG, remove start location."
   (eval-buffer)
   ))
 
-;; dependency s, dash, editorconfig
-(use-package editorconfig)
-(use-package dash)
-(use-package s)
-;; Load copilot.el, modify this path to your local path.
-(load-file "~/Downloads/copilot.el/copilot.el")
+(use-package copilot
+  :straight (:host github :repo "zerolfx/copilot.el"
+                   :files ("dist" "copilot.el"))
+  :ensure t
+  :config
+  ; enable copilot in programming modes
+  (add-hook 'prog-mode-hook 'copilot-mode)
+  ;;For evil users, you will want to add this line to have completions only when in insert state:
+  (customize-set-variable 'copilot-enable-predicates '(evil-insert-state-p))
 
-; enable copilot in programming modes
-(add-hook 'prog-mode-hook 'copilot-mode)
-;;For evil users, you will want to add this line to have completions only when in insert state:
-(customize-set-variable 'copilot-enable-predicates '(evil-insert-state-p))
+  ; complete by copilot first, then company-mode
+  (defun my-tab ()
+    (interactive)
+    (or (copilot-accept-completion)
+        (company-indent-or-complete-common nil)))
 
-; complete by copilot first, then company-mode
-(defun my-tab ()
-  (interactive)
-  (or (copilot-accept-completion)
-      (company-indent-or-complete-common nil)))
+  ; modify company-mode behaviors
+  (with-eval-after-load 'company
+    ; disable inline previews
+    (delq 'company-preview-if-just-one-frontend company-frontends)
+    ; enable tab completion
+    (define-key company-mode-map (kbd "<tab>") 'my-tab)
+    (define-key company-mode-map (kbd "TAB") 'my-tab)
+    (define-key company-active-map (kbd "<tab>") 'my-tab)
+    (define-key company-active-map (kbd "TAB") 'my-tab))
 
-; modify company-mode behaviors
-(with-eval-after-load 'company
-  ; disable inline previews
-  (delq 'company-preview-if-just-one-frontend company-frontends)
-  ; enable tab completion
-  (define-key company-mode-map (kbd "<tab>") 'my-tab)
-  (define-key company-mode-map (kbd "TAB") 'my-tab)
-  (define-key company-active-map (kbd "<tab>") 'my-tab)
-  (define-key company-active-map (kbd "TAB") 'my-tab))
-
-(define-key global-map (kbd "M-r") 'my-tab)
+  (define-key global-map (kbd "M-r") 'my-tab))
 
 ;; Emacs 29 ships with an improved global minor mode for scrolling with a mouse or a touchpad,
 ;; that you might want to enable as well:
