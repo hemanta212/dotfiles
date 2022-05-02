@@ -67,6 +67,7 @@ preexec() { echo -ne '\e[5 q' ;} # Use beam shape cursor for each new prompt.
 
 #//////////////////////////EXPORTS///////////////////////////////
 export EDITOR=nvim
+export PATH="$PATH":"$HOME/bin"
 export PATH="$PATH":"$HOME/local/flutter/bin/"
 export PATH="$PATH":"$HOME/local/tools/bin/"
 export PATH="$PATH":"$HOME/.local/bin/"
@@ -75,7 +76,7 @@ export PATH="$HOME/local/.blogger_cli/bin:$PATH"
 export PATH="$HOME/.poetry/bin:$PATH"
 export PATH="$HOME/.emacs.d/bin:$PATH"
 
-# Export the Android SDK path 
+# Export the Android SDK path
 export ANDROID_HOME=$HOME/local/android-sdk
 export PATH=$PATH:$ANDROID_HOME/cmdline-tools/tools/bin
 export PATH=$PATH:$ANDROID_HOME/platform-tools
@@ -151,5 +152,9 @@ if echo $OSTYPE | grep -q 'android' ; then
 fi
 
 
-
-
+# If inside Proper linux
+if echo $OSTYPE | grep -q 'linux-gnu' ; then
+        /usr/bin/setxkbmap -option 'caps:ctrl_modifier'
+        /usr/bin/xcape -e 'Caps_Lock=Escape' -t 100
+        #sudo nice -n -20 $HOME/.local/caps2esc-legacy/caps2esc >/tmp/caps2esc.log 2>/tmp/caps2esc.err &
+fi

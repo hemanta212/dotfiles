@@ -7,23 +7,24 @@ from __future__ import unicode_literals
 
 import sys
 
+ptpython_support = True
 try:
     import ptpython
+    from prompt_toolkit.filters import ViInsertMode
+    from prompt_toolkit.key_binding.key_processor import KeyPress
+    from prompt_toolkit.keys import Keys
+    from ptpython.layout import CompletionVisualisation
+    from pygments.token import Token
 except ImportError:
+    ptpython_support = False
     print("ptpython is not available: falling back to standard prompt")
-
-from prompt_toolkit.filters import ViInsertMode
-from prompt_toolkit.key_binding.key_processor import KeyPress
-from prompt_toolkit.keys import Keys
-from pygments.token import Token
-
-from ptpython.layout import CompletionVisualisation
 
 try:
     from rich import pretty
     pretty.install()
 except Exception as e:
-    print("No rich support :(", e)
+    if ptpython_support:
+        print("No rich support :(", e)
 
 __all__ = ("configure",)
 
@@ -187,6 +188,7 @@ def configure(repl):
         b.insert_text(' ')
 
 
-from ptpython.repl import embed
-sys.exit(embed(globals(), locals(), configure=configure))
+if ptpython_support:
+    from ptpython.repl import embed
+    sys.exit(embed(globals(), locals(), configure=configure))
 

@@ -5,6 +5,11 @@ alias memfree='echo "sync && echo 3 > /proc/sys/vm/drop_caches" | sudo sh'
 alias cat='bat'
 alias ytdl='youtube-dl'
 alias stinfo='~/.termux/api_info.py all'
+alias si='sudo apt install'
+alias Ss='sudo apt search'
+alias Su='sudo apt update'
+alias Syu='sudo apt update && sudo apt upgrade -y'
+alias syu='sudo apt update && sudo apt upgrade'
 #alias changelog="git log --pretty=format:'%s' $(git describe --tags --abbrev=0 @^)..@"
 
 alias Ss='apt search'
