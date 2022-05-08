@@ -105,7 +105,7 @@ Next-generation, purely functional package manager for the Emacs hacker.
 #+begin_src emacs-lisp
     ;; Define variables section
     (defvar efs/default-font-size 140)
-    (defvar efs/default-variable-font-size 145)
+    (defvar efs/default-variable-font-size 165)
 
     ;; Make frame transparency overridable
     (defvar efs/frame-transparency '(90 . 90))
@@ -424,7 +424,6 @@ Version 2019-11-04 2021-02-16"
   (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
   ;; Remap  Imenu to M-i
   (global-set-key (kbd "M-i") 'imenu)
-  (global-set-key (kbd "C-c p f") 'counsel-fzf)
   (global-set-key (kbd "C-c C-x s") 'org-search-view)
   (global-set-key (kbd "M-w") 'scroll-other-window)
   (global-set-key (kbd "M-W") 'scroll-other-window-down)
@@ -448,6 +447,8 @@ Version 2019-11-04 2021-02-16"
 
   (use-package evil
     :init
+    ;; use emacs keybinding in insert state
+    (setq evil-disable-insert-state-bindings t)
     (setq evil-want-integration t)
     (setq evil-want-keybinding nil)
     (setq evil-want-C-u-scroll t)
@@ -553,7 +554,7 @@ Giving a try to Paradox for an enhanced package management interface. We set par
   (use-package doom-themes)
   (unless efs/is-termux
    (if (eq (display-graphic-p) nil)
-       (load-theme 'modus-vivendi t)
+       (load-theme 'doom-ir-black t)
        (progn
        (load-theme 'doom-one t)
        (doom-themes-visual-bell-config))))
@@ -796,19 +797,53 @@ Smooth scrolling (line by line) instead of jumping by half-screens.
     (smooth-scrolling-mode 1))
 #+end_src
 
-** Perspective EL
+** Perspective.el
 Workspaces inside emacs, group simiar file buffers together under a namespace. Each namespace has its own window layout and list of buffers
+
+Also can save the state to disk.
 #+begin_src emacs-lisp
-        (use-package perspective
-        :straight t
-        :bind (("C-x k" . persp-kill-buffer*)
-                  ("C-M-n" . persp-next)
-                  ("C-M-k" . persp-switch)
-               )
-        :custom
-        (persp-mode-prefix-key (kbd "C-x p"))  ; pick your own prefix key here
-        :init
-        (persp-mode))
+  (use-package perspective
+    :straight t
+    :bind (("C-x k" . persp-kill-buffer*)
+           ("C-M-n" . persp-next)
+           ("C-M-k" . persp-switch)
+           )
+    :custom
+    (persp-mode-prefix-key (kbd "C-x p"))  ; pick your own prefix key here
+    (persp-state-default-file (expand-file-name "~/.config/emacs/persp-session-state"))
+    :init
+    (persp-mode)
+    :config
+    (add-hook 'kill-emacs-hook #'persp-state-save))
+#+end_src
+
+** Burly.el
+Save and restore frame and windows layout
+*** Usage
+*Bookmark commands*
+  Most users will probably use Burly by bookmarking frame and window configurations and accessing them with these commands:
+   * burly-bookmark-frames: Bookmark the current frames and their window configurations.
+   * burly-bookmark-windows: Bookmark the current frame's window configuration.
+   * burly-open-bookmark: Select and open a Burly bookmark.
+   * burly-open-last-bookmark: Open the last-opened Burly bookmark. Helpful for, e.g. quickly restoring an overview while working on a project.
+
+*Note* that bookmarks created by Burly are regular Emacs bookmarks, so they can be managed by Emacss built-in bookmark commands, e.g. list-bookmarks, bookmark-delete, etc.
+
+*URL commands*
+These commands work on URL strings. While most users probably wont use these, they may be useful for building custom tooling.
+
+ * burly-open-url: Open a Burly URL (at point, or prompt for one), displaying the buffer(s) in the current window or frame.
+ * burly-kill-buffer-url: Copy BUFFERs URL to the kill ring.
+ * burly-kill-frames-url: Copy the current framesets URL to the kill ring.
+ * burly-kill-windows-url: Copy the current frames window configuration URL to the kill ring.
+
+*Tips*
+ * You can customize settings in the burly group.
+ * An Info manual is included with this package.
+*** Config
+#+begin_src emacs-lisp
+  (use-package burly
+  :straight t)
 #+end_src
 
 ** Fonts
@@ -971,6 +1006,8 @@ Editing syntactic sugars made easier: Temporarily shows emphasis markers and hid
     (use-package visual-fill-column
       :hook ((org-mode . efs/org-mode-visual-fill)
              (dashboard-mode . efs/org-mode-visual-fill)
+             (telega-chat-mode . efs/org-mode-visual-fill)
+             (telega-root-mode . efs/org-mode-visual-fill)
              (info-mode . efs/org-mode-visual-fill)))
 #+end_src
 
@@ -1110,6 +1147,7 @@ You can add more =src= block templates below by copying one of the lines and cha
     (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
     (add-to-list 'org-structure-template-alist '("clang" . "src C :results output :exports both"))
     (add-to-list 'org-structure-template-alist '("cpp" . "src C++ :results output :exports both"))
+    (add-to-list 'org-structure-template-alist '("cppio" . "src C++ :results output :exports both :includes <iostream>"))
     (add-to-list 'org-structure-template-alist '("c++" . "src C++ :include <iostream> :main no :results output :exports both :flags -std=c++17 -Wall --pedantic -Werror"))
     (add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
     (add-to-list 'org-structure-template-alist '("sasm" . "src 8085 :export both :args -db /tmp/8085-session1"))
@@ -1157,6 +1195,26 @@ You can add more =src= block templates below by copying one of the lines and cha
           (message "Disabled org markdown export on save for current buffer..."))
       (add-hook 'after-save-hook 'org-md-export-to-markdown nil t)
       (message "Enabled org markdown export on save for current buffer...")))
+#+end_src
+
+*** Auto indent src blocks
+Disabled too buggy gets errors of
+#+begin_example
+Warning (org-element-cache): org-element--cache: Org parser error in test.py::1055. Resetting.
+ The error was: (error "rx ‘**’ range error")
+ Backtrace:
+nil
+ Please report this to Org mode mailing list (M-x org-submit-bug-report). Disable showing Disable logging
+#+end_example
+
+#+begin_src emacs-lisp
+;;  (defun indent-org-block-automatically ()
+;;    (when (org-in-src-block-p)
+;;      (org-edit-special)
+;;      (indent-region (point-min) (point-max))
+;;      (org-edit-src-exit)))
+;;
+;;  (run-at-time 1 10 'indent-org-block-automatically)
 #+end_src
 
 ** Org-download
@@ -1786,18 +1844,20 @@ Try these commands with =M-x=:
 
 **** Python Mode
 #+begin_src emacs-lisp
-  (use-package python-mode
-  :straight t
-  :hook ((python-mode . lsp-deferred)
-         (python-mode . poetry-tracking-mode))
-  :custom
-  (python-shell-interpreter "python3")
-  (dap-python-executable "python3")
-  (dap-python-debugger 'ptvsd)
-  :config
-  (require 'dap-python)
-  :bind (:map python-mode-map
-         ("C-c r" . python-mr-builds)))
+    (use-package python-mode
+      :straight t
+      :hook ((python-mode . lsp-deferred)
+             (python-mode . poetry-tracking-mode))
+      :custom
+      (python-shell-interpreter "python3")
+      (dap-python-executable "python3")
+      (dap-python-debugger 'ptvsd)
+      :bind (:map python-mode-map
+                  ("C-c r" . python-mr-builds))
+      :config
+      (require 'dap-python))
+       ;; C-c r doesnot bind for some reason ugly global keymap hack
+      (define-key global-map (kbd "C-c r") 'python-mr-builds)
 #+end_src
 
 *** Flutter/Dart
@@ -1999,7 +2059,9 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
   (use-package counsel-projectile
     :after projectile
-    :config (counsel-projectile-mode))
+    :config
+    (define-key projectile-command-map (kbd "C-c p f") 'counsel-fzf)
+    (counsel-projectile-mode))
 #+end_src
 
 ** Magit
@@ -2392,7 +2454,7 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
 ** Ascii Artist drawing to Unicode
 Artist mode companion:
 #+begin_src emacs-lisp
-(use-package ascii-art-to-unicode)
+(use-package ascii-art-to-unicode :straight t)
 #+end_src
 
 ** OSM
@@ -2511,6 +2573,27 @@ Similar to org present
         org-tree-slide-activate-message "Presentation started."
         org-tree-slide-deactivate-message "Presentation ended."
         org-tree-slide-header t))
+#+end_src
+
+** Meme generator
+*** Setup
+https://github.com/larsmagne/meme
+*Microsoft True Type Fonts*
+You will also need to get the correct fonts,
+*Ubuntu*
+~$ apt install ttf-mscorefonts-installer~
+*Arch Linux*
+Using an AUR wrapper,
+~$ pacaur -S ttf-ms-fonts fontconfig-ttf-ms-fonts~
+
+*Dependency on imgur*
+
+*** Config
+#+begin_src emacs-lisp
+;; dependency imgur
+(use-package imgur :straight t)
+(use-package meme
+  :straight (:host github :repo "larsmagne/meme"))
 #+end_src
 
 * Mail
@@ -2697,3 +2780,12 @@ https://emacsredux.com/blog/2021/12/19/using-emacs-on-windows-11-with-wsl2/
       (setq my-state nil))
     (message "%s" my-state))
 #+end_src
+
+** Reload Emacs
+#+begin_src emacs-lisp
+  (defun reload-emacs()
+      (interactive)
+      (load-file (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/init.el")))
+
+  (define-key global-map (kbd "C-c e r r") 'reload-emacs)
+      #+end_src

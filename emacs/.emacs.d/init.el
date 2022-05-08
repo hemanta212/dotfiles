@@ -77,7 +77,7 @@
 
 ;; Define variables section
   (defvar efs/default-font-size 140)
-  (defvar efs/default-variable-font-size 145)
+  (defvar efs/default-variable-font-size 165)
 
   ;; Make frame transparency overridable
   (defvar efs/frame-transparency '(90 . 90))
@@ -311,7 +311,6 @@ Version 2019-11-04 2021-02-16"
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 ;; Remap  Imenu to M-i
 (global-set-key (kbd "M-i") 'imenu)
-(global-set-key (kbd "C-c p f") 'counsel-fzf)
 (global-set-key (kbd "C-c C-x s") 'org-search-view)
 (global-set-key (kbd "M-w") 'scroll-other-window)
 (global-set-key (kbd "M-W") 'scroll-other-window-down)
@@ -335,6 +334,8 @@ Version 2019-11-04 2021-02-16"
 
 (use-package evil
   :init
+  ;; use emacs keybinding in insert state
+  (setq evil-disable-insert-state-bindings t)
   (setq evil-want-integration t)
   (setq evil-want-keybinding nil)
   (setq evil-want-C-u-scroll t)
@@ -408,7 +409,7 @@ Version 2019-11-04 2021-02-16"
 (use-package doom-themes)
 (unless efs/is-termux
  (if (eq (display-graphic-p) nil)
-     (load-theme 'modus-vivendi t)
+     (load-theme 'doom-ir-black t)
      (progn
      (load-theme 'doom-one t)
      (doom-themes-visual-bell-config))))
@@ -577,15 +578,21 @@ Version 2019-11-04 2021-02-16"
   (smooth-scrolling-mode 1))
 
 (use-package perspective
-:straight t
-:bind (("C-x k" . persp-kill-buffer*)
-          ("C-M-n" . persp-next)
-          ("C-M-k" . persp-switch)
-       )
-:custom
-(persp-mode-prefix-key (kbd "C-x p"))  ; pick your own prefix key here
-:init
-(persp-mode))
+  :straight t
+  :bind (("C-x k" . persp-kill-buffer*)
+         ("C-M-n" . persp-next)
+         ("C-M-k" . persp-switch)
+         )
+  :custom
+  (persp-mode-prefix-key (kbd "C-x p"))  ; pick your own prefix key here
+  (persp-state-default-file (expand-file-name "~/.config/emacs/persp-session-state"))
+  :init
+  (persp-mode)
+  :config
+  (add-hook 'kill-emacs-hook #'persp-state-save))
+
+(use-package burly
+:straight t)
 
 (use-package emojify
   :hook (after-init . global-emojify-mode))
@@ -706,6 +713,8 @@ Version 2019-11-04 2021-02-16"
 (use-package visual-fill-column
   :hook ((org-mode . efs/org-mode-visual-fill)
          (dashboard-mode . efs/org-mode-visual-fill)
+         (telega-chat-mode . efs/org-mode-visual-fill)
+         (telega-root-mode . efs/org-mode-visual-fill)
          (info-mode . efs/org-mode-visual-fill)))
 
 (use-package ob-racket
@@ -818,6 +827,7 @@ Version 2019-11-04 2021-02-16"
   (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
   (add-to-list 'org-structure-template-alist '("clang" . "src C :results output :exports both"))
   (add-to-list 'org-structure-template-alist '("cpp" . "src C++ :results output :exports both"))
+  (add-to-list 'org-structure-template-alist '("cppio" . "src C++ :results output :exports both :includes <iostream>"))
   (add-to-list 'org-structure-template-alist '("c++" . "src C++ :include <iostream> :main no :results output :exports both :flags -std=c++17 -Wall --pedantic -Werror"))
   (add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
   (add-to-list 'org-structure-template-alist '("sasm" . "src 8085 :export both :args -db /tmp/8085-session1"))
@@ -858,6 +868,14 @@ Version 2019-11-04 2021-02-16"
         (message "Disabled org markdown export on save for current buffer..."))
     (add-hook 'after-save-hook 'org-md-export-to-markdown nil t)
     (message "Enabled org markdown export on save for current buffer...")))
+
+;;  (defun indent-org-block-automatically ()
+;;    (when (org-in-src-block-p)
+;;      (org-edit-special)
+;;      (indent-region (point-min) (point-max))
+;;      (org-edit-src-exit)))
+;;
+;;  (run-at-time 1 10 'indent-org-block-automatically)
 
 (use-package org-download
 ;; Drag-and-drop to 'dired'
@@ -1275,17 +1293,19 @@ With a prefix ARG, remove start location."
       (sphinx-build))
 
 (use-package python-mode
-:straight t
-:hook ((python-mode . lsp-deferred)
-       (python-mode . poetry-tracking-mode))
-:custom
-(python-shell-interpreter "python3")
-(dap-python-executable "python3")
-(dap-python-debugger 'ptvsd)
-:config
-(require 'dap-python)
-:bind (:map python-mode-map
-       ("C-c r" . python-mr-builds)))
+  :straight t
+  :hook ((python-mode . lsp-deferred)
+         (python-mode . poetry-tracking-mode))
+  :custom
+  (python-shell-interpreter "python3")
+  (dap-python-executable "python3")
+  (dap-python-debugger 'ptvsd)
+  :bind (:map python-mode-map
+              ("C-c r" . python-mr-builds))
+  :config
+  (require 'dap-python))
+   ;; C-c r doesnot bind for some reason ugly global keymap hack
+  (define-key global-map (kbd "C-c r") 'python-mr-builds)
 
 (use-package dart-mode
   :defer t
@@ -1414,7 +1434,9 @@ With a prefix ARG, remove start location."
 
 (use-package counsel-projectile
   :after projectile
-  :config (counsel-projectile-mode))
+  :config
+  (define-key projectile-command-map (kbd "C-c p f") 'counsel-fzf)
+  (counsel-projectile-mode))
 
 (use-package magit
   :defer t
@@ -1665,7 +1687,7 @@ With a prefix ARG, remove start location."
 
 (use-package speed-type)
 
-(use-package ascii-art-to-unicode)
+(use-package ascii-art-to-unicode :straight t)
 
 (use-package osm
   :bind (("C-c m h" . osm-home)
@@ -1765,6 +1787,11 @@ With a prefix ARG, remove start location."
         org-tree-slide-activate-message "Presentation started."
         org-tree-slide-deactivate-message "Presentation ended."
         org-tree-slide-header t))
+
+;; dependency imgur
+(use-package imgur :straight t)
+(use-package meme
+  :straight (:host github :repo "larsmagne/meme"))
 
 ;; (load-file "~/.cache/emacs/.emacs.custom/misc-exts/byte-run.el")
 ;; (add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
@@ -1908,3 +1935,9 @@ With a prefix ARG, remove start location."
         (setq my-state 't)
     (setq my-state nil))
   (message "%s" my-state))
+
+(defun reload-emacs()
+    (interactive)
+    (load-file (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/init.el")))
+
+(define-key global-map (kbd "C-c e r r") 'reload-emacs)
