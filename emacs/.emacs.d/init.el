@@ -660,38 +660,39 @@ Version 2019-11-04 2021-02-16"
   (setq evil-auto-indent nil)
   (diminish org-indent-mode))
 
-  (use-package org
-    :commands (org-capture org-agenda)
-    :hook (org-mode . efs/org-mode-setup)
-    :config
-    (setq org-ellipsis " ▾"
-          org-hide-emphasis-markers t
-          org-hide-block-startup nil
-          org-fontify-quote-and-verse-blocks t
-          org-src-fontify-natively t
-          org-src-tab-acts-natively t
-          org-src-preserve-indentation nil
-          org-edit-src-content-indentation 2
-          org-startup-folded 'content
-          org-cycle-separator-lines 2
-          org-log-done 'time
-          org-log-into-drawer t
-          org-agenda-start-with-log-mode t
-          org-agenda-files
-          '("~/dev/personal/org/track.org"))
-    (define-key org-mode-map (kbd "C-c C-r") verb-command-map)
+(use-package org
+  :commands (org-capture org-agenda)
+  :hook (org-mode . efs/org-mode-setup)
+  :config
 
-      (evil-define-key '(normal insert visual) org-mode-map (kbd "C-j") 'org-next-visible-heading)
-(evil-define-key '(normal insert visual) org-mode-map (kbd "C-k") 'org-previous-visible-heading)
+  (setq org-ellipsis " ▾"
+        org-hide-emphasis-markers t
+        org-hide-block-startup nil
+        org-fontify-quote-and-verse-blocks t
+        org-src-fontify-natively t
+        org-src-tab-acts-natively t
+        org-src-preserve-indentation nil
+        org-edit-src-content-indentation 2
+        org-startup-folded 'content
+        org-cycle-separator-lines 2
+        org-log-done 'time
+        org-log-into-drawer t
+        org-agenda-start-with-log-mode t
+        org-agenda-files
+        '("~/dev/personal/org/track.org"))
+  (define-key org-mode-map (kbd "C-c C-r") verb-command-map)
+
+  (evil-define-key '(normal insert visual) org-mode-map (kbd "C-j") 'org-next-visible-heading)
+  (evil-define-key '(normal insert visual) org-mode-map (kbd "C-k") 'org-previous-visible-heading)
 
   (evil-define-key '(normal insert visual) org-mode-map (kbd "M-j") 'org-metadown)
   (evil-define-key '(normal insert visual) org-mode-map (kbd "M-k") 'org-metaup)
 
-    (setq org-todo-keywords
-    '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
-      (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
+  (setq org-todo-keywords
+        '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
+          (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
 
-    (efs/org-font-setup))
+  (efs/org-font-setup))
 
 (use-package org-bullets
   :after org
@@ -825,6 +826,7 @@ Version 2019-11-04 2021-02-16"
   (add-to-list 'org-structure-template-alist '("ex" . "example"))
   (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
   (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
+  (add-to-list 'org-structure-template-alist '("shell" . "src shell :results output :exports both"))
   (add-to-list 'org-structure-template-alist '("clang" . "src C :results output :exports both"))
   (add-to-list 'org-structure-template-alist '("cpp" . "src C++ :results output :exports both"))
   (add-to-list 'org-structure-template-alist '("cppio" . "src C++ :results output :exports both :includes <iostream>"))
@@ -869,11 +871,17 @@ Version 2019-11-04 2021-02-16"
     (add-hook 'after-save-hook 'org-md-export-to-markdown nil t)
     (message "Enabled org markdown export on save for current buffer...")))
 
-;;  (defun indent-org-block-automatically ()
-;;    (when (org-in-src-block-p)
-;;      (org-edit-special)
-;;      (indent-region (point-min) (point-max))
-;;      (org-edit-src-exit)))
+(defun indent-org-block-automatically ()
+  (interactive)
+  (when (org-in-src-block-p)
+    (org-edit-special)
+    (indent-region (point-min) (point-max))
+    (org-edit-src-exit)))
+
+  (add-hook 'org-mode-hook
+      (lambda ()
+        (add-hook 'after-save-hook #'indent-org-block-automatically)))
+
 ;;
 ;;  (run-at-time 1 10 'indent-org-block-automatically)
 

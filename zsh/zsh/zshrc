@@ -116,6 +116,7 @@ eval "$(zoxide init zsh)"
 # Fzf history search and keybindings:
 [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
 [ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
+[ -f /home/pykancha/.deta/bin/deta ] && export PATH="/home/pykancha/.deta/bin:$PATH"
 
 # If inside wsl
 if uname -r | grep -q 'microsoft'; then

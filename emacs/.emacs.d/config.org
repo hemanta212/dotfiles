@@ -933,18 +933,19 @@ These commands work on URL strings. While most users probably wont use these, 
 
 #+begin_src emacs-lisp
     ;; Turn on indentation and auto-fill mode for Org files
-  (defun efs/org-mode-setup ()
-    (org-indent-mode)
-    (variable-pitch-mode 1)
-    (auto-fill-mode 0)
-    (visual-line-mode 1)
-    (setq evil-auto-indent nil)
-    (diminish org-indent-mode))
+    (defun efs/org-mode-setup ()
+      (org-indent-mode)
+      (variable-pitch-mode 1)
+      (auto-fill-mode 0)
+      (visual-line-mode 1)
+      (setq evil-auto-indent nil)
+      (diminish org-indent-mode))
 
     (use-package org
       :commands (org-capture org-agenda)
       :hook (org-mode . efs/org-mode-setup)
       :config
+
       (setq org-ellipsis " ▾"
             org-hide-emphasis-markers t
             org-hide-block-startup nil
@@ -962,15 +963,15 @@ These commands work on URL strings. While most users probably wont use these, 
             '("~/dev/personal/org/track.org"))
       (define-key org-mode-map (kbd "C-c C-r") verb-command-map)
 
-        (evil-define-key '(normal insert visual) org-mode-map (kbd "C-j") 'org-next-visible-heading)
-  (evil-define-key '(normal insert visual) org-mode-map (kbd "C-k") 'org-previous-visible-heading)
+      (evil-define-key '(normal insert visual) org-mode-map (kbd "C-j") 'org-next-visible-heading)
+      (evil-define-key '(normal insert visual) org-mode-map (kbd "C-k") 'org-previous-visible-heading)
 
-    (evil-define-key '(normal insert visual) org-mode-map (kbd "M-j") 'org-metadown)
-    (evil-define-key '(normal insert visual) org-mode-map (kbd "M-k") 'org-metaup)
+      (evil-define-key '(normal insert visual) org-mode-map (kbd "M-j") 'org-metadown)
+      (evil-define-key '(normal insert visual) org-mode-map (kbd "M-k") 'org-metaup)
 
       (setq org-todo-keywords
-      '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
-        (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
+            '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
+              (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
 
       (efs/org-font-setup))
 #+end_src
@@ -1145,6 +1146,7 @@ You can add more =src= block templates below by copying one of the lines and cha
     (add-to-list 'org-structure-template-alist '("ex" . "example"))
     (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
     (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
+    (add-to-list 'org-structure-template-alist '("shell" . "src shell :results output :exports both"))
     (add-to-list 'org-structure-template-alist '("clang" . "src C :results output :exports both"))
     (add-to-list 'org-structure-template-alist '("cpp" . "src C++ :results output :exports both"))
     (add-to-list 'org-structure-template-alist '("cppio" . "src C++ :results output :exports both :includes <iostream>"))
@@ -1198,7 +1200,7 @@ You can add more =src= block templates below by copying one of the lines and cha
 #+end_src
 
 *** Auto indent src blocks
-Disabled too buggy gets errors of
+Autorunnig disabled. too buggy gets errors of
 #+begin_example
 Warning (org-element-cache): org-element--cache: Org parser error in test.py::1055. Resetting.
  The error was: (error "rx ‘**’ range error")
@@ -1208,13 +1210,19 @@ nil
 #+end_example
 
 #+begin_src emacs-lisp
-;;  (defun indent-org-block-automatically ()
-;;    (when (org-in-src-block-p)
-;;      (org-edit-special)
-;;      (indent-region (point-min) (point-max))
-;;      (org-edit-src-exit)))
-;;
-;;  (run-at-time 1 10 'indent-org-block-automatically)
+  (defun indent-org-block-automatically ()
+    (interactive)
+    (when (org-in-src-block-p)
+      (org-edit-special)
+      (indent-region (point-min) (point-max))
+      (org-edit-src-exit)))
+
+    (add-hook 'org-mode-hook
+        (lambda ()
+          (add-hook 'after-save-hook #'indent-org-block-automatically)))
+
+  ;;
+  ;;  (run-at-time 1 10 'indent-org-block-automatically)
 #+end_src
 
 ** Org-download
