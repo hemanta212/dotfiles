@@ -409,7 +409,7 @@ Version 2019-11-04 2021-02-16"
 (use-package doom-themes)
 (unless efs/is-termux
  (if (eq (display-graphic-p) nil)
-     (load-theme 'doom-ir-black t)
+     (load-theme 'modus-vivendi t)
      (progn
      (load-theme 'doom-one t)
      (doom-themes-visual-bell-config))))
@@ -732,6 +732,11 @@ Version 2019-11-04 2021-02-16"
   :after (org-mode)
   )
 
+(use-package geiser)
+(use-package geiser-mit)
+(use-package geiser-guile)
+(use-package geiser-racket)
+
 (defun org-babel-execute:json (body params)
   (let ((jq (cdr (assoc :jq params)))
         (node (cdr (assoc :node params))))
@@ -825,6 +830,7 @@ Version 2019-11-04 2021-02-16"
   (add-to-list 'org-structure-template-alist '("art" . "src artist"))
   (add-to-list 'org-structure-template-alist '("ex" . "example"))
   (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+  (add-to-list 'org-structure-template-alist '("eml" . "src emacs-lisp :exports both"))
   (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
   (add-to-list 'org-structure-template-alist '("shell" . "src shell :results output :exports both"))
   (add-to-list 'org-structure-template-alist '("clang" . "src C :results output :exports both"))
@@ -878,9 +884,9 @@ Version 2019-11-04 2021-02-16"
     (indent-region (point-min) (point-max))
     (org-edit-src-exit)))
 
-  (add-hook 'org-mode-hook
-      (lambda ()
-        (add-hook 'after-save-hook #'indent-org-block-automatically)))
+;;  (add-hook 'org-mode-hook
+;;      (lambda ()
+;;        (add-hook 'after-save-hook #'indent-org-block-automatically)))
 
 ;;
 ;;  (run-at-time 1 10 'indent-org-block-automatically)

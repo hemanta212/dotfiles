@@ -554,7 +554,7 @@ Giving a try to Paradox for an enhanced package management interface. We set par
   (use-package doom-themes)
   (unless efs/is-termux
    (if (eq (display-graphic-p) nil)
-       (load-theme 'doom-ir-black t)
+       (load-theme 'modus-vivendi t)
        (progn
        (load-theme 'doom-one t)
        (doom-themes-visual-bell-config))))
@@ -1034,6 +1034,14 @@ Editing syntactic sugars made easier: Temporarily shows emphasis markers and hid
     )
 #+end_src
 
+**** Scheme geiser
+#+begin_src emacs-lisp
+(use-package geiser)
+(use-package geiser-mit)
+(use-package geiser-guile)
+(use-package geiser-racket)
+#+end_src
+
 *** Custom Babel execute
 **** Json
 #+begin_src emacs-lisp
@@ -1145,6 +1153,7 @@ You can add more =src= block templates below by copying one of the lines and cha
     (add-to-list 'org-structure-template-alist '("art" . "src artist"))
     (add-to-list 'org-structure-template-alist '("ex" . "example"))
     (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+    (add-to-list 'org-structure-template-alist '("eml" . "src emacs-lisp :exports both"))
     (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
     (add-to-list 'org-structure-template-alist '("shell" . "src shell :results output :exports both"))
     (add-to-list 'org-structure-template-alist '("clang" . "src C :results output :exports both"))
@@ -1217,9 +1226,9 @@ nil
       (indent-region (point-min) (point-max))
       (org-edit-src-exit)))
 
-    (add-hook 'org-mode-hook
-        (lambda ()
-          (add-hook 'after-save-hook #'indent-org-block-automatically)))
+  ;;  (add-hook 'org-mode-hook
+  ;;      (lambda ()
+  ;;        (add-hook 'after-save-hook #'indent-org-block-automatically)))
 
   ;;
   ;;  (run-at-time 1 10 'indent-org-block-automatically)

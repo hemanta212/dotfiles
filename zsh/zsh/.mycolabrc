@@ -1,13 +1,13 @@
-manim() {
-  if [ $# -eq 2 ]
-    then
-      poetry run manim $1.py $2 --low_quality --video_output_dir=./videos && curl localhost:60262/manim
-  fi
-  if [ $# -eq 3 ]
-    then
-      poetry run manim $1.py $2 --low_quality --video_output_dir=./videos && curl localhost:$3/manim
-  fi
-}
+#manim() {
+#  if [ $# -eq 2 ]
+#    then
+#      poetry run manim $1.py $2 --low_quality --video_output_dir=./videos && curl localhost:60262/manim
+#  fi
+#  if [ $# -eq 3 ]
+#    then
+#      poetry run manim $1.py $2 --low_quality --video_output_dir=./videos && curl localhost:$3/manim
+#  fi
+#}
 
 manimc() {
   if [ $# -eq 2 ]
@@ -39,17 +39,17 @@ manimb(){
  fi
 }
 
-build(){
-  poetry run manim -qk generator.py $1;
-  mv images/Generator_ManimCE_v0.8.0.png images/image.png;
- if [ $# -eq 1 ]
-    then
-    curl localhost:5001/manim-pic;
-    curl localhost:60262/manim-pic;
-    curl localhost:5002/manim-pic;
- fi
- if [ $# -eq 2 ]
-    then
-    curl localhost:$2/manim-pic;
- fi
-}
+#build(){
+#  poetry run manim -qk generator.py $1;
+#  mv images/Generator_ManimCE_v0.8.0.png images/image.png;
+# if [ $# -eq 1 ]
+#    then
+#    curl localhost:5001/manim-pic;
+#    curl localhost:60262/manim-pic;
+#    curl localhost:5002/manim-pic;
+# fi
+# if [ $# -eq 2 ]
+#    then
+#    curl localhost:$2/manim-pic;
+# fi
+#}
