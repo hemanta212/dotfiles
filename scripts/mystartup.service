@@ -1,0 +1,9 @@
+[Unit]
+Description=Custom Pop OS startup script
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /usr/bin/startup.sh
+
+[Install]
+WantedBy=multi-user.target

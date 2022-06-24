@@ -1,0 +1,35 @@
+#tabbrowser-tabs { visibility: collapse !important; }
+#sidebar-header {
+  visibility: collapse !important;
+}
+#titlebar {
+  visibility: collapse;
+}
+
+/* hides the native tabs */
+#TabsToolbar {
+  visibility: collapse;
+}/* leaves space for the window buttons */
+/*
+#nav-bar {
+    margin-top: -8px;
+    margin-right: 74px;
+    margin-bottom: -4px;
+}
+*/
+
+/* Compact tab layout */
+:root { --tab-height: 20px !important; --tab-width: 10px !important;}
+.tab { height: 20px !important; }
+/* Shrink space between pinned tabs and tab bar, only when pins are present */
+#tabbar[style*="margin"] { margin-top: 20px !important; }
+
+/* Show title of unread tabs with red font */
+.tab.unread .label {
+  color: red !important;
+}
+
+/* Add private browsing indicator per tab */
+.tab.private-browsing .label:before {
+  content: " ";
+}
