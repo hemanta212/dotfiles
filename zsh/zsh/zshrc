@@ -84,18 +84,10 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 # Fixes sdkmanager error with java versions higher than java 8 !!MAY cause problems otherwise
 #export JAVA_OPTS='-XX:+IgnoreUnrecognizedVMOptions --add-modules java.se.ee'
 
-# export pyenv
-if [ -d ~/.pyenv/bin ]; then
-  export PATH="~/.pyenv/bin:$PATH"
-  eval "$(pyenv init -)"
-  export PYENV_ROOT='~/.pyenv/'
-fi
 
 export XDG_CONFIG_HOME="$HOME/.config/"
 export PYTHONSTARTUP="$XDG_CONFIG_HOME/ptpython/.pythonrc.py"
 
-# init fasd
-eval "$(fasd --init auto)"
 export MANPATH="/usr/local/man:$MANPATH"
 
 
@@ -153,9 +145,20 @@ if echo $OSTYPE | grep -q 'android' ; then
 fi
 
 
-# If inside Proper linux
-if echo $OSTYPE | grep -q 'linux-gnu' ; then
+# If inside Proper linux and using xorg
+# This session check works in fedora and ubuntu 18
+# ON wayland use  gsettings set org.gnome.desktop.input-sources xkb-options "['caps:ctrl_modifier']"
+# session_type = loginctl show-session $(loginctl | grep $(whoami) | awk '{print $1}') -p Type
+if echo $OSTYPE | grep "gnu-linux" && loginctl show-session $(loginctl | grep $(whoami) | awk '{print $1}') -p Type | grep "x11" ; then
         /usr/bin/setxkbmap -option 'caps:ctrl_modifier'
         /usr/bin/xcape -e 'Caps_Lock=Escape' -t 100
         #sudo nice -n -20 $HOME/.local/caps2esc-legacy/caps2esc >/tmp/caps2esc.log 2>/tmp/caps2esc.err &
+fi
+
+# export pyenv
+if [ -d ~/.pyenv/bin ]; then
+	export PYENV_ROOT="$HOME/.pyenv"
+	command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+        eval "$(pyenv init -)"
+        #eval "$(pyenv virtualenv-init -)"
 fi

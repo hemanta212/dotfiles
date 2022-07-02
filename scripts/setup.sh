@@ -7,15 +7,18 @@ git clone https://github.com/hemanta212/dotfiles $HOME/dev/dotfiles
 git clone https://github.com/romkatv/powerlevel10k $HOME/.config/zsh/powerlevel10k --depth 1
 
 curl -sSL https://hemanta212.github.io/dotfiles/colab/p10k.zsh -o $HOME/.config/zsh/p10k.zsh
+cp $HOME/.config/zsh/p10k.zsh $HOME/.p10k.zsh
 
 ln -s $HOME/dev/dotfiles/scripts/* $HOME/scripts/
 ln -s $HOME/dev/dotfiles/tmux/.tmux.conf $HOME/
 DOT_PREFIX="$HOME/dev/dotfiles/zsh"
 ln -s $HOME/dev/dotfiles/zsh/zsh/* $HOME/.config/zsh/
+mkdir -p ~/.cache/zsh 
 ln -s $DOT_PREFIX/pythonrc.py $HOME/.config/ptpython/
 cp $HOME/dev/dotfiles/zsh/.pythonrc.py .config/ptpython
 ln -s $DOT_PREFIX/.zshrc $HOME
 ln -s $DOT_PREFIX/.bashrc $DOT_PREFIX/.bash_profile $HOME
+export ZPLUG_HOME=$HOME/.cache/zplug
 curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
 wget https://github.com/dandavison/delta/releases/download/0.12.1/git-delta_0.12.1_amd64.deb -O $HOME/git-delta.deb
 export PATH=$PATH:$HOME/.cache/zplug/bin/
