@@ -149,9 +149,15 @@ fi
 # This session check works in fedora and ubuntu 18
 # ON wayland use  gsettings set org.gnome.desktop.input-sources xkb-options "['caps:ctrl_modifier']"
 # session_type = loginctl show-session $(loginctl | grep $(whoami) | awk '{print $1}') -p Type
-if echo $OSTYPE | grep "gnu-linux" && loginctl show-session $(loginctl | grep $(whoami) | awk '{print $1}') -p Type | grep "x11" ; then
+if echo $OSTYPE | grep -q "linux-gnu" && loginctl show-session $(loginctl | grep $(whoami) | awk '{print $1}') -p Type | grep -q "x11" ; then
         /usr/bin/setxkbmap -option 'caps:ctrl_modifier'
         /usr/bin/xcape -e 'Caps_Lock=Escape' -t 100
+
+        if ! ps cax | grep -q Audiorelay; then
+            # survive after terminal close, run in background, pause stdinput, not create nohup.out file
+            nohup $HOME/.local/bin/Audiorelay </dev/null >/dev/null 2>&1 &
+        fi
+
         #sudo nice -n -20 $HOME/.local/caps2esc-legacy/caps2esc >/tmp/caps2esc.log 2>/tmp/caps2esc.err &
 fi
 

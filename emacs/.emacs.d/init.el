@@ -26,6 +26,8 @@
 (require 'subr-x)
 (setq efs/is-termux
       (string-suffix-p "Android" (string-trim (shell-command-to-string "uname -a"))))
+(setq efs/is-fedora
+      (string-prefix-p "Linux fedora" (string-trim (shell-command-to-string "uname -a"))))
 
 ;; Initialize package sources
 (require 'package)
@@ -76,88 +78,93 @@
 (setq straight-use-package-by-default t)
 
 ;; Define variables section
-  (defvar efs/default-font-size 140)
-  (defvar efs/default-variable-font-size 165)
+(if efs/is-fedora
+    (progn
+      (defvar efs/default-font-size 80)
+      (defvar efs/default-variable-font-size 100))
+  (progn
+    (defvar efs/default-font-size 140)
+    (defvar efs/default-variable-font-size 165)))
 
-  ;; Make frame transparency overridable
-  (defvar efs/frame-transparency '(90 . 90))
+;; Make frame transparency overridable
+(defvar efs/frame-transparency '(90 . 90))
 
 
-  (setq inhibit-startup-message t)
+(setq inhibit-startup-message t)
 
-  (menu-bar-mode -1)            ; Disable the menu bar
-  (display-battery-mode 1)
-  (if (display-graphic-p)
-      (progn
-        (set-fringe-mode 10)        ; Give some breathing room
-        (tooltip-mode -1)           ; Disable tooltips
-        (tool-bar-mode -1)
-        (menu-bar-mode 1)
-        (scroll-bar-mode -1)))
+(menu-bar-mode -1)            ; Disable the menu bar
+(display-battery-mode 1)
+(if (display-graphic-p)
+    (progn
+      (set-fringe-mode 10)        ; Give some breathing room
+      (tooltip-mode -1)           ; Disable tooltips
+      (tool-bar-mode -1)
+      (menu-bar-mode 1)
+      (scroll-bar-mode -1)))
 
-  (set-face-attribute 'default nil :font "Fira Code Retina" :height efs/default-font-size)
-  ;; Set the fixed pitch face
-  (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height efs/default-font-size)
-  ;; Set the variable pitch face
-  (set-face-attribute 'variable-pitch nil :font "Segoe UI" :height efs/default-variable-font-size :weight 'regular)
+(set-face-attribute 'default nil :font "Fira Code Retina" :height efs/default-font-size)
+;; Set the fixed pitch face
+(set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height efs/default-font-size)
+;; Set the variable pitch face
+(set-face-attribute 'variable-pitch nil :font "Segoe UI" :height efs/default-variable-font-size :weight 'regular)
 
-  ;; Set up the visible bell
-  (setq visible-bell nil)
-  ;; Disable line numbers globally for everything
-  (setq display-line-numbers-type nil)
-  ;; Change cursor color
-  ;;(set-cursor-color "#000000")
-  ;; (dolist (mode '(org-mode-hook
-  ;;                 term-mode-hook
-  ;;                 shell-mode-hook
-  ;;                 vterm-mode-hook
-  ;;                 eww-mode-hook
-  ;;                 treemacs-mode-hook
-  ;;                 nov-mode-hook
-  ;;                 pdf-view-mode-hook
-  ;;                 lsp-ui-imenu-hook
-  ;;                 eshell-mode-hook))
-  ;;   (add-hook mode (lambda () (display-line-numbers-mode 0))))
+;; Set up the visible bell
+(setq visible-bell nil)
+;; Disable line numbers globally for everything
+(setq display-line-numbers-type nil)
+;; Change cursor color
+;;(set-cursor-color "#000000")
+;; (dolist (mode '(org-mode-hook
+;;                 term-mode-hook
+;;                 shell-mode-hook
+;;                 vterm-mode-hook
+;;                 eww-mode-hook
+;;                 treemacs-mode-hook
+;;                 nov-mode-hook
+;;                 pdf-view-mode-hook
+;;                 lsp-ui-imenu-hook
+;;                 eshell-mode-hook))
+;;   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
-  ;; (column-number-mode)
+;; (column-number-mode)
 
-  ;; Prevent asking for confirmation to kill processes when exiting.
-  (custom-set-variables '(confirm-kill-processes nil))
+;; Prevent asking for confirmation to kill processes when exiting.
+(custom-set-variables '(confirm-kill-processes nil))
 
-  ;; set default encoding
-  (set-language-environment "UTF-8")
-  (prefer-coding-system       'utf-8)
-  (set-default-coding-systems 'utf-8)
-  (set-terminal-coding-system 'utf-8)
-  (set-keyboard-coding-system 'utf-8)
-  (setq default-buffer-file-coding-system 'utf-8)
-  ;; Force org mode to open any org file in utf 8
-  (add-to-list 'file-coding-system-alist '("\\.org\\'" . utf-8))
+;; set default encoding
+(set-language-environment "UTF-8")
+(prefer-coding-system       'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(setq default-buffer-file-coding-system 'utf-8)
+;; Force org mode to open any org file in utf 8
+(add-to-list 'file-coding-system-alist '("\\.org\\'" . utf-8))
 
 ;; Treat clipboard input as UTF-8 string first; compound text next, etc.
 (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
 
-  ;; line numbers
-  (when (>= emacs-major-version 26)
+;; line numbers
+(when (>= emacs-major-version 26)
   (use-package display-line-numbers
     :defer nil
     :straight nil
     :config
     (global-display-line-numbers-mode)))
 
-  ;; Highlight trailing whitespace in red, so it’s easily visible
-  ;;(disabled for now as it created a lot of noise in some modes, e.g. the org-mode export screen)
-   (custom-set-variables '(show-trailing-whitespace nil))
+;; Highlight trailing whitespace in red, so it’s easily visible
+;;(disabled for now as it created a lot of noise in some modes, e.g. the org-mode export screen)
+(custom-set-variables '(show-trailing-whitespace nil))
 
-  (unless efs/is-termux
+(unless efs/is-termux
   (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
   (add-to-list 'default-frame-alist '(alpha . (100 . 100)))
   (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
   (add-to-list 'default-frame-alist '(fullscreen . maximized)))
 
 
-  ;; Highlight matching parenthesis
-  (show-paren-mode)
+;; Highlight matching parenthesis
+(show-paren-mode)
 
 ;; Make Asynchronous operations loaded to use later
 (use-package async)
