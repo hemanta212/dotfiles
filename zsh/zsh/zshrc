@@ -149,7 +149,7 @@ fi
 # This session check works in fedora and ubuntu 18
 # ON wayland use  gsettings set org.gnome.desktop.input-sources xkb-options "['caps:ctrl_modifier']"
 # session_type = loginctl show-session $(loginctl | grep $(whoami) | awk '{print $1}') -p Type
-if echo $OSTYPE | grep -q "linux-gnu" && loginctl show-session $(loginctl | grep $(whoami) | awk '{print $1}') -p Type | grep -q "x11" ; then
+if ! uname -a | grep -q "microsoft" && loginctl show-session $(loginctl | grep $(whoami) | awk '{print $1}') -p Type | grep -q "x11" ; then
         /usr/bin/setxkbmap -option 'caps:ctrl_modifier'
         /usr/bin/xcape -e 'Caps_Lock=Escape' -t 100
 
