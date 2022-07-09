@@ -59,9 +59,19 @@ def termux_battery():
 
     return decorated
 
+def poco_x3_ip():
+    # Runs arp.exe -a gets poco ip from its mac
+    mac_addr = "9c-5a-81-f5-6d-52"
+    cmd = f"arp.exe -a | grep {mac_addr}"
+    output = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, shell=True).stdout
+    # 192.168.1.64  9c-5a-81-f5-6d-52  dynamic
+    line = output.strip().split(" ")[0]
+    ip = line.strip().split(".")[-1]
+    return f": {ip}"
+
 
 def all():
-    print(get_link_speed(), get_ip(), "|", termux_battery())
+    print(get_link_speed(), get_ip(), poco_x3_ip(), "|", termux_battery())
 
 
 if __name__ == "__main__":
@@ -74,5 +84,7 @@ if __name__ == "__main__":
         print(get_ip())
     elif arg == "wifi-speed":
         print(get_link_speed())
+    elif arg == "poco-x3-ip":
+        print(poco_x3_ip())
 
 # termux-list-notifications

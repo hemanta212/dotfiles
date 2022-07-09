@@ -1396,6 +1396,10 @@ With a prefix ARG, remove start location."
 (use-package yaml-mode
   :mode "\\.ya?ml\\'")
 
+(use-package go-mode
+:mode "\\.go\\'"
+:hook (go-mode . lsp-deferred))
+
 (use-package flycheck
   :straight t
   :defer t
