@@ -78,96 +78,123 @@
 (setq straight-use-package-by-default t)
 
 ;; Define variables section
-(if efs/is-fedora
-    (progn
-      (defvar efs/default-font-size 80)
-      (defvar efs/default-variable-font-size 100))
-  (progn
-    (defvar efs/default-font-size 140)
-    (defvar efs/default-variable-font-size 165)))
+ (if efs/is-fedora
+     (progn
+       (defvar efs/default-font-size 80)
+       (defvar efs/default-variable-font-size 100)
+       (defvar efs/special-small-font-size 80))
+   (progn
+     (defvar efs/default-font-size 140)
+     (defvar efs/special-small-font-size 100)
+     (defvar efs/default-variable-font-size 165)))
 
-;; Make frame transparency overridable
-(defvar efs/frame-transparency '(90 . 90))
-
-
-(setq inhibit-startup-message t)
-
-(menu-bar-mode -1)            ; Disable the menu bar
-(display-battery-mode 1)
-(if (display-graphic-p)
-    (progn
-      (set-fringe-mode 10)        ; Give some breathing room
-      (tooltip-mode -1)           ; Disable tooltips
-      (tool-bar-mode -1)
-      (menu-bar-mode 1)
-      (scroll-bar-mode -1)))
-
-(set-face-attribute 'default nil :font "Fira Code Retina" :height efs/default-font-size)
-;; Set the fixed pitch face
-(set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height efs/default-font-size)
-;; Set the variable pitch face
-(set-face-attribute 'variable-pitch nil :font "Segoe UI" :height efs/default-variable-font-size :weight 'regular)
-
-;; Set up the visible bell
-(setq visible-bell nil)
-;; Disable line numbers globally for everything
-(setq display-line-numbers-type nil)
-;; Change cursor color
-;;(set-cursor-color "#000000")
-;; (dolist (mode '(org-mode-hook
-;;                 term-mode-hook
-;;                 shell-mode-hook
-;;                 vterm-mode-hook
-;;                 eww-mode-hook
-;;                 treemacs-mode-hook
-;;                 nov-mode-hook
-;;                 pdf-view-mode-hook
-;;                 lsp-ui-imenu-hook
-;;                 eshell-mode-hook))
-;;   (add-hook mode (lambda () (display-line-numbers-mode 0))))
-
-;; (column-number-mode)
-
-;; Prevent asking for confirmation to kill processes when exiting.
-(custom-set-variables '(confirm-kill-processes nil))
-
-;; set default encoding
-(set-language-environment "UTF-8")
-(prefer-coding-system       'utf-8)
-(set-default-coding-systems 'utf-8)
-(set-terminal-coding-system 'utf-8)
-(set-keyboard-coding-system 'utf-8)
-(setq default-buffer-file-coding-system 'utf-8)
-;; Force org mode to open any org file in utf 8
-(add-to-list 'file-coding-system-alist '("\\.org\\'" . utf-8))
-
-;; Treat clipboard input as UTF-8 string first; compound text next, etc.
-(setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
-
-;; line numbers
-(when (>= emacs-major-version 26)
-  (use-package display-line-numbers
-    :defer nil
-    :straight nil
-    :config
-    (global-display-line-numbers-mode)))
-
-;; Highlight trailing whitespace in red, so it’s easily visible
-;;(disabled for now as it created a lot of noise in some modes, e.g. the org-mode export screen)
-(custom-set-variables '(show-trailing-whitespace nil))
-
-(unless efs/is-termux
-  (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
-  (add-to-list 'default-frame-alist '(alpha . (100 . 100)))
-  (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
-  (add-to-list 'default-frame-alist '(fullscreen . maximized)))
+ ;; Make frame transparency overridable
+ (defvar efs/frame-transparency '(90 . 90))
 
 
-;; Highlight matching parenthesis
-(show-paren-mode)
+ (setq inhibit-startup-message t)
+
+ (menu-bar-mode -1)            ; Disable the menu bar
+ (display-battery-mode 1)
+ (if (display-graphic-p)
+     (progn
+       (set-fringe-mode 10)        ; Give some breathing room
+       (tooltip-mode -1)           ; Disable tooltips
+       (tool-bar-mode -1)
+       (menu-bar-mode 1)
+       (scroll-bar-mode -1)))
+
+ (set-face-attribute 'default nil :font "Fira Code Retina" :height efs/default-font-size)
+ ;; Set the fixed pitch face
+ (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height efs/default-font-size)
+ ;; Set the variable pitch face
+ (set-face-attribute 'variable-pitch nil :font "Segoe UI" :height efs/default-variable-font-size :weight 'regular)
+
+ ;; Set up the visible bell
+ (setq visible-bell nil)
+ ;; Disable line numbers globally for everything
+ (setq display-line-numbers-type nil)
+ ;; Change cursor color
+ ;;(set-cursor-color "#000000")
+ ;; (dolist (mode '(org-mode-hook
+ ;;                 term-mode-hook
+ ;;                 shell-mode-hook
+ ;;                 vterm-mode-hook
+ ;;                 eww-mode-hook
+ ;;                 treemacs-mode-hook
+ ;;                 nov-mode-hook
+ ;;                 pdf-view-mode-hook
+ ;;                 lsp-ui-imenu-hook
+ ;;                 eshell-mode-hook))
+ ;;   (add-hook mode (lambda () (display-line-numbers-mode 0))))
+
+ ;; (column-number-mode)
+
+ ;; Prevent asking for confirmation to kill processes when exiting.
+ (custom-set-variables '(confirm-kill-processes nil))
+
+ ;; set default encoding
+ (set-language-environment "UTF-8")
+ (prefer-coding-system       'utf-8)
+ (set-default-coding-systems 'utf-8)
+ (set-terminal-coding-system 'utf-8)
+ (set-keyboard-coding-system 'utf-8)
+ (setq default-buffer-file-coding-system 'utf-8)
+ ;; Force org mode to open any org file in utf 8
+ (add-to-list 'file-coding-system-alist '("\\.org\\'" . utf-8))
+
+ ;; Treat clipboard input as UTF-8 string first; compound text next, etc.
+ (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
+
+ ;; line numbers
+ (when (>= emacs-major-version 26)
+   (use-package display-line-numbers
+     :defer nil
+     :straight nil
+     :config
+     (global-display-line-numbers-mode)))
+
+ ;; Highlight trailing whitespace in red, so it’s easily visible
+ ;;(disabled for now as it created a lot of noise in some modes, e.g. the org-mode export screen)
+ (custom-set-variables '(show-trailing-whitespace nil))
+
+ (unless efs/is-termux
+   (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
+   (add-to-list 'default-frame-alist '(alpha . (100 . 100)))
+   (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+   (add-to-list 'default-frame-alist '(fullscreen . maximized)))
+
+
+ ;; Highlight matching parenthesis
+ (show-paren-mode)
+
+
+ ;; Small fonts for compilation buffers
+ ;; Use variable width font faces in current buffer
+(defun my-buffer-face-mode-variable ()
+  "Set font to a variable width (proportional) fonts in current buffer"
+  (interactive)
+  (setq buffer-face-mode-face '(:family "Symbola" :height 100 :width semi-condensed))
+  (buffer-face-mode))
+
+;; Use monospaced font faces in current buffer
+(defun my-buffer-face-mode-fixed ()
+  "Sets a fixed width (monospace) font in current buffer"
+  (interactive)
+  (setq buffer-face-mode-face '(:family "Inconsolata" :height 100))
+  (buffer-face-mode))
+
+;; Set default font faces for Info and ERC modes
+(add-hook 'compilation-mode-hook 'my-buffer-face-mode-variable)
+(add-hook 'compilation-mode-hook 'my-buffer-face-mode-variable)
 
 ;; Make Asynchronous operations loaded to use later
 (use-package async)
+
+;; dont pollute system clipboard X-clipboard
+;; with evil use the + to copy/paste
+;; visual select + shift ' + shift = + y or p
+(setq select-enable-clipboard nil)
 
 ;; Start the emacs server
 ;; (server-start)
@@ -610,6 +637,52 @@ Version 2019-11-04 2021-02-16"
   (interactive "nTransparency Value 0 - 100 opaque:")
   (set-frame-parameter (selected-frame) 'alpha value))
 
+(use-package pulsar
+  :config
+
+  (setq pulsar-pulse-functions
+        '(recenter-top-bottom
+          move-to-window-line-top-bottom
+          reposition-window
+          forward-page
+          backward-page
+          scroll-up-command
+          scroll-down-command
+          org-next-visible-heading
+          org-previous-visible-heading
+          org-forward-heading-same-level
+          org-backward-heading-same-level
+          outline-backward-same-level
+          outline-forward-same-level
+          outline-next-visible-heading
+          outline-previous-visible-heading
+          outline-up-heading))
+
+  (setq pulsar-pulse-on-window-change t)
+  (setq pulsar-pulse t)
+  (setq pulsar-delay 0.055)
+  (setq pulsar-iterations 10)
+  (setq pulsar-face 'pulsar-magenta)
+  (setq pulsar-highlight-face 'pulsar-yellow)
+
+  (pulsar-global-mode 1))
+
+;; OR use the local mode for select mode hooks
+
+;; (dolist (hook '(org-mode-hook emacs-lisp-mode-hook))
+;;   (add-hook hook #'pulsar-mode))
+
+;;     (info "(elisp) Key Binding Conventions")
+;; You can replace `pulsar-highlight-line' with the command
+;; `pulsar-highlight-dwim'.
+(let ((map global-map))
+  (define-key map (kbd "C-c h p") #'pulsar-pulse-line)
+  (define-key map (kbd "C-c h h") #'pulsar-highlight-dwim))
+
+;; integration with the built-in `imenu':
+(add-hook 'imenu-after-jump-hook #'pulsar-recenter-top)
+(add-hook 'imenu-after-jump-hook #'pulsar-reveal-entry)
+
 (cond ((eq system-type 'darwin)
        ;; <<Mac settings>>
      (custom-set-variables
@@ -739,6 +812,11 @@ Version 2019-11-04 2021-02-16"
   :after (org-mode)
   )
 
+(use-package ob-go
+  :defer t
+  :after (org-mode)
+  )
+
 (use-package geiser)
 (use-package geiser-mit)
 (use-package geiser-guile)
@@ -816,16 +894,16 @@ Version 2019-11-04 2021-02-16"
 (with-eval-after-load 'org
  (org-babel-do-load-languages
    'org-babel-load-languages
-   '((emacs-lisp . t)
-     (C . t)
-     (scheme . t)
-     (shell . t)
+   '((C . t)
+     (emacs-lisp . t)
+     (go . t)
      (http . t)
-     (ein . t)
-     (racket . t)
      (js . t)
-     (python . t)))
-
+     (ein . t)
+     (python . t)
+     (racket . t)
+     (scheme . t)
+     (shell . t)))
  (push '("conf-unix" . conf-unix) org-src-lang-modes)
  (setq org-confirm-babel-evaluate nil))
 
@@ -833,24 +911,25 @@ Version 2019-11-04 2021-02-16"
   ;; This is needed as of Org 9.2
   (require 'org-tempo)
 
-  (add-to-list 'org-structure-template-alist '("draw" . "src artist"))
   (add-to-list 'org-structure-template-alist '("art" . "src artist"))
-  (add-to-list 'org-structure-template-alist '("ex" . "example"))
-  (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
-  (add-to-list 'org-structure-template-alist '("eml" . "src emacs-lisp :exports both"))
-  (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
-  (add-to-list 'org-structure-template-alist '("shell" . "src shell :results output :exports both"))
+  (add-to-list 'org-structure-template-alist '("draw" . "src artist"))
   (add-to-list 'org-structure-template-alist '("clang" . "src C :results output :exports both"))
   (add-to-list 'org-structure-template-alist '("cpp" . "src C++ :results output :exports both"))
   (add-to-list 'org-structure-template-alist '("cppio" . "src C++ :results output :exports both :includes <iostream>"))
   (add-to-list 'org-structure-template-alist '("c++" . "src C++ :include <iostream> :main no :results output :exports both :flags -std=c++17 -Wall --pedantic -Werror"))
-  (add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
-  (add-to-list 'org-structure-template-alist '("sasm" . "src 8085 :export both :args -db /tmp/8085-session1"))
-  (add-to-list 'org-structure-template-alist '("asm" . "src 8085"))
+  (add-to-list 'org-structure-template-alist '("ex" . "example"))
+  (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+  (add-to-list 'org-structure-template-alist '("eml" . "src emacs-lisp :exports both"))
+  (add-to-list 'org-structure-template-alist '("go" . "src go :exports both :results output"))
+  (add-to-list 'org-structure-template-alist '("ht" . "src http"))
+  (add-to-list 'org-structure-template-alist '("ein" . "src ein-python :session localhost :results output"))
   (add-to-list 'org-structure-template-alist '("py" . "src python :exports both :results output"))
   (add-to-list 'org-structure-template-alist '("rak" . "src racket :exports both :results output"))
-  (add-to-list 'org-structure-template-alist '("ein" . "src ein-python :session localhost :results output"))
-  (add-to-list 'org-structure-template-alist '("ht" . "src http")))
+  (add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
+  (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
+  (add-to-list 'org-structure-template-alist '("shell" . "src shell :results output :exports both"))
+  (add-to-list 'org-structure-template-alist '("sasm" . "src 8085 :export both :args -db /tmp/8085-session1"))
+  (add-to-list 'org-structure-template-alist '("asm" . "src 8085")))
   ;;(setq org-structure-template-alist '())
 
 ;; Automatically tangle our Emacs.org config file when we save it
@@ -1321,12 +1400,11 @@ With a prefix ARG, remove start location."
   (python-shell-interpreter "python3")
   (dap-python-executable "python3")
   (dap-python-debugger 'ptvsd)
-  :bind (:map python-mode-map
-              ("C-c r" . python-mr-builds))
   :config
   (require 'dap-python))
+
    ;; C-c r doesnot bind for some reason ugly global keymap hack
-  (define-key global-map (kbd "C-c r") 'python-mr-builds)
+  ;; (define-key global-map (kbd "C-c r") 'python-mr-builds)
 
 (use-package dart-mode
   :defer t
@@ -1396,9 +1474,19 @@ With a prefix ARG, remove start location."
 (use-package yaml-mode
   :mode "\\.ya?ml\\'")
 
+(defun lsp-go-install-save-hooks ()
+  (add-hook 'after-save-hook #'lsp-format-buffer t t)
+  (add-hook 'after-save-hook #'lsp-organize-imports t t))
+
 (use-package go-mode
-:mode "\\.go\\'"
-:hook (go-mode . lsp-deferred))
+  :mode "\\.go\\'"
+  :hook ((go-mode . lsp-deferred)
+         (go-mode . lsp-go-install-save-hooks)))
+
+    (define-key global-map (kbd "C-c l R") '(lambda () (interactive)
+                                              (progn
+                                                (save-buffer)
+                                                (recompile))))
 
 (use-package flycheck
   :straight t
@@ -1563,7 +1651,15 @@ With a prefix ARG, remove start location."
   :defer t
   :config
   (global-origami-mode 1)
-  :bind ("C-c l f" . origami-toggle-node))
+  :bind (("C-c l o T" . origami-toggle-all-nodes)
+         ("C-c l o t" . origami-toggle-node)
+         ("C-c l o n" . origami-next-fold)
+         ("C-c l o p" . origami-previous-fold)
+         ("C-c l o r t" . origami-recursively-toggle-node)
+         ("C-c l o r o" . origami-open-node-recursively)
+         ("C-c l o r c" . origami-close-node-recursively)
+         ("C-c l o O" . origami-open-all-nodes)
+         ("C-c l o C" . origami-close-all-nodes)))
 
 (use-package lsp-origami
   :hook (lsp-after-open-hook . lsp-origami-try-enable))
