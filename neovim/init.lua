@@ -78,6 +78,10 @@
       end
       }
 
+      -- Go dev
+      use 'ray-x/go.nvim'
+      use 'ray-x/guihua.lua' -- recommanded if need floating window support
+
 
   -- Automatically set up your configuration after cloning packer.nvim
   -- Put this at the end after all plugins
@@ -469,6 +473,21 @@ sources = {
   { name = 'orgmode' }
 }
 })
+
+-- Go setup
+require('go').setup()
+-- Run gofmt + goimport on save
+vim.api.nvim_exec([[ autocmd BufWritePre *.go :silent! lua require('go.format').goimport() ]], false)
+local go_capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
+require('go').setup({
+  -- other setups ....
+  lsp_cfg = {
+    capabilities = go_capabilities,
+    -- other setups
+  },
+})
+require("go.format").goimport()  -- goimport + gofmt
+
 
 -- vim.cmd [[nnoremap <silent> <leader>   :<c-u>WhichKey '<Space>'<CR>]]
 

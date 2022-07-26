@@ -80,8 +80,8 @@
 ;; Define variables section
  (if efs/is-fedora
      (progn
-       (defvar efs/default-font-size 80)
-       (defvar efs/default-variable-font-size 100)
+       (defvar efs/default-font-size 100)
+       (defvar efs/default-variable-font-size 120)
        (defvar efs/special-small-font-size 80))
    (progn
      (defvar efs/default-font-size 140)
@@ -174,19 +174,18 @@
 (defun my-buffer-face-mode-variable ()
   "Set font to a variable width (proportional) fonts in current buffer"
   (interactive)
-  (setq buffer-face-mode-face '(:family "Symbola" :height 100 :width semi-condensed))
+  (setq buffer-face-mode-face '(:family "Consolas" :height 70 :width semi-condensed))
   (buffer-face-mode))
 
 ;; Use monospaced font faces in current buffer
 (defun my-buffer-face-mode-fixed ()
   "Sets a fixed width (monospace) font in current buffer"
   (interactive)
-  (setq buffer-face-mode-face '(:family "Inconsolata" :height 100))
+  (setq buffer-face-mode-face '(:height 80))
   (buffer-face-mode))
 
-;; Set default font faces for Info and ERC modes
 (add-hook 'compilation-mode-hook 'my-buffer-face-mode-variable)
-(add-hook 'compilation-mode-hook 'my-buffer-face-mode-variable)
+;;(add-hook 'compilation-mode-hook 'my-buffer-face-mode-variable)
 
 ;; Make Asynchronous operations loaded to use later
 (use-package async)
@@ -638,6 +637,7 @@ Version 2019-11-04 2021-02-16"
   (set-frame-parameter (selected-frame) 'alpha value))
 
 (use-package pulsar
+  :straight t
   :config
 
   (setq pulsar-pulse-functions
@@ -2005,7 +2005,7 @@ With a prefix ARG, remove start location."
   :ensure t
   :config
   ; enable copilot in programming modes
-  (add-hook 'prog-mode-hook 'copilot-mode)
+  ;; (add-hook 'prog-mode-hook 'copilot-mode)
   ;;For evil users, you will want to add this line to have completions only when in insert state:
   (customize-set-variable 'copilot-enable-predicates '(evil-insert-state-p))
 

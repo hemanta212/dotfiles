@@ -93,7 +93,6 @@ export MANPATH="/usr/local/man:$MANPATH"
 
 if [ -d ~/.config/nvm ]; then
 export NVM_DIR="$HOME/.config/nvm"
-export PATH="$NVM_DIR/versions/node/v14.17.6/bin:$PATH"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 fi
