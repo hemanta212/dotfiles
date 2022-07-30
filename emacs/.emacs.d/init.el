@@ -1483,10 +1483,40 @@ With a prefix ARG, remove start location."
   :hook ((go-mode . lsp-deferred)
          (go-mode . lsp-go-install-save-hooks)))
 
-    (define-key global-map (kbd "C-c l R") '(lambda () (interactive)
-                                              (progn
-                                                (save-buffer)
-                                                (recompile))))
+(define-key global-map (kbd "C-c l R") '(lambda () (interactive)
+                                          (progn
+                                            (save-buffer)
+                                            (recompile))))
+
+;; go install github.com/josharian/impl@latest
+(use-package go-impl)
+
+;; go install github.com/go-delve/delve/cmd/dlv@latest
+(use-package go-dlv)
+(use-package gotest
+:config
+(define-key go-mode-map (kbd "C-c l t f") 'go-test-current-file)
+(define-key go-mode-map (kbd "C-c l t t") 'go-test-current-test)
+(define-key go-mode-map (kbd "C-c l t p") 'go-test-current-project)
+(define-key go-mode-map (kbd "C-c l t b") 'go-test-current-benchmark)
+(define-key go-mode-map (kbd "C-c l t r") 'go-run))
+
+;; go install github.com/haya14busa/goplay/cmd/goplay@latest
+(use-package go-playground)
+
+;; GO111MODULE=off go get -v github.com/cweill/gotests/...
+(use-package go-gen-test)
+;; :config
+;; (defun my-go-gen-test-setup ()
+;;   "My keybindings for generating go tests."
+;;   (interactive)
+;;   (local-set-key (kbd "C-c C-g") #'go-gen-test-dwim))
+
+;; (add-hook 'go-mode-hook #'my-go-gen-test-setup))
+
+(use-package go-eldoc)
+;; go install github.com/kisielk/errcheck@latest
+(use-package go-errcheck)
 
 (use-package flycheck
   :straight t
@@ -1795,15 +1825,15 @@ With a prefix ARG, remove start location."
 
 ;; Magit style transiet key
 (require 'telega-transient)
-(telega-transient-mode 1)
+(telega-transient-mode 1))
 
-(require 'telega-stories)
-(telega-stories-mode 1)
+;; (require 'telega-stories)
+;; (telega-stories-mode 1)
 ;; "Emacs Stories" rootview
 ;; (define-key telega-root-mode-map (kbd "v e") 'telega-view-emacs-stories)
 ;; Emacs Dashboard
-(add-to-list 'dashboard-items '(telega-stories . 5))
-)
+;; (add-to-list 'dashboard-items '(telega-stories . 5))
+;; )
 (define-key global-map (kbd "C-c t") telega-prefix-map)
 
 (use-package speed-type)
@@ -1998,34 +2028,6 @@ With a prefix ARG, remove start location."
       "~/dev/dotfiles/emacs/.emacs.d/init.el"
   (eval-buffer)
   ))
-
-(use-package copilot
-  :straight (:host github :repo "zerolfx/copilot.el"
-                   :files ("dist" "copilot.el"))
-  :ensure t
-  :config
-  ; enable copilot in programming modes
-  ;; (add-hook 'prog-mode-hook 'copilot-mode)
-  ;;For evil users, you will want to add this line to have completions only when in insert state:
-  (customize-set-variable 'copilot-enable-predicates '(evil-insert-state-p))
-
-  ; complete by copilot first, then company-mode
-  (defun my-tab ()
-    (interactive)
-    (or (copilot-accept-completion)
-        (company-indent-or-complete-common nil)))
-
-  ; modify company-mode behaviors
-  (with-eval-after-load 'company
-    ; disable inline previews
-    (delq 'company-preview-if-just-one-frontend company-frontends)
-    ; enable tab completion
-    (define-key company-mode-map (kbd "<tab>") 'my-tab)
-    (define-key company-mode-map (kbd "TAB") 'my-tab)
-    (define-key company-active-map (kbd "<tab>") 'my-tab)
-    (define-key company-active-map (kbd "TAB") 'my-tab))
-
-  (define-key global-map (kbd "M-r") 'my-tab))
 
 ;; Emacs 29 ships with an improved global minor mode for scrolling with a mouse or a touchpad,
 ;; that you might want to enable as well:
