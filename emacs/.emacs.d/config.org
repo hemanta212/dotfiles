@@ -894,8 +894,8 @@ These commands work on URL strings. While most users probably wont use these, 
 
 ** Emojify
 #+begin_src emacs-lisp
-(use-package emojify
-  :hook (after-init . global-emojify-mode))
+(use-package emojify)
+  ;; :hook (after-init . global-emojify-mode))
 #+end_src
 
 ** Transparency

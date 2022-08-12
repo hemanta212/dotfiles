@@ -627,8 +627,8 @@ Version 2019-11-04 2021-02-16"
 (use-package burly
 :straight t)
 
-(use-package emojify
-  :hook (after-init . global-emojify-mode))
+(use-package emojify)
+  ;; :hook (after-init . global-emojify-mode))
 
 ;; Set transparency of emacs
 (defun transparency (value)
