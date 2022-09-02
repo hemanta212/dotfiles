@@ -38,7 +38,7 @@ def get_ip():
 
 
 def get_link_speed():
-    cmd = "ping -c 1 google.com"
+    cmd = "ping -c 1 news.ycombinator.com"
     output = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, shell=True).stdout
     lines = output.strip().split("\n")
     if len(lines) < 2:
@@ -71,9 +71,45 @@ def battery():
 
     return decorated
 
+#def temperature():
+#    cmd = "sensors | grep coretemp -A 3 | grep 'Package id 0' | awk '{print $4}'" 
+#    output = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, shell=True).stdout
+#    return "🌡️ " + output.strip()[1:]
+#
+#def fan():
+#    cmd = """sensors | grep fan1 | awk '{print $2 "/" $10}'"""
+#    output = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, shell=True).stdout
+#    return "☢💨 " + output.strip()
+
+def fan_temp():
+    cmd = "sensors" 
+    output = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, shell=True).stdout
+    lines = output.strip().split('\n')
+    faninfo, coretemp = "", "" 
+    # sensors command outputs two relevant lines
+    # Package id 0:  +51.0°C  (high = +100.0°C, crit = +100.0°C)
+    # fan1:           2300 RPM  (min =    0 RPM, max = 4900 RPM)
+    for line in lines:
+        if line.startswith('fan1:'):
+            faninfo = line
+        elif line.startswith('Package id 0'):
+            coretemp = line
+    # Coretemp process
+    # Package id 0:  +51.0°C  (high = +100.0°C, crit = +100.0°C)
+    words = [i.strip() for i in coretemp.split(' ') if i]
+    temp = words[3] # +51.0°C
+    temperature = temp[1:]
+
+    # Faninfo extraction
+    # fan1:           2300 RPM  (min =    0 RPM, max = 4900 RPM)
+    words = [i.strip() for i in faninfo.split(' ') if i]
+    current, maxrpm = words[1], words[-2]
+    fan_info = current + "/" + maxrpm
+
+    return f"☢💨 {fan_info} 🌡️  {temperature}"
 
 def all():
-    print(get_link_speed(), get_ip(), "|", battery())
+    print(fan_temp(), get_link_speed(), get_ip(), "|", battery())
 
 
 if __name__ == "__main__":
