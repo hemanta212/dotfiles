@@ -1944,6 +1944,17 @@ With a prefix ARG, remove start location."
 (use-package meme
   :straight (:host github :repo "larsmagne/meme"))
 
+(use-package elcord
+  :config
+  (defun myelcord-buffer-details-format ()
+    "Return the buffer details string shown on discord."
+    (if (equal (substring (buffer-name) 0 1) "!")
+    (format "%s [%s]" (substring (buffer-name) 1) (car (persp-ibuffer-name (current-buffer))))
+    (format "Editing %s [%s]" (buffer-name) (car (persp-ibuffer-name (current-buffer))))))
+
+  (setq elcord-buffer-details-format-function 'myelcord-buffer-details-format)
+  )
+
 ;; (load-file "~/.cache/emacs/.emacs.custom/misc-exts/byte-run.el")
 ;; (add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
 ;; (require 'mu4e)
