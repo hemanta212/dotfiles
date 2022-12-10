@@ -41,8 +41,8 @@ require('packer').startup(function(use)
   }
 
   -- Git related plugins
-  use 'tpope/vim-fugitive'
-  use 'tpope/vim-rhubarb'
+  -- use 'tpope/vim-fugitive'
+  -- use 'tpope/vim-rhubarb'
   use 'lewis6991/gitsigns.nvim'
 
   use 'navarasu/onedark.nvim' -- Theme inspired by Atom
@@ -56,6 +56,46 @@ require('packer').startup(function(use)
 
   -- Fuzzy Finder Algorithm which requires local dependencies to be built. Only load if `make` is available
   use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'make', cond = vim.fn.executable 'make' == 1 }
+
+
+  -- Go dev
+  use 'ray-x/go.nvim'
+  use 'ray-x/guihua.lua' -- recommanded if need floating window support
+
+  use 'nvim-lua/plenary.nvim'
+  use 'ThePrimeagen/harpoon'
+
+  use {
+  "folke/which-key.nvim",
+  config = function()
+      require("which-key").setup {
+      -- your configuration comes here
+      -- or leave it empty to use the default settings
+      -- refer to the configuration section below
+      }
+  end
+  }
+
+  -- Z zump zz jump leap avy two char jump
+  use 'justinmk/vim-sneak'
+
+  -- NEOGIT (MAGIT for neovim)
+  use {
+   'TimUntersberger/neogit',
+   requires = {
+     'nvim-lua/plenary.nvim',
+     'sindrets/diffview.nvim'
+   }
+  }
+
+  -- Snip Run
+  use { 'michaelb/sniprun', run = 'bash ./install.sh'}
+
+  -- Debuggers
+  use 'mfussenegger/nvim-dap'
+  use 'rcarriga/nvim-dap-ui'
+  use 'theHamsta/nvim-dap-virtual-text'
+
 
   -- Add custom plugins to packer from /nvim/lua/custom/plugins.lua
   local has_plugins, plugins = pcall(require, 'custom.plugins')
@@ -94,6 +134,8 @@ vim.o.hlsearch = false
 -- Make line numbers default
 vim.wo.number = true
 
+vim.opt.expandtab = true
+
 -- Enable mouse mode
 vim.o.mouse = 'a'
 
@@ -117,6 +159,11 @@ vim.cmd [[colorscheme onedark]]
 
 -- Set completeopt to have a better completion experience
 vim.o.completeopt = 'menuone,noselect'
+
+-- Recommended
+vim.opt.smarttab = true
+vim.opt.smartindent = true
+vim.opt.autoindent = true
 
 -- Set <space> as the leader key
 -- See `:help mapleader`
@@ -151,7 +198,17 @@ require('lualine').setup {
 }
 
 -- Enable Comment.nvim
-require('Comment').setup()
+require('Comment').setup{
+  toggler = {
+      ---Block-comment toggle keymap
+      block = '<M-/>',
+  },
+  ---LHS of operator-pending mappings in NORMAL and VISUAL mode
+  opleader = {
+      ---Block-comment keymap
+      block = '<M-/>',
+  },
+}
 
 -- Enable `lukas-reineke/indent-blankline.nvim`
 -- See `:help indent_blankline.txt`
@@ -170,13 +227,22 @@ require('gitsigns').setup {
   },
 }
 
+actions = require('telescope.actions')
 require('telescope').setup {
   defaults = {
     mappings = {
-      i = {
-        ['<C-u>'] = false,
-        ['<C-d>'] = false,
-      },
+        i = {
+          ['<C-u>'] = false,
+          ['<C-d>'] = false,
+          ['<C-g>'] = actions.close,
+          ["<C-j>"] = actions.move_selection_next,
+          ["<C-k>"] = actions.move_selection_previous,
+
+        },
+        n = {
+            ['<C-d>'] = false,
+            ['<C-g>'] = actions.close,
+          },
     },
   },
 }
@@ -282,14 +348,14 @@ local on_attach = function(_, bufnr)
     vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc })
   end
 
-  nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
-  nmap('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
+  nmap('<leader>lrr', vim.lsp.buf.rename, '[R]e[n]ame')
+  nmap('<leader>la', vim.lsp.buf.code_action, '[C]ode [A]ction')
 
   nmap('gd', vim.lsp.buf.definition, '[G]oto [D]efinition')
   nmap('gi', vim.lsp.buf.implementation, '[G]oto [I]mplementation')
   nmap('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
-  nmap('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
-  nmap('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
+  nmap('<leader>lds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
+  nmap('<leader>lws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
 
   -- See `:help K` for why this keymap
   nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
@@ -297,10 +363,10 @@ local on_attach = function(_, bufnr)
 
   -- Lesser used LSP functionality
   nmap('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
-  nmap('<leader>D', vim.lsp.buf.type_definition, 'Type [D]efinition')
-  nmap('<leader>wa', vim.lsp.buf.add_workspace_folder, '[W]orkspace [A]dd Folder')
-  nmap('<leader>wr', vim.lsp.buf.remove_workspace_folder, '[W]orkspace [R]emove Folder')
-  nmap('<leader>wl', function()
+  nmap('<leader>lD', vim.lsp.buf.type_definition, 'Type [D]efinition')
+  nmap('<leader>lwa', vim.lsp.buf.add_workspace_folder, '[W]orkspace [A]dd Folder')
+  nmap('<leader>lwr', vim.lsp.buf.remove_workspace_folder, '[W]orkspace [R]emove Folder')
+  nmap('<leader>lwl', function()
     print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
   end, '[W]orkspace [L]ist Folders')
 
@@ -410,3 +476,176 @@ cmp.setup {
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+
+--Remap kj, ctrl+g as escape key
+vim.api.nvim_set_keymap('i', 'kj', '<esc>', { noremap = true })
+vim.api.nvim_set_keymap('c', 'kj', '<esc>', { noremap = true })
+vim.api.nvim_set_keymap('i', '<C-g>', '<esc>', { noremap = true })
+vim.api.nvim_set_keymap('c', '<C-g>', '<esc>', { noremap = true })
+
+vim.api.nvim_set_keymap('n', '<leader>g', [[<cmd>lua require('neogit').open()<CR>]], { noremap = true, silent = true })
+vim.api.nvim_set_keymap('i', '<C-x>g', [[<cmd>lua require('neogit').open()<CR>]], { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<C-x>g', [[<cmd>lua require('neogit').open()<CR>]], { noremap = true, silent = true })
+local neogit = require("neogit")
+
+neogit.setup {
+  disable_signs = false,
+  disable_hint = false,
+  disable_context_highlighting = false,
+  disable_commit_confirmation = false,
+  auto_refresh = true,
+  disable_builtin_notifications = false,
+  commit_popup = {
+      kind = "split",
+  },
+  -- Change the default way of opening neogit
+  kind = "tab",
+  -- customize displayed signs
+  signs = {
+    -- { CLOSED, OPENED }
+    section = { ">", "v" },
+    item = { ">", "v" },
+    hunk = { "", "" },
+  },
+  integrations = {
+    -- Neogit only provides inline diffs. If you want a more traditional way to look at diffs, you can use `sindrets/diffview.nvim`.
+    -- The diffview integration enables the diff popup, which is a wrapper around `sindrets/diffview.nvim`.
+    --
+    -- Requires you to have `sindrets/diffview.nvim` installed.
+    -- use {
+    --   'TimUntersberger/neogit',
+    --   requires = {
+    --     'nvim-lua/plenary.nvim',
+    --     'sindrets/diffview.nvim'
+    --   }
+    -- }
+    --
+    diffview = false
+  },
+  -- Setting any section to `false` will make the section not render at all
+  sections = {
+    untracked = {
+      folded = false
+    },
+    unstaged = {
+      folded = false
+    },
+    staged = {
+      folded = false
+    },
+    stashes = {
+      folded = true
+    },
+    unpulled = {
+      folded = true
+    },
+    unmerged = {
+      folded = false
+    },
+    recent = {
+      folded = true
+    },
+  },
+  -- override/add mappings
+  mappings = {
+    -- modify status buffer mappings
+    status = {
+      -- Adds a mapping with "B" as key that does the "BranchPopup" command
+      ["B"] = "BranchPopup",
+      -- Removes the default mapping of "s"
+      ["s"] = "",
+    }
+  }
+}
+
+-- Set a venv for pynvim
+vim.cmd [[let g:python3_host_prog = '~/.local/pipx/venvs/ipython/bin/python']]
+-- Disable python2 provider
+vim.cmd[[let g:loaded_python_provider = 0]]
+local configs = require('lspconfig/configs')
+local util = require('lspconfig/util')
+
+local path = util.path
+
+local function get_python_path(workspace)
+  -- Use activated virtualenv.
+  if vim.env.VIRTUAL_ENV then
+    return path.join(vim.env.VIRTUAL_ENV, 'bin', 'python')
+  end
+
+  --[=====[
+  -- Find and use virtualenv via poetry in workspace directory.
+  local match = vim.fn.glob(path.join(workspace, 'poetry.lock'))
+  if match ~= '' then
+     local venv = vim.fn.trim(vim.fn.system('poetry env info -p'))
+     return path.join(venv, 'bin', 'python')
+  end
+  --]=====]
+
+  -- Find and use virtualenv in workspace directory.
+  for _, pattern in ipairs({'*', '.*'}) do
+    local match = vim.fn.glob(path.join(workspace, pattern, 'pyvenv.cfg'))
+    if match ~= '' then
+      return path.join(path.dirname(match), 'bin', 'python')
+    end
+  end
+
+  -- Fallback to system Python.
+  return exepath('python3') or exepath('python') or 'python'
+end
+
+require'lspconfig'.pyright.setup{
+   on_attach=on_attach,
+   capabilities=capabilities,
+   cmd = { "pyright-langserver", "--stdio" },
+  before_init = function(_, config)
+    config.settings.python.pythonPath = get_python_path(config.root_dir)
+  end,
+    filetypes = { "python" },
+    settings = {
+      python = {
+        analysis = {
+          autoSearchPaths = true,
+          diagnosticMode = "workspace",
+          useLibraryCodeForTypes = true
+        }
+      }
+    },
+    single_file_support = true
+}
+
+-- Go setup
+require('go').setup()
+-- Run gofmt + goimport on save
+local format_sync_grp = vim.api.nvim_create_augroup("GoImport", {})
+vim.api.nvim_create_autocmd("BufWritePre", {
+  pattern = "*.go",
+  callback = function()
+   require('go.format').goimport()
+  end,
+  group = format_sync_grp,
+})
+
+local go_capabilities = require('cmp_nvim_lsp').default_capabilities(vim.lsp.protocol.make_client_capabilities())
+require('go').setup({
+  -- other setups ....
+  lsp_cfg = {
+    capabilities = go_capabilities,
+    -- other setups
+  },
+})
+require("go.format").goimport()  -- goimport + gofmt
+
+require("telescope").load_extension('harpoon')
+vim.keymap.set('n', '<leader>ha', function() require("harpoon.mark").add_file() end, { desc = '[H]arpoon [A]dd' })
+vim.keymap.set('n', '<leader>hm', function() require("harpoon.ui").toggle_quick_menu() end, { desc = '[H]arpoon [M]menu'})
+vim.keymap.set('n', '<leader>hp', function() require("harpoon.ui").nav_prev() end, { desc = '[H]arpoon [P]rev File' })
+vim.keymap.set('n', '<leader>hn', function() require("harpoon.ui").nav_next() end, { desc = '[H]arpoon [N]ext File' })
+vim.keymap.set('n', '<leader>h1', function() return require("harpoon.ui").nav_file(1) end, { desc = '[H]arpoon File [1]' })
+vim.keymap.set('n', '<leader>h2', function() return require("harpoon.ui").nav_file(2) end)
+vim.keymap.set('n', '<leader>h3', function() return require("harpoon.ui").nav_file(3) end)
+vim.keymap.set('n', '<leader>h4', function() return require("harpoon.ui").nav_file(4) end)
+vim.keymap.set('n', '<leader>h5', function() return require("harpoon.ui").nav_file(5) end)
+vim.keymap.set('n', '<leader>h6', function() return require("harpoon.ui").nav_file(6) end)
+vim.keymap.set('n', '<leader>h7', function() return require("harpoon.ui").nav_file(7) end)
+vim.keymap.set('n', '<leader>h8', function() return require("harpoon.ui").nav_file(8) end)
