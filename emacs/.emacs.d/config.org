@@ -2,6 +2,7 @@
 #+property: header-args:emacs-lisp :tangle ~/dev/dotfiles/emacs/.emacs.d/init.el
 
 * Startup Performance
+
 Add a function to =emacs-startup-hook= to print out the duration of Emacs startup:
 
 #+begin_src emacs-lisp
@@ -1128,10 +1129,14 @@ Editing syntactic sugars made easier: Temporarily shows emphasis markers and hid
 
 **** Scheme geiser
 #+begin_src emacs-lisp
-(use-package geiser)
-(use-package geiser-mit)
-(use-package geiser-guile)
-(use-package geiser-racket)
+  (use-package geiser
+    :defer t)
+  (use-package geiser-mit
+    :defer t)
+  (use-package geiser-guile
+    :defer t)
+  (use-package geiser-racket
+    :defer t)
 #+end_src
 
 *** Custom Babel execute
@@ -1256,6 +1261,7 @@ You can add more =src= block templates below by copying one of the lines and cha
     (add-to-list 'org-structure-template-alist '("py" . "src python :exports both :results output"))
     (add-to-list 'org-structure-template-alist '("rak" . "src racket :exports both :results output"))
     (add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
+    (add-to-list 'org-structure-template-alist '("lua" . "src lua"))
     (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
     (add-to-list 'org-structure-template-alist '("shell" . "src shell :results output :exports both"))
     (add-to-list 'org-structure-template-alist '("sasm" . "src 8085 :export both :args -db /tmp/8085-session1"))
@@ -1679,7 +1685,7 @@ If the file being captured to is not the file for the current date, we call org-
 ** Pdf-Tools
 #+begin_src emacs-lisp
   (use-package pdf-tools
-  :defer 4
+  :defer t
   :commands (pdf-view-mode pdf-tools-install)
   :mode ("\\.[pP][dD][fF]\\'" . pdf-view-mode)
   :magic ("%PDF" . pdf-view-mode)
@@ -2084,49 +2090,56 @@ IPYTHON babyyy!
 #+end_src
 *** GoLang
 #+begin_src emacs-lisp
-  (defun lsp-go-install-save-hooks ()
-    (add-hook 'after-save-hook #'lsp-format-buffer t t)
-    (add-hook 'after-save-hook #'lsp-organize-imports t t))
+    (defun lsp-go-install-save-hooks ()
+      (add-hook 'after-save-hook #'lsp-format-buffer t t)
+      (add-hook 'after-save-hook #'lsp-organize-imports t t))
 
-  (use-package go-mode
-    :mode "\\.go\\'"
-    :hook ((go-mode . lsp-deferred)
-           (go-mode . lsp-go-install-save-hooks)))
+    (use-package go-mode
+      :mode "\\.go\\'"
+      :hook ((go-mode . lsp-deferred)
+             (go-mode . lsp-go-install-save-hooks)))
 
-  (define-key global-map (kbd "C-c l R") '(lambda () (interactive)
-                                            (progn
-                                              (save-buffer)
-                                              (recompile))))
+    (define-key global-map (kbd "C-c l R") '(lambda () (interactive)
+                                              (progn
+                                                (save-buffer)
+                                                (recompile))))
 
-  ;; go install github.com/josharian/impl@latest
-  (use-package go-impl)
+    ;; go install github.com/josharian/impl@latest
+    (use-package go-impl
+      :defer t)
 
-  ;; go install github.com/go-delve/delve/cmd/dlv@latest
-  (use-package go-dlv)
-  (use-package gotest
-  :config
-  (define-key go-mode-map (kbd "C-c l t f") 'go-test-current-file)
-  (define-key go-mode-map (kbd "C-c l t t") 'go-test-current-test)
-  (define-key go-mode-map (kbd "C-c l t p") 'go-test-current-project)
-  (define-key go-mode-map (kbd "C-c l t b") 'go-test-current-benchmark)
-  (define-key go-mode-map (kbd "C-c l t r") 'go-run))
+    ;; go install github.com/go-delve/delve/cmd/dlv@latest
+    (use-package go-dlv
+      :defer t)
+    (use-package gotest
+    :defer t
+    :config
+    (define-key go-mode-map (kbd "C-c l t f") 'go-test-current-file)
+    (define-key go-mode-map (kbd "C-c l t t") 'go-test-current-test)
+    (define-key go-mode-map (kbd "C-c l t p") 'go-test-current-project)
+    (define-key go-mode-map (kbd "C-c l t b") 'go-test-current-benchmark)
+    (define-key go-mode-map (kbd "C-c l t r") 'go-run))
 
-  ;; go install github.com/haya14busa/goplay/cmd/goplay@latest
-  (use-package go-playground)
+    ;; go install github.com/haya14busa/goplay/cmd/goplay@latest
+    (use-package go-playground
+      :defer t)
 
-  ;; GO111MODULE=off go get -v github.com/cweill/gotests/...
-  (use-package go-gen-test)
-  ;; :config
-  ;; (defun my-go-gen-test-setup ()
-  ;;   "My keybindings for generating go tests."
-  ;;   (interactive)
-  ;;   (local-set-key (kbd "C-c C-g") #'go-gen-test-dwim))
+    ;; GO111MODULE=off go get -v github.com/cweill/gotests/...
+    (use-package go-gen-test
+      :defer t)
+    ;; :config
+    ;; (defun my-go-gen-test-setup ()
+    ;;   "My keybindings for generating go tests."
+    ;;   (interactive)
+    ;;   (local-set-key (kbd "C-c C-g") #'go-gen-test-dwim))
 
-  ;; (add-hook 'go-mode-hook #'my-go-gen-test-setup))
+    ;; (add-hook 'go-mode-hook #'my-go-gen-test-setup))
 
-  (use-package go-eldoc)
-  ;; go install github.com/kisielk/errcheck@latest
-  (use-package go-errcheck)
+    (use-package go-eldoc
+      :defer t)
+    ;; go install github.com/kisielk/errcheck@latest
+    (use-package go-errcheck
+      :defer t)
 
 #+end_src
 
@@ -2612,7 +2625,8 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
 
 ** Speed type
 #+begin_src emacs-lisp
-  (use-package speed-type)
+    (use-package speed-type
+      :defer t)
 #+end_src
 
 ** Ascii Artist drawing to Unicode
@@ -2754,14 +2768,18 @@ Using an AUR wrapper,
 
 *** Config
 #+begin_src emacs-lisp
-;; dependency imgur
-(use-package imgur :straight t)
-(use-package meme
-  :straight (:host github :repo "larsmagne/meme"))
+  ;; dependency imgur
+  (use-package imgur :straight t
+    :defer t)
+
+  (use-package meme
+    :defer t
+    :straight (:host github :repo "larsmagne/meme"))
 #+end_src
 ** Elcord Discord Rich Presence
 #+begin_src emacs-lisp
   (use-package elcord
+    :defer t
     :config
     (defun myelcord-buffer-details-format ()
       "Return the buffer details string shown on discord."
@@ -2770,6 +2788,7 @@ Using an AUR wrapper,
       (format "Editing %s [%s]" (buffer-name) (car (persp-ibuffer-name (current-buffer))))))
 
     (setq elcord-buffer-details-format-function 'myelcord-buffer-details-format)
+    (setq elcord-idle-timer 5000)
     )
 #+end_src
 
@@ -2848,6 +2867,7 @@ Using an AUR wrapper,
 ** Edit Server
 #+begin_src emacs-lisp
   (use-package edit-server
+    :defer t
    :config
     (edit-server-start))
 #+end_src

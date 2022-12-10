@@ -817,10 +817,14 @@ Version 2019-11-04 2021-02-16"
   :after (org-mode)
   )
 
-(use-package geiser)
-(use-package geiser-mit)
-(use-package geiser-guile)
-(use-package geiser-racket)
+(use-package geiser
+  :defer t)
+(use-package geiser-mit
+  :defer t)
+(use-package geiser-guile
+  :defer t)
+(use-package geiser-racket
+  :defer t)
 
 (defun org-babel-execute:json (body params)
   (let ((jq (cdr (assoc :jq params)))
@@ -926,6 +930,7 @@ Version 2019-11-04 2021-02-16"
   (add-to-list 'org-structure-template-alist '("py" . "src python :exports both :results output"))
   (add-to-list 'org-structure-template-alist '("rak" . "src racket :exports both :results output"))
   (add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
+  (add-to-list 'org-structure-template-alist '("lua" . "src lua"))
   (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
   (add-to-list 'org-structure-template-alist '("shell" . "src shell :results output :exports both"))
   (add-to-list 'org-structure-template-alist '("sasm" . "src 8085 :export both :args -db /tmp/8085-session1"))
@@ -1195,7 +1200,7 @@ capture was not aborted."
      ;; :unnarrowed t)))
 
 (use-package pdf-tools
-:defer 4
+:defer t
 :commands (pdf-view-mode pdf-tools-install)
 :mode ("\\.[pP][dD][fF]\\'" . pdf-view-mode)
 :magic ("%PDF" . pdf-view-mode)
@@ -1489,11 +1494,14 @@ With a prefix ARG, remove start location."
                                             (recompile))))
 
 ;; go install github.com/josharian/impl@latest
-(use-package go-impl)
+(use-package go-impl
+  :defer t)
 
 ;; go install github.com/go-delve/delve/cmd/dlv@latest
-(use-package go-dlv)
+(use-package go-dlv
+  :defer t)
 (use-package gotest
+:defer t
 :config
 (define-key go-mode-map (kbd "C-c l t f") 'go-test-current-file)
 (define-key go-mode-map (kbd "C-c l t t") 'go-test-current-test)
@@ -1502,10 +1510,12 @@ With a prefix ARG, remove start location."
 (define-key go-mode-map (kbd "C-c l t r") 'go-run))
 
 ;; go install github.com/haya14busa/goplay/cmd/goplay@latest
-(use-package go-playground)
+(use-package go-playground
+  :defer t)
 
 ;; GO111MODULE=off go get -v github.com/cweill/gotests/...
-(use-package go-gen-test)
+(use-package go-gen-test
+  :defer t)
 ;; :config
 ;; (defun my-go-gen-test-setup ()
 ;;   "My keybindings for generating go tests."
@@ -1514,9 +1524,11 @@ With a prefix ARG, remove start location."
 
 ;; (add-hook 'go-mode-hook #'my-go-gen-test-setup))
 
-(use-package go-eldoc)
+(use-package go-eldoc
+  :defer t)
 ;; go install github.com/kisielk/errcheck@latest
-(use-package go-errcheck)
+(use-package go-errcheck
+  :defer t)
 
 (use-package flycheck
   :straight t
@@ -1836,7 +1848,8 @@ With a prefix ARG, remove start location."
 ;; )
 (define-key global-map (kbd "C-c t") telega-prefix-map)
 
-(use-package speed-type)
+(use-package speed-type
+  :defer t)
 
 (use-package ascii-art-to-unicode :straight t)
 
@@ -1940,11 +1953,15 @@ With a prefix ARG, remove start location."
         org-tree-slide-header t))
 
 ;; dependency imgur
-(use-package imgur :straight t)
+(use-package imgur :straight t
+  :defer t)
+
 (use-package meme
+  :defer t
   :straight (:host github :repo "larsmagne/meme"))
 
 (use-package elcord
+  :defer t
   :config
   (defun myelcord-buffer-details-format ()
     "Return the buffer details string shown on discord."
@@ -1953,6 +1970,7 @@ With a prefix ARG, remove start location."
     (format "Editing %s [%s]" (buffer-name) (car (persp-ibuffer-name (current-buffer))))))
 
   (setq elcord-buffer-details-format-function 'myelcord-buffer-details-format)
+  (setq elcord-idle-timer 5000)
   )
 
 ;; (load-file "~/.cache/emacs/.emacs.custom/misc-exts/byte-run.el")
@@ -2022,6 +2040,7 @@ With a prefix ARG, remove start location."
 ;;                                   (:maildir "/hemantasharma.212@gmail/[Gmail].All Mail"    :key ?a))))
 
 (use-package edit-server
+  :defer t
  :config
   (edit-server-start))
 
