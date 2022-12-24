@@ -157,12 +157,12 @@ if ! uname -a | grep -q "microsoft" && loginctl show-session $(loginctl | grep $
 fi
 
 # export pyenv
-if [ -d ~/.pyenv/bin ]; then
-	export PYENV_ROOT="$HOME/.pyenv"
-	command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
-        eval "$(pyenv init -)"
-        #eval "$(pyenv virtualenv-init -)"
-fi
+# if [ -d ~/.pyenv/bin ]; then
+# 	export PYENV_ROOT="$HOME/.pyenv"
+# 	command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+#         eval "$(pyenv init -)"
+#         #eval "$(pyenv virtualenv-init -)"
+# fi
 
 
 if [ -d /usr/local/go ]; then
