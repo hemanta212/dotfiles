@@ -588,7 +588,7 @@ Giving a try to Paradox for an enhanced package management interface. We set par
   (use-package doom-themes)
   (unless efs/is-termux
    (if (eq (display-graphic-p) nil)
-       (load-theme 'modus-vivendi t)
+       (load-theme 'doom-gruvbox t)
        (progn
        (load-theme 'doom-one t)
        (doom-themes-visual-bell-config))))
@@ -2141,6 +2141,34 @@ IPYTHON babyyy!
     (use-package go-errcheck
       :defer t)
 
+#+end_src
+
+** Counsel Dash
+Dash powered docsets offline lightning fast in eww
+#+begin_src emacs-lisp
+  (use-package counsel-dash
+   :config
+   (setq counsel-dash-common-docsets '("Go", "Emacs_Lisp", "Python_3"))
+   (setq counsel-dash-docsets-path "~/local/docset")
+   (setq counsel-dash-browser-func 'eww)
+   :hook ((emacs-lisp-mode . (lambda () (setq-local counsel-dash-docsets '("Emacs_Lisp"))))
+          (python-mode . (lambda () (setq-local counsel-dash-docsets '("Python_3"))))
+          (go-mode . (lambda () (setq-local counsel-dash-docsets '("Go"))))
+          (c-mode . (lambda () (setq-local counsel-dash-docsets '("C"))))))
+#+end_src
+
+** Private Comments Mode
+Insert private comments in any code sourced controlled with git
+Need to install server first
+https://github.com/masukomi/private_comments#building-from-source
+
+sudo apt install chicken-bin
+
+After ./build.sh, pc will fail but ~private_comments~ exe builds in tgz file extract it and move the executable inside the bin of new folder to ~local/bin~
+
+#+begin_src emacs-lisp
+  (use-package private-comments-mode
+    :hook (lsp-mode . private-comments-mode))
 #+end_src
 
 ** FlyCheck

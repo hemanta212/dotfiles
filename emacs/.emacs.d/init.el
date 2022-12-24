@@ -442,7 +442,7 @@ Version 2019-11-04 2021-02-16"
 (use-package doom-themes)
 (unless efs/is-termux
  (if (eq (display-graphic-p) nil)
-     (load-theme 'modus-vivendi t)
+     (load-theme 'doom-gruvbox t)
      (progn
      (load-theme 'doom-one t)
      (doom-themes-visual-bell-config))))
@@ -1529,6 +1529,19 @@ With a prefix ARG, remove start location."
 ;; go install github.com/kisielk/errcheck@latest
 (use-package go-errcheck
   :defer t)
+
+(use-package counsel-dash
+ :config
+ (setq counsel-dash-common-docsets '("Go", "Emacs_Lisp", "Python_3"))
+ (setq counsel-dash-docsets-path "~/local/docset")
+ (setq counsel-dash-browser-func 'eww)
+ :hook ((emacs-lisp-mode . (lambda () (setq-local counsel-dash-docsets '("Emacs_Lisp"))))
+        (python-mode . (lambda () (setq-local counsel-dash-docsets '("Python_3"))))
+        (go-mode . (lambda () (setq-local counsel-dash-docsets '("Go"))))
+        (c-mode . (lambda () (setq-local counsel-dash-docsets '("C"))))))
+
+(use-package private-comments-mode
+  :hook (lsp-mode . private-comments-mode))
 
 (use-package flycheck
   :straight t
