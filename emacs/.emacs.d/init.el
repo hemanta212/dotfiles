@@ -17,7 +17,7 @@
   (setq gc-cons-threshold most-positive-fixnum)
 
   ;; Debug errors with more info
-  (setq debug-on-error t)
+  (setq debug-on-error nil)
   ;; supress native comp warnings
   (setq native-comp-async-report-warnings-errors 'silent)
   ;; Suppress “ad-handle-definition: .. redefined” warnings during Emacs startup.
@@ -89,8 +89,9 @@
      (defvar efs/default-variable-font-size 165)))
 
  ;; Make frame transparency overridable
+ (if (display-graphic-p)
  (defvar efs/frame-transparency '(90 . 90))
-
+ (defvar efs/frame-transparency '(100 . 100)))
 
  (setq inhibit-startup-message t)
 
@@ -361,7 +362,31 @@ Version 2019-11-04 2021-02-16"
     "tt" '(counsel-load-theme :which-key "choose theme")
     "f"  '(:ignore t :which-key "Imp Files")
     "fo" '(lambda () (interactive) (find-file (expand-file-name "~/dev/personal/org/track.org"))) :which-key "track org"
+
+    "fe" '(lambda ()
+            (interactive)
+            (progn
+             (other-window 1)
+             (delete-other-windows)
+            )) :which-key "Focus other window"
+
+
+    "fr" '(lambda ()
+            (interactive)
+            (progn
+             (winner-undo)
+             (other-window 1)
+            )) :which-key "Focus reset"
+
+    "ff" '(lambda ()
+            (interactive)
+            (progn
+             (delete-other-windows)
+            )) :which-key "Focus this window"
+
+
     "fd"  '(:ignore t :which-key "Dot files")
+    "fdv" '(lambda () (interactive) (find-file (expand-file-name "~/dev/dotfiles/neovim/init.org")) :which-key "Neovim Config")
     "fde" '(lambda () (interactive) (find-file (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org")) :which-key "emacs config")))
 
 
@@ -442,10 +467,12 @@ Version 2019-11-04 2021-02-16"
 (use-package doom-themes)
 (unless efs/is-termux
  (if (eq (display-graphic-p) nil)
-     (load-theme 'doom-gruvbox t)
+     (load-theme 'doom-one t)
      (progn
      (load-theme 'doom-one t)
      (doom-themes-visual-bell-config))))
+
+(use-package atom-one-dark-theme)
 
 (use-package berrys-theme
   :straight t
@@ -1332,7 +1359,7 @@ With a prefix ARG, remove start location."
 :after lsp-mode)
 
 (rune/leader-keys
-  "d"  'dap-hydra :which-key "dap hydra")
+  "D"  'dap-hydra :which-key "dap hydra")
 
 (use-package lsp-ui
   :hook (lsp-mode . lsp-ui-mode)
@@ -1411,6 +1438,13 @@ With a prefix ARG, remove start location."
    ;; C-c r doesnot bind for some reason ugly global keymap hack
   ;; (define-key global-map (kbd "C-c r") 'python-mr-builds)
 
+(use-package ein
+:defer t
+:custom
+(ein:output-area-inlined-images nil))
+
+;;(use-package jupyter)
+
 (use-package dart-mode
   :defer t
   :custom
@@ -1453,31 +1487,6 @@ With a prefix ARG, remove start location."
 ;;  :init
 ;;  (fmakunbound 'gdb)
 ;;  (fmakunbound 'gdb-enable-debug))
-
-(use-package lua-mode
-    :mode "\\.lua\\'" ;; only load/open for .ts file
-    :hook (lua-mode . lsp-deferred)
-    :config
-    (setq lua-indent-level 3)
-    (setq lua-documentation-function 'browse-web))
-
-(use-package racket-mode
-:hook (racket-xp-mode . racket-mode))
-
-(use-package ein
-:defer t
-:custom
-(ein:output-area-inlined-images nil))
-
-;;(use-package jupyter)
-
-(use-package math-preview
-:defer t
-:custom
-(math-preview-command "/home/pykancha/.config/nvm/versions/node/v14.17.6/bin/math-preview"))
-
-(use-package yaml-mode
-  :mode "\\.ya?ml\\'")
 
 (defun lsp-go-install-save-hooks ()
   (add-hook 'after-save-hook #'lsp-format-buffer t t)
@@ -1530,12 +1539,48 @@ With a prefix ARG, remove start location."
 (use-package go-errcheck
   :defer t)
 
+(add-hook 'js-mode-hook 'lsp)
+(add-hook 'js-jsx-mode 'lsp)
+
+(use-package js2-mode
+  :hook (js2-minor-mode . lsp-deferred))
+
+(use-package typescript-mode
+    :mode "\\.ts\\'" ;; only load/open for .ts file
+    :hook (typescript-mode . lsp-deferred)
+    :config
+    (setq typescript-indent-level 2))
+
+(use-package yaml-mode
+  :mode "\\.ya?ml\\'")
+
+(use-package math-preview
+:defer t
+:custom
+(math-preview-command "/home/pykancha/.config/nvm/versions/node/v14.17.6/bin/math-preview"))
+
+(use-package lua-mode
+    :mode "\\.lua\\'" ;; only load/open for .ts file
+    :hook (lua-mode . lsp-deferred)
+    :config
+    (setq lua-indent-level 3)
+    (setq lua-documentation-function 'browse-web))
+
+(use-package racket-mode
+:hook (racket-xp-mode . racket-mode))
+
 (use-package counsel-dash
  :config
- (setq counsel-dash-common-docsets '("Go", "Emacs_Lisp", "Python_3"))
- (setq counsel-dash-docsets-path "~/local/docset")
+ (setq counsel-dash-common-docsets '("Go", "Emacs Lisp", "Python_3"))
+ (setq counsel-dash-docsets-path "~/.local/share/dasht/docsets")
  (setq counsel-dash-browser-func 'eww)
- :hook ((emacs-lisp-mode . (lambda () (setq-local counsel-dash-docsets '("Emacs_Lisp"))))
+ ;; when using dasht for docset download error popups up just disable it
+ (setq dash-docs-enable-debugging nil)
+ (rune/leader-keys
+    "d"  '(:ignore t :which-key "Dash Docs")
+    "ds"  'counsel-dash :which-key "Dash search"
+    "dd"  'counsel-dash-at-point :which-key "Dash at point")
+ :hook ((emacs-lisp-mode . (lambda () (setq-local counsel-dash-docsets '("Emacs Lisp"))))
         (python-mode . (lambda () (setq-local counsel-dash-docsets '("Python_3"))))
         (go-mode . (lambda () (setq-local counsel-dash-docsets '("Go"))))
         (c-mode . (lambda () (setq-local counsel-dash-docsets '("C"))))))
@@ -1560,8 +1605,12 @@ With a prefix ARG, remove start location."
     '("isort" "--stdout" "-"))
 (setf (alist-get 'black apheleia-formatters)
     '("black" "-"))
+(setf (alist-get 'prettierd apheleia-formatters)
+    '("prettierd" filepath))
 (setf (alist-get 'python-mode apheleia-mode-alist)
     '(isort black))
+(setf (alist-get 'js-mode apheleia-mode-alist)
+    '(prettierd))
 (apheleia-global-mode))
 
 (use-package company
@@ -1647,6 +1696,8 @@ With a prefix ARG, remove start location."
 (yas-global-mode 1))
 
 (use-package yasnippet-snippets
+  :after yasnippet)
+(use-package react-snippets
   :after yasnippet)
 
 (use-package webpaste

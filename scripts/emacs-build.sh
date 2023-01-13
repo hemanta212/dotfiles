@@ -81,6 +81,15 @@ export CC=/usr/bin/gcc-10 CXX=/usr/bin/g++-10
     --with-jpeg --with-png --with-rsvg --with-tiff \
     --with-xml2 \
     --with-cairo \
+    --with-modules \
+    --without-compress-install \
+    --without-xaw3d \
+    --without-gconf \
+    --without-gsettings \
+    --with-wide-int \
+    --with-xft \
+    --with-xm2 \
+    --with-xpm \
     CFLAGS="-O3 -pipe -mtune=native -march=native -fomit-frame-pointer" prefix=/usr/local
     
     # Other interesting compilation options:

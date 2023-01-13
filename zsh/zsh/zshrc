@@ -96,6 +96,8 @@ export NVM_DIR="$HOME/.config/nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 fi
+# TODO NVM SUCKS COULDNT MAKE IT LOAD things correctly
+export PATH="$PATH":"$HOME/.config/nvm/versions/node/v16.16.0/bin"
 
 export _ZO_DATA_DIR="$HOME/.config/zsh/"
 eval "$(zoxide init zsh)"

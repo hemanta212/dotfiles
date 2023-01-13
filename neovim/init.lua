@@ -46,6 +46,7 @@ use { -- Additional text objects via treesitter
 use 'lewis6991/gitsigns.nvim'
 
 use 'navarasu/onedark.nvim' -- Theme inspired by Atom
+use 'projekt0n/github-nvim-theme'
 use 'nvim-lualine/lualine.nvim' -- Fancier statusline
 use 'lukas-reineke/indent-blankline.nvim' -- Add indentation guides even on blank lines
 use 'numToStr/Comment.nvim' -- "gc" to comment visual regions/lines
@@ -153,15 +154,15 @@ require('indent_blankline').setup {
   show_trailing_blankline_indent = false,
 }
 
-require('gitsigns').setup {
-  signs = {
-    add = { text = '+' },
-    change = { text = '~' },
-    delete = { text = '_' },
-    topdelete = { text = '‾' },
-    changedelete = { text = '~' },
-  },
-}
+-- require('gitsigns').setup {
+--   signs = {
+--     add = { text = '+' },
+--     change = { text = '~' },
+--     delete = { text = '_' },
+--     topdelete = { text = '‾' },
+--     changedelete = { text = '~' },
+--   },
+-- }
 
 actions = require('telescope.actions')
 require('telescope').setup {
@@ -548,6 +549,27 @@ require('go').setup({
 })
 require("go.format").goimport()  -- goimport + gofmt
 
+use 'sunaku/vim-dasht'
+      vim.cmd([[
+          " search related docsets
+    nnoremap <Leader>ds :Dasht<Space>
+
+    " search ALL the docsets
+    nnoremap <Leader>dS :Dasht!<Space>
+
+      " search related docsets
+  nnoremap <silent> <Leader>dd :call Dasht(dasht#cursor_search_terms())<Return>
+
+  " search ALL the docsets
+  nnoremap <silent> <Leader>dD :call Dasht(dasht#cursor_search_terms(), '!')<Return>
+
+    " search related docsets
+vnoremap <silent> <Leader>dd y:<C-U>call Dasht(getreg(0))<Return>
+
+" search ALL the docsets
+vnoremap <silent> <Leader>dD y:<C-U>call Dasht(getreg(0), '!')<Return>
+      ]])
+
 use {
  'TimUntersberger/neogit',
  requires = {
@@ -671,6 +693,7 @@ vim.keymap.set('n', '<leader>h7', function() return ui.nav_file(7) end)
 vim.keymap.set('n', '<leader>h8', function() return ui.nav_file(8) end)
 
 use 'mbbill/undotree'
+vim.cmd[[nnoremap <leader>U :UndotreeToggle<CR>]]
 
 use { 'michaelb/sniprun', run = 'bash ./install.sh'}
 

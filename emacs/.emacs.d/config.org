@@ -25,7 +25,7 @@ Add a function to =emacs-startup-hook= to print out the duration of Emacs startu
     (setq gc-cons-threshold most-positive-fixnum)
 
     ;; Debug errors with more info
-    (setq debug-on-error t)
+    (setq debug-on-error nil)
     ;; supress native comp warnings
     (setq native-comp-async-report-warnings-errors 'silent)
     ;; Suppress “ad-handle-definition: .. redefined” warnings during Emacs startup.
@@ -106,115 +106,116 @@ Next-generation, purely functional package manager for the Emacs hacker.
 
 * Basic UI Configuration
 #+begin_src emacs-lisp
-  ;; Define variables section
-  (if efs/is-fedora
+    ;; Define variables section
+    (if efs/is-fedora
+        (progn
+          (defvar efs/default-font-size 100)
+          (defvar efs/default-variable-font-size 120)
+          (defvar efs/special-small-font-size 80))
       (progn
-        (defvar efs/default-font-size 100)
-        (defvar efs/default-variable-font-size 120)
-        (defvar efs/special-small-font-size 80))
-    (progn
-      (defvar efs/default-font-size 140)
-      (defvar efs/special-small-font-size 100)
-      (defvar efs/default-variable-font-size 165)))
+        (defvar efs/default-font-size 140)
+        (defvar efs/special-small-font-size 100)
+        (defvar efs/default-variable-font-size 165)))
 
-  ;; Make frame transparency overridable
-  (defvar efs/frame-transparency '(90 . 90))
+    ;; Make frame transparency overridable
+    (if (display-graphic-p)
+    (defvar efs/frame-transparency '(90 . 90))
+    (defvar efs/frame-transparency '(100 . 100)))
 
+    (setq inhibit-startup-message t)
 
-  (setq inhibit-startup-message t)
+    (menu-bar-mode -1)            ; Disable the menu bar
+    (display-battery-mode 1)
+    (if (display-graphic-p)
+        (progn
+          (set-fringe-mode 10)        ; Give some breathing room
+          (tooltip-mode -1)           ; Disable tooltips
+          (tool-bar-mode -1)
+          (menu-bar-mode 1)
+          (scroll-bar-mode -1)))
 
-  (menu-bar-mode -1)            ; Disable the menu bar
-  (display-battery-mode 1)
-  (if (display-graphic-p)
-      (progn
-        (set-fringe-mode 10)        ; Give some breathing room
-        (tooltip-mode -1)           ; Disable tooltips
-        (tool-bar-mode -1)
-        (menu-bar-mode 1)
-        (scroll-bar-mode -1)))
+    (set-face-attribute 'default nil :font "Fira Code Retina" :height efs/default-font-size)
+    ;; Set the fixed pitch face
+    (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height efs/default-font-size)
+    ;; Set the variable pitch face
+    (set-face-attribute 'variable-pitch nil :font "Segoe UI" :height efs/default-variable-font-size :weight 'regular)
 
-  (set-face-attribute 'default nil :font "Fira Code Retina" :height efs/default-font-size)
-  ;; Set the fixed pitch face
-  (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height efs/default-font-size)
-  ;; Set the variable pitch face
-  (set-face-attribute 'variable-pitch nil :font "Segoe UI" :height efs/default-variable-font-size :weight 'regular)
+    ;; Set up the visible bell
+    (setq visible-bell nil)
+    ;; Disable line numbers globally for everything
+    (setq display-line-numbers-type nil)
+    ;; Change cursor color
+    ;;(set-cursor-color "#000000")
+    ;; (dolist (mode '(org-mode-hook
+    ;;                 term-mode-hook
+    ;;                 shell-mode-hook
+    ;;                 vterm-mode-hook
+    ;;                 eww-mode-hook
+    ;;                 treemacs-mode-hook
+    ;;                 nov-mode-hook
+    ;;                 pdf-view-mode-hook
+    ;;                 lsp-ui-imenu-hook
+    ;;                 eshell-mode-hook))
+    ;;   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
-  ;; Set up the visible bell
-  (setq visible-bell nil)
-  ;; Disable line numbers globally for everything
-  (setq display-line-numbers-type nil)
-  ;; Change cursor color
-  ;;(set-cursor-color "#000000")
-  ;; (dolist (mode '(org-mode-hook
-  ;;                 term-mode-hook
-  ;;                 shell-mode-hook
-  ;;                 vterm-mode-hook
-  ;;                 eww-mode-hook
-  ;;                 treemacs-mode-hook
-  ;;                 nov-mode-hook
-  ;;                 pdf-view-mode-hook
-  ;;                 lsp-ui-imenu-hook
-  ;;                 eshell-mode-hook))
-  ;;   (add-hook mode (lambda () (display-line-numbers-mode 0))))
+    ;; (column-number-mode)
 
-  ;; (column-number-mode)
+    ;; Prevent asking for confirmation to kill processes when exiting.
+    (custom-set-variables '(confirm-kill-processes nil))
 
-  ;; Prevent asking for confirmation to kill processes when exiting.
-  (custom-set-variables '(confirm-kill-processes nil))
+    ;; set default encoding
+    (set-language-environment "UTF-8")
+    (prefer-coding-system       'utf-8)
+    (set-default-coding-systems 'utf-8)
+    (set-terminal-coding-system 'utf-8)
+    (set-keyboard-coding-system 'utf-8)
+    (setq default-buffer-file-coding-system 'utf-8)
+    ;; Force org mode to open any org file in utf 8
+    (add-to-list 'file-coding-system-alist '("\\.org\\'" . utf-8))
 
-  ;; set default encoding
-  (set-language-environment "UTF-8")
-  (prefer-coding-system       'utf-8)
-  (set-default-coding-systems 'utf-8)
-  (set-terminal-coding-system 'utf-8)
-  (set-keyboard-coding-system 'utf-8)
-  (setq default-buffer-file-coding-system 'utf-8)
-  ;; Force org mode to open any org file in utf 8
-  (add-to-list 'file-coding-system-alist '("\\.org\\'" . utf-8))
+    ;; Treat clipboard input as UTF-8 string first; compound text next, etc.
+    (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
 
-  ;; Treat clipboard input as UTF-8 string first; compound text next, etc.
-  (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
+    ;; line numbers
+    (when (>= emacs-major-version 26)
+      (use-package display-line-numbers
+        :defer nil
+        :straight nil
+        :config
+        (global-display-line-numbers-mode)))
 
-  ;; line numbers
-  (when (>= emacs-major-version 26)
-    (use-package display-line-numbers
-      :defer nil
-      :straight nil
-      :config
-      (global-display-line-numbers-mode)))
+    ;; Highlight trailing whitespace in red, so it’s easily visible
+    ;;(disabled for now as it created a lot of noise in some modes, e.g. the org-mode export screen)
+    (custom-set-variables '(show-trailing-whitespace nil))
 
-  ;; Highlight trailing whitespace in red, so it’s easily visible
-  ;;(disabled for now as it created a lot of noise in some modes, e.g. the org-mode export screen)
-  (custom-set-variables '(show-trailing-whitespace nil))
-
-  (unless efs/is-termux
-    (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
-    (add-to-list 'default-frame-alist '(alpha . (100 . 100)))
-    (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
-    (add-to-list 'default-frame-alist '(fullscreen . maximized)))
+    (unless efs/is-termux
+      (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
+      (add-to-list 'default-frame-alist '(alpha . (100 . 100)))
+      (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+      (add-to-list 'default-frame-alist '(fullscreen . maximized)))
 
 
-  ;; Highlight matching parenthesis
-  (show-paren-mode)
+    ;; Highlight matching parenthesis
+    (show-paren-mode)
 
 
-  ;; Small fonts for compilation buffers
-  ;; Use variable width font faces in current buffer
- (defun my-buffer-face-mode-variable ()
-   "Set font to a variable width (proportional) fonts in current buffer"
-   (interactive)
-   (setq buffer-face-mode-face '(:family "Consolas" :height 120 :width semi-condensed))
-   (buffer-face-mode))
+    ;; Small fonts for compilation buffers
+    ;; Use variable width font faces in current buffer
+   (defun my-buffer-face-mode-variable ()
+     "Set font to a variable width (proportional) fonts in current buffer"
+     (interactive)
+     (setq buffer-face-mode-face '(:family "Consolas" :height 120 :width semi-condensed))
+     (buffer-face-mode))
 
- ;; Use monospaced font faces in current buffer
- (defun my-buffer-face-mode-fixed ()
-   "Sets a fixed width (monospace) font in current buffer"
-   (interactive)
-   (setq buffer-face-mode-face '(:height 120))
-   (buffer-face-mode))
+   ;; Use monospaced font faces in current buffer
+   (defun my-buffer-face-mode-fixed ()
+     "Sets a fixed width (monospace) font in current buffer"
+     (interactive)
+     (setq buffer-face-mode-face '(:height 120))
+     (buffer-face-mode))
 
- (add-hook 'compilation-mode-hook 'my-buffer-face-mode-variable)
- ;;(add-hook 'compilation-mode-hook 'my-buffer-face-mode-variable)
+   (add-hook 'compilation-mode-hook 'my-buffer-face-mode-variable)
+   ;;(add-hook 'compilation-mode-hook 'my-buffer-face-mode-variable)
 #+end_src
 
 * Basic Editor behaviour
@@ -448,74 +449,98 @@ Version 2019-11-04 2021-02-16"
 - I use the bind-key package to more easily keep track and manage user keybindings. bind-key comes with use-package so we just load it. The main advantage of using this over define-key or global-set-key is that you can use M-x describe-personal-keybindings to see a list of all the customized keybindings you have defined.
 
 #+begin_src emacs-lisp
-  ;; Repeat mode set to on (C-x o o o) or (C-x { { {) to resize
-  ;; Helps with window switching/resizing
-  (repeat-mode 1)
+        ;; Repeat mode set to on (C-x o o o) or (C-x { { {) to resize
+        ;; Helps with window switching/resizing
+        (repeat-mode 1)
 
-  ;; Load the which key compatible bind-key
-  (require 'bind-key)
-  ;; Make ESC quit prompts
-  (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
-  ;; Remap  Imenu to M-i
-  (global-set-key (kbd "M-i") 'imenu)
-  (global-set-key (kbd "C-c C-x s") 'org-search-view)
-  (global-set-key (kbd "M-w") 'scroll-other-window)
-  (global-set-key (kbd "M-W") 'scroll-other-window-down)
+        ;; Load the which key compatible bind-key
+        (require 'bind-key)
+        ;; Make ESC quit prompts
+        (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+        ;; Remap  Imenu to M-i
+        (global-set-key (kbd "M-i") 'imenu)
+        (global-set-key (kbd "C-c C-x s") 'org-search-view)
+        (global-set-key (kbd "M-w") 'scroll-other-window)
+        (global-set-key (kbd "M-W") 'scroll-other-window-down)
 
-  (use-package general
-    :after evil
-    :config
-    (general-create-definer rune/leader-keys
-      :keymaps '(normal insert visual emacs)
-      :prefix "SPC"
-      :global-prefix "C-SPC")
+        (use-package general
+          :after evil
+          :config
+          (general-create-definer rune/leader-keys
+            :keymaps '(normal insert visual emacs)
+            :prefix "SPC"
+            :global-prefix "C-SPC")
 
-    (rune/leader-keys
-      "t"  '(:ignore t :which-key "toggles")
-      "tt" '(counsel-load-theme :which-key "choose theme")
-      "f"  '(:ignore t :which-key "Imp Files")
-      "fo" '(lambda () (interactive) (find-file (expand-file-name "~/dev/personal/org/track.org"))) :which-key "track org"
-      "fd"  '(:ignore t :which-key "Dot files")
-      "fde" '(lambda () (interactive) (find-file (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org")) :which-key "emacs config")))
+          (rune/leader-keys
+            "t"  '(:ignore t :which-key "toggles")
+            "tt" '(counsel-load-theme :which-key "choose theme")
+            "f"  '(:ignore t :which-key "Imp Files")
+            "fo" '(lambda () (interactive) (find-file (expand-file-name "~/dev/personal/org/track.org"))) :which-key "track org"
+
+            "fe" '(lambda ()
+                    (interactive)
+                    (progn
+                     (other-window 1)
+                     (delete-other-windows)
+                    )) :which-key "Focus other window"
 
 
-  (use-package evil
-    :init
-    ;; use emacs keybinding in insert state
-    (setq evil-disable-insert-state-bindings t)
-    (setq evil-want-integration t)
-    (setq evil-want-keybinding nil)
-    (setq evil-want-C-u-scroll t)
-    (setq evil-want-C-i-jump nil)
-    (setq evil-want-minibuffer t)
-    :config
-    (evil-mode 1)
-    (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
-    (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
+            "fr" '(lambda ()
+                    (interactive)
+                    (progn
+                     (winner-undo)
+                     (other-window 1)
+                    )) :which-key "Focus reset"
 
-    ;; Use visual line motions even outside of visual-line-mode buffers
-    (evil-global-set-key 'motion "j" 'evil-next-visual-line)
-    (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
+            "ff" '(lambda ()
+                    (interactive)
+                    (progn
+                     (delete-other-windows)
+                    )) :which-key "Focus this window"
 
-    (evil-set-initial-state 'messages-buffer-mode 'normal)
-    (evil-set-initial-state 'dashboard-mode 'normal))
 
-  (defun evil-init-minibuffer ()
-    (set (make-local-variable 'evil-echo-state) nil)
-    (evil-emacs-state))
+            "fd"  '(:ignore t :which-key "Dot files")
+            "fdv" '(lambda () (interactive) (find-file (expand-file-name "~/dev/dotfiles/neovim/init.org")) :which-key "Neovim Config")
+            "fde" '(lambda () (interactive) (find-file (expand-file-name "~/dev/dotfiles/emacs/.emacs.d/config.org")) :which-key "emacs config")))
 
-   (add-hook 'minibuffer-setup-hook 'evil-init-minibuffer 90)
 
-  (use-package evil-collection
-    :after evil
-    :config
-    (evil-collection-init))
+        (use-package evil
+          :init
+          ;; use emacs keybinding in insert state
+          (setq evil-disable-insert-state-bindings t)
+          (setq evil-want-integration t)
+          (setq evil-want-keybinding nil)
+          (setq evil-want-C-u-scroll t)
+          (setq evil-want-C-i-jump nil)
+          (setq evil-want-minibuffer t)
+          :config
+          (evil-mode 1)
+          (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
+          (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
 
-  (use-package evil-escape
-    :after evil
-    :config
-    (evil-escape-mode)
-    (setq evil-escape-key-sequence "kj"))
+          ;; Use visual line motions even outside of visual-line-mode buffers
+          (evil-global-set-key 'motion "j" 'evil-next-visual-line)
+          (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
+
+          (evil-set-initial-state 'messages-buffer-mode 'normal)
+          (evil-set-initial-state 'dashboard-mode 'normal))
+
+        (defun evil-init-minibuffer ()
+          (set (make-local-variable 'evil-echo-state) nil)
+          (evil-emacs-state))
+
+         (add-hook 'minibuffer-setup-hook 'evil-init-minibuffer 90)
+
+        (use-package evil-collection
+          :after evil
+          :config
+          (evil-collection-init))
+
+        (use-package evil-escape
+          :after evil
+          :config
+          (evil-escape-mode)
+          (setq evil-escape-key-sequence "kj"))
 #+end_src
 
 * UI configuration
@@ -588,12 +613,16 @@ Giving a try to Paradox for an enhanced package management interface. We set par
   (use-package doom-themes)
   (unless efs/is-termux
    (if (eq (display-graphic-p) nil)
-       (load-theme 'doom-gruvbox t)
+       (load-theme 'doom-one t)
        (progn
        (load-theme 'doom-one t)
        (doom-themes-visual-bell-config))))
 #+end_src
 
+*** Atom OneDark themes
+#+begin_src emacs-lisp
+(use-package atom-one-dark-theme)
+#+end_src
 *** Berry's Theme
 Light theme (esp for org)
    #+begin_src emacs-lisp
@@ -1844,7 +1873,7 @@ Provides a summary on any topic from wikipedia. Previously it opened in separate
     :after lsp-mode)
 
     (rune/leader-keys
-      "d"  'dap-hydra :which-key "dap hydra")
+      "D"  'dap-hydra :which-key "dap hydra")
 #+end_src
 
 *** lsp-ui
@@ -1975,6 +2004,20 @@ Try these commands with =M-x=:
       ;; (define-key global-map (kbd "C-c r") 'python-mr-builds)
 #+end_src
 
+*** EIN
+IPYTHON babyyy!
+#+begin_src emacs-lisp
+  (use-package ein
+  :defer t
+  :custom
+  (ein:output-area-inlined-images nil))
+#+end_src
+
+*** Jupyter notebook
+#+begin_src emacs-lisp
+;;(use-package jupyter)
+#+end_src
+
 *** Flutter/Dart
 **** Dart-Mode
 #+begin_src emacs-lisp
@@ -2034,60 +2077,6 @@ Try these commands with =M-x=:
   ;;  (fmakunbound 'gdb-enable-debug))
 #+end_src
 
-*** Typescript
-(use-package typescript-mode
-    :mode "\\.ts\\'" ;; only load/open for .ts file
-    :hook (typescript-mode . lsp-deferred)
-    :config
-    (setq typescript-indent-level 2))
-*** Lua
-#+begin_src emacs-lisp
-  (use-package lua-mode
-      :mode "\\.lua\\'" ;; only load/open for .ts file
-      :hook (lua-mode . lsp-deferred)
-      :config
-      (setq lua-indent-level 3)
-      (setq lua-documentation-function 'browse-web))
-#+end_src
-
-*** Racket
-**** Racket Mode
-#+begin_src emacs-lisp
-  (use-package racket-mode
-  :hook (racket-xp-mode . racket-mode))
-#+end_src
-
-**** Ob-Racket
-[[*Ob-Racket][Ob-Racket installation]]
-
-*** EIN
-IPYTHON babyyy!
-#+begin_src emacs-lisp
-  (use-package ein
-  :defer t
-  :custom
-  (ein:output-area-inlined-images nil))
-#+end_src
-
-*** Jupyter notebook
-#+begin_src emacs-lisp
-;;(use-package jupyter)
-#+end_src
-
-*** Latex
-**** Math Preview
-#+begin_src emacs-lisp
-  (use-package math-preview
-  :defer t
-  :custom
-  (math-preview-command "/home/pykancha/.config/nvm/versions/node/v14.17.6/bin/math-preview"))
-#+end_src
-
-*** Yaml
-#+begin_src emacs-lisp
-(use-package yaml-mode
-  :mode "\\.ya?ml\\'")
-#+end_src
 *** GoLang
 #+begin_src emacs-lisp
     (defun lsp-go-install-save-hooks ()
@@ -2143,15 +2132,73 @@ IPYTHON babyyy!
 
 #+end_src
 
+*** JS
+
+#+begin_src emacs-lisp
+  (add-hook 'js-mode-hook 'lsp)
+  (add-hook 'js-jsx-mode 'lsp)
+
+  (use-package js2-mode
+    :hook (js2-minor-mode . lsp-deferred))
+#+end_src
+
+*** Typescript
+#+begin_src emacs-lisp
+(use-package typescript-mode
+    :mode "\\.ts\\'" ;; only load/open for .ts file
+    :hook (typescript-mode . lsp-deferred)
+    :config
+    (setq typescript-indent-level 2))
+#+end_src
+*** Yaml
+#+begin_src emacs-lisp
+(use-package yaml-mode
+  :mode "\\.ya?ml\\'")
+#+end_src
+*** Latex
+**** Math Preview
+#+begin_src emacs-lisp
+  (use-package math-preview
+  :defer t
+  :custom
+  (math-preview-command "/home/pykancha/.config/nvm/versions/node/v14.17.6/bin/math-preview"))
+#+end_src
+
+*** Lua
+#+begin_src emacs-lisp
+  (use-package lua-mode
+      :mode "\\.lua\\'" ;; only load/open for .ts file
+      :hook (lua-mode . lsp-deferred)
+      :config
+      (setq lua-indent-level 3)
+      (setq lua-documentation-function 'browse-web))
+#+end_src
+
+*** Racket
+**** Racket Mode
+#+begin_src emacs-lisp
+  (use-package racket-mode
+  :hook (racket-xp-mode . racket-mode))
+#+end_src
+
+**** Ob-Racket
+[[*Ob-Racket][Ob-Racket installation]]
+
 ** Counsel Dash
 Dash powered docsets offline lightning fast in eww
 #+begin_src emacs-lisp
   (use-package counsel-dash
    :config
-   (setq counsel-dash-common-docsets '("Go", "Emacs_Lisp", "Python_3"))
-   (setq counsel-dash-docsets-path "~/local/docset")
+   (setq counsel-dash-common-docsets '("Go", "Emacs Lisp", "Python_3"))
+   (setq counsel-dash-docsets-path "~/.local/share/dasht/docsets")
    (setq counsel-dash-browser-func 'eww)
-   :hook ((emacs-lisp-mode . (lambda () (setq-local counsel-dash-docsets '("Emacs_Lisp"))))
+   ;; when using dasht for docset download error popups up just disable it
+   (setq dash-docs-enable-debugging nil)
+   (rune/leader-keys
+      "d"  '(:ignore t :which-key "Dash Docs")
+      "ds"  'counsel-dash :which-key "Dash search"
+      "dd"  'counsel-dash-at-point :which-key "Dash at point")
+   :hook ((emacs-lisp-mode . (lambda () (setq-local counsel-dash-docsets '("Emacs Lisp"))))
           (python-mode . (lambda () (setq-local counsel-dash-docsets '("Python_3"))))
           (go-mode . (lambda () (setq-local counsel-dash-docsets '("Go"))))
           (c-mode . (lambda () (setq-local counsel-dash-docsets '("C"))))))
@@ -2199,8 +2246,12 @@ By default supports: black, [[https://prettier.io][prettier]], gofmt
       '("isort" "--stdout" "-"))
   (setf (alist-get 'black apheleia-formatters)
       '("black" "-"))
+  (setf (alist-get 'prettierd apheleia-formatters)
+      '("prettierd" filepath))
   (setf (alist-get 'python-mode apheleia-mode-alist)
       '(isort black))
+  (setf (alist-get 'js-mode apheleia-mode-alist)
+      '(prettierd))
   (apheleia-global-mode))
 #+end_src
 
@@ -2319,6 +2370,9 @@ Yasnippet is the snippet tool for emacs. It doesnot bundle the snippets itself t
 
   (use-package yasnippet-snippets
     :after yasnippet)
+  (use-package react-snippets
+    :after yasnippet)
+
 #+end_src
 
 ** WebPaste

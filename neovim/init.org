@@ -493,6 +493,7 @@ cmp.setup {
 #+end_src
 
 * Vim Keymaps
+
 #+begin_src lua
   --Remap kj, ctrl+g as escape key
   vim.api.nvim_set_keymap('i', 'kj', '<esc>', { noremap = true })
@@ -510,6 +511,7 @@ cmp.setup {
 #+end_src
 
 * UI Conf
+
 #+begin_src lua
   vim.opt.nu = true
   vim.opt.relativenumber = true
@@ -529,10 +531,13 @@ cmp.setup {
 
   vim.opt.colorcolumn = "80"
 #+end_src
+
 * NetRW
+
 #+begin_src lua
 vim.keymap.set("n", "<C-x>d", vim.cmd.Ex)
 #+end_src
+
 * Languages
 ** Python
 *** Vim-Venom : Venv Activator
@@ -630,6 +635,31 @@ vim.keymap.set("n", "<C-x>d", vim.cmd.Ex)
   require("go.format").goimport()  -- goimport + gofmt
 #+end_src
 
+* Dash Docs
+
+#+begin_src lua
+      use 'sunaku/vim-dasht'
+      vim.cmd([[
+          " search related docsets
+    nnoremap <Leader>ds :Dasht<Space>
+
+    " search ALL the docsets
+    nnoremap <Leader>dS :Dasht!<Space>
+
+      " search related docsets
+  nnoremap <silent> <Leader>dd :call Dasht(dasht#cursor_search_terms())<Return>
+
+  " search ALL the docsets
+  nnoremap <silent> <Leader>dD :call Dasht(dasht#cursor_search_terms(), '!')<Return>
+
+    " search related docsets
+vnoremap <silent> <Leader>dd y:<C-U>call Dasht(getreg(0))<Return>
+
+" search ALL the docsets
+vnoremap <silent> <Leader>dD y:<C-U>call Dasht(getreg(0), '!')<Return>
+      ]])
+#+end_src
+
 * NeoGIt
 
 #+begin_src lua
@@ -719,6 +749,7 @@ vim.keymap.set("n", "<C-x>d", vim.cmd.Ex)
 #+end_src
 
 * Project Nvim
+
 #+begin_src lua
   use {
     "ahmedkhalf/project.nvim",
@@ -736,10 +767,13 @@ vim.keymap.set("n", "<C-x>d", vim.cmd.Ex)
 #+end_src
 
 * Copilot
+
 #+begin_src lua
 use 'github/copilot.vim'
 #+end_src
+
 * Harpoon
+
 #+begin_src lua
   use {
      'ThePrimeagen/harpoon',
@@ -767,9 +801,12 @@ use 'github/copilot.vim'
 #+end_src
 
 * Undo-Tree
+
 #+begin_src lua
 use 'mbbill/undotree'
+vim.cmd[[nnoremap <leader>U :UndotreeToggle<CR>]]
 #+end_src
+
 * Sniprun
 Run visual selected block of code. Repl/Notebook style developement
 #+begin_src lua
@@ -777,6 +814,7 @@ Run visual selected block of code. Repl/Notebook style developement
 #+end_src
 
 * Float Terminal
+
 #+begin_src lua
 use 'voldikss/vim-floaterm'
 -- Configuration example
@@ -785,7 +823,9 @@ vim.cmd[[let g:floaterm_keymap_prev   = '<leader>tp']]
 vim.cmd[[let g:floaterm_keymap_next   = '<leader>tn']]
 vim.cmd[[let g:floaterm_keymap_toggle = '<leader>tt']]
 #+end_src
+
 * Dap Mode
+
 #+begin_src lua
   -- Debuggers
   use 'mfussenegger/nvim-dap'
@@ -794,6 +834,7 @@ vim.cmd[[let g:floaterm_keymap_toggle = '<leader>tt']]
 #+end_src
 
 * Which-Key
+
 #+begin_src lua
   use {
   "folke/which-key.nvim",
@@ -819,6 +860,7 @@ vim.keymap.set({ "n", "x", "o" }, "<leader><space>", "<Cmd>Svart<CR>")        --
 #+end_src
 
 * Game: Vim Be Good
+
 #+begin_src lua
 use 'ThePrimeagen/vim-be-good'
 #+end_src
