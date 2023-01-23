@@ -1585,8 +1585,7 @@ With a prefix ARG, remove start location."
         (go-mode . (lambda () (setq-local counsel-dash-docsets '("Go"))))
         (c-mode . (lambda () (setq-local counsel-dash-docsets '("C"))))))
 
-(use-package private-comments-mode
-  :hook (lsp-mode . private-comments-mode))
+(use-package private-comments-mode)
 
 (use-package flycheck
   :straight t

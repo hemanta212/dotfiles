@@ -2214,8 +2214,7 @@ sudo apt install chicken-bin
 After ./build.sh, pc will fail but ~private_comments~ exe builds in tgz file extract it and move the executable inside the bin of new folder to ~local/bin~
 
 #+begin_src emacs-lisp
-  (use-package private-comments-mode
-    :hook (lsp-mode . private-comments-mode))
+  (use-package private-comments-mode)
 #+end_src
 
 ** FlyCheck

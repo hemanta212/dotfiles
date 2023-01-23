@@ -459,7 +459,7 @@ vim.opt.scrolloff = 8
 
 vim.opt.colorcolumn = "80"
 
-vim.keymap.set("n", "<C-x>d", vim.cmd.Ex)
+-- vim.keymap.set("n", "<C-x>d", vim.cmd.Ex)
 
 use 'rafi/vim-venom'
 require('venom').setup({
