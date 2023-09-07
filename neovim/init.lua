@@ -46,7 +46,6 @@ use { -- Additional text objects via treesitter
 use 'lewis6991/gitsigns.nvim'
 
 use 'navarasu/onedark.nvim' -- Theme inspired by Atom
-use 'projekt0n/github-nvim-theme'
 use 'nvim-lualine/lualine.nvim' -- Fancier statusline
 use 'lukas-reineke/indent-blankline.nvim' -- Add indentation guides even on blank lines
 use 'numToStr/Comment.nvim' -- "gc" to comment visual regions/lines
@@ -154,15 +153,15 @@ require('indent_blankline').setup {
   show_trailing_blankline_indent = false,
 }
 
--- require('gitsigns').setup {
---   signs = {
---     add = { text = '+' },
---     change = { text = '~' },
---     delete = { text = '_' },
---     topdelete = { text = '‾' },
---     changedelete = { text = '~' },
---   },
--- }
+require('gitsigns').setup {
+  signs = {
+    add = { text = '+' },
+    change = { text = '~' },
+    delete = { text = '_' },
+    topdelete = { text = '‾' },
+    changedelete = { text = '~' },
+  },
+}
 
 actions = require('telescope.actions')
 require('telescope').setup {
@@ -206,7 +205,7 @@ vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { de
 
 require('nvim-treesitter.configs').setup {
   -- Add languages to be installed here that you want installed for treesitter
-  ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'typescript', 'help' },
+  ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'typescript', 'vim', 'vimdoc'},
 
   highlight = { enable = true },
   indent = { enable = true },
@@ -322,10 +321,11 @@ require('mason').setup()
 
 -- Enable the following language servers
 -- Feel free to add/remove any LSPs that you want here. They will automatically be installed
-local servers = { 'clangd', 'rust_analyzer', 'pyright', 'tsserver', 'sumneko_lua', 'gopls' }
+local servers = { 'clangd', 'rust_analyzer', 'pyright', 'tsserver', 'lua_ls', 'gopls' }
 
 -- Ensure the servers above are installed
 require('mason-lspconfig').setup {
+
   ensure_installed = servers,
 }
 
@@ -347,7 +347,7 @@ local runtime_path = vim.split(package.path, ';')
 table.insert(runtime_path, 'lua/?.lua')
 table.insert(runtime_path, 'lua/?/init.lua')
 
-require('lspconfig').sumneko_lua.setup {
+require('lspconfig').lua_ls.setup {
   on_attach = on_attach,
   capabilities = capabilities,
   settings = {
@@ -459,7 +459,7 @@ vim.opt.scrolloff = 8
 
 vim.opt.colorcolumn = "80"
 
--- vim.keymap.set("n", "<C-x>d", vim.cmd.Ex)
+vim.keymap.set("n", "<C-x>d", vim.cmd.Ex)
 
 use 'rafi/vim-venom'
 require('venom').setup({
@@ -667,7 +667,26 @@ use {
 require('telescope').load_extension('projects')
 vim.api.nvim_set_keymap('n', '<leader>sp', [[<cmd>lua require('telescope').extensions.projects.projects{}<CR>]], { noremap = true, silent = true })
 
-use 'github/copilot.vim'
+-- use 'github/copilot.vim'
+use {
+  "zbirenbaum/copilot.lua",
+  cmd = "Copilot",
+  event = "InsertEnter",
+  config = function()
+    require("copilot").setup({
+      suggestion = { enabled = false },
+      panel = { enabled = false },
+    })
+  end,
+}
+
+use {
+  "zbirenbaum/copilot-cmp",
+  after = { "copilot.lua" },
+  config = function ()
+    require("copilot_cmp").setup()
+  end
+}
 
 use {
    'ThePrimeagen/harpoon',
@@ -709,15 +728,18 @@ use 'mfussenegger/nvim-dap'
 use 'rcarriga/nvim-dap-ui'
 use 'theHamsta/nvim-dap-virtual-text'
 
+-- Lua
 use {
-"folke/which-key.nvim",
-config = function()
+  "folke/which-key.nvim",
+  config = function()
+    vim.o.timeout = true
+    vim.o.timeoutlen = 300
     require("which-key").setup {
-    -- your configuration comes here
-    -- or leave it empty to use the default settings
-    -- refer to the configuration section below
+      -- your configuration comes here
+      -- or leave it empty to use the default settings
+      -- refer to the configuration section below
     }
-end
+  end
 }
 
 use 'https://gitlab.com/madyanov/svart.nvim'

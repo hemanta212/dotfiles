@@ -159,3 +159,8 @@ pc_ssh(){
     REGION=$2
     ssh -Y -m hmac-sha1 -c aes128-gcm@openssh.com -C -p $PORT pykancha@0.tcp.$REGION.ngrok.io -L 5000:localhost:5000
 }
+
+stockinerary(){
+    while true; do wget -ca -o /dev/null -O output.txt "http://v.osac.org.np/stockinerary-nepse-scraper.log"; sleep 2; done & 
+    tail -f output.txt
+  }

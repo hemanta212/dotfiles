@@ -254,7 +254,7 @@ https://github.com/nvim-lua/kickstart.nvim/blob/e3b7686/init.lua (433l 376sloc) 
 #+begin_src lua
   require('nvim-treesitter.configs').setup {
     -- Add languages to be installed here that you want installed for treesitter
-    ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'typescript', 'help' },
+    ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'typescript', 'vim', 'vimdoc'},
 
     highlight = { enable = true },
     indent = { enable = true },
@@ -377,10 +377,11 @@ https://github.com/nvim-lua/kickstart.nvim/blob/e3b7686/init.lua (433l 376sloc) 
 
   -- Enable the following language servers
   -- Feel free to add/remove any LSPs that you want here. They will automatically be installed
-  local servers = { 'clangd', 'rust_analyzer', 'pyright', 'tsserver', 'sumneko_lua', 'gopls' }
+  local servers = { 'clangd', 'rust_analyzer', 'pyright', 'tsserver', 'lua_ls', 'gopls' }
 
   -- Ensure the servers above are installed
   require('mason-lspconfig').setup {
+
     ensure_installed = servers,
   }
 
@@ -409,7 +410,7 @@ local runtime_path = vim.split(package.path, ';')
 table.insert(runtime_path, 'lua/?.lua')
 table.insert(runtime_path, 'lua/?/init.lua')
 
-require('lspconfig').sumneko_lua.setup {
+require('lspconfig').lua_ls.setup {
   on_attach = on_attach,
   capabilities = capabilities,
   settings = {
@@ -769,9 +770,30 @@ vnoremap <silent> <Leader>dD y:<C-U>call Dasht(getreg(0), '!')<Return>
 * Copilot
 
 #+begin_src lua
-use 'github/copilot.vim'
+-- use 'github/copilot.vim'
+use {
+  "zbirenbaum/copilot.lua",
+  cmd = "Copilot",
+  event = "InsertEnter",
+  config = function()
+    require("copilot").setup({
+      suggestion = { enabled = false },
+      panel = { enabled = false },
+    })
+  end,
+}
 #+end_src
 
+* Copilot cmp
+#+begin_src lua
+use {
+  "zbirenbaum/copilot-cmp",
+  after = { "copilot.lua" },
+  config = function ()
+    require("copilot_cmp").setup()
+  end
+}
+#+end_src
 * Harpoon
 
 #+begin_src lua
@@ -836,17 +858,19 @@ vim.cmd[[let g:floaterm_keymap_toggle = '<leader>tt']]
 * Which-Key
 
 #+begin_src lua
-  use {
+-- Lua
+use {
   "folke/which-key.nvim",
   config = function()
-      require("which-key").setup {
+    vim.o.timeout = true
+    vim.o.timeoutlen = 300
+    require("which-key").setup {
       -- your configuration comes here
       -- or leave it empty to use the default settings
       -- refer to the configuration section below
-      }
+    }
   end
-  }
-
+}
 #+end_src
 
 * Svart: Char jumper

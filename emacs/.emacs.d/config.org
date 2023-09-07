@@ -620,9 +620,11 @@ Giving a try to Paradox for an enhanced package management interface. We set par
 #+end_src
 
 *** Atom OneDark themes
+
 #+begin_src emacs-lisp
 (use-package atom-one-dark-theme)
 #+end_src
+
 *** Berry's Theme
 Light theme (esp for org)
    #+begin_src emacs-lisp
@@ -988,6 +990,12 @@ Highlight current line on-demand or after select operations, By Prot.
   (add-hook 'imenu-after-jump-hook #'pulsar-reveal-entry)
 #+end_src
 
+** Beacon
+#+begin_src emacs-lisp
+  (use-package beacon
+    :config
+    (beacon-mode 1))
+#+end_src
 * OS specifics
 #+begin_src emacs-lisp
   (cond ((eq system-type 'darwin)
@@ -1414,6 +1422,8 @@ are exported to a filename derived from the headline text."
 #+begin_src emacs-lisp
   (use-package org-make-toc
   :defer t
+  :custom
+  (org-make-toc-insert-custom-ids t)
   :hook (org-mode . org-make-toc-mode)
   :commands (org-make-toc))
 #+end_src
@@ -2178,11 +2188,17 @@ IPYTHON babyyy!
 **** Racket Mode
 #+begin_src emacs-lisp
   (use-package racket-mode
-  :hook (racket-xp-mode . racket-mode))
+  :hook ((racket-xp-mode . racket-mode)
+         (racket-mode . lsp-deferred)))
 #+end_src
 
 **** Ob-Racket
 [[*Ob-Racket][Ob-Racket installation]]
+
+*** Elixir
+#+begin_src emacs-lisp
+  (use-package elixir-mode)
+#+end_src
 
 ** Counsel Dash
 Dash powered docsets offline lightning fast in eww
@@ -2944,6 +2960,18 @@ Using an AUR wrapper,
 
 #+end_src
 
+* Copilot.el
+#+begin_src emacs-lisp
+    (use-package copilot
+      :straight (:host github :repo "zerolfx/copilot.el" :files ("dist" "*.el"))
+      :ensure t
+      :hook
+      (prog-mode . copilot-mode)
+      :config
+      (define-key copilot-completion-map (kbd "<tab>") 'copilot-accept-completion)
+      (define-key copilot-completion-map (kbd "TAB") 'copilot-accept-completion))
+    ;; you can utilize :map :hook and :config to customize copilot
+#+end_src
 * Emacs Outside
 ** Edit Server
 #+begin_src emacs-lisp

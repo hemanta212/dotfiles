@@ -172,9 +172,20 @@ if [ -d /usr/local/go ]; then
     export GOBIN=$GOHOME/bin
     export PATH=$PATH:/usr/local/go/bin:$GOBIN
 fi
-
+if [ -d $HOME/local/flutter ]; then
+    export PATH=$PATH:$HOME/local/flutter/bin
+fi
+if [ -d $HOME/.pub-cache/bin ]; then
+    export PATH=$PATH:$HOME/.pub-cache/bin
+fi
 if [ -d ~/.local/pipx ]; then
-eval "$(register-python-argcomplete pipx)"
+eval "$(~/.local/bin/register-python-argcomplete pipx)"
 fi
 
+export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0 #GWSL
+export PULSE_SERVER=tcp:$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}') #GWSL
+source $HOME/.local/bin/.tmc-autocomplete.sh || true
 
+if [ -d $HOME/.rye ]; then
+    source "$HOME/.rye/env"
+fi

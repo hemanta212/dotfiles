@@ -710,6 +710,10 @@ Version 2019-11-04 2021-02-16"
 (add-hook 'imenu-after-jump-hook #'pulsar-recenter-top)
 (add-hook 'imenu-after-jump-hook #'pulsar-reveal-entry)
 
+(use-package beacon
+  :config
+  (beacon-mode 1))
+
 (cond ((eq system-type 'darwin)
        ;; <<Mac settings>>
      (custom-set-variables
@@ -1046,6 +1050,8 @@ are exported to a filename derived from the headline text."
 
 (use-package org-make-toc
 :defer t
+:custom
+(org-make-toc-insert-custom-ids t)
 :hook (org-mode . org-make-toc-mode)
 :commands (org-make-toc))
 
@@ -1567,7 +1573,10 @@ With a prefix ARG, remove start location."
     (setq lua-documentation-function 'browse-web))
 
 (use-package racket-mode
-:hook (racket-xp-mode . racket-mode))
+:hook ((racket-xp-mode . racket-mode)
+       (racket-mode . lsp-deferred)))
+
+(use-package elixir-mode)
 
 (use-package counsel-dash
  :config
@@ -2101,6 +2110,16 @@ With a prefix ARG, remove start location."
 ;;                                   (:maildir "/hemantasharma.212@gmail/[Gmail].Drafts"      :key ?d)
 ;;                                   (:maildir "/hemantasharma.212@gmail/[Gmail].Bin"       :key ?t)
 ;;                                   (:maildir "/hemantasharma.212@gmail/[Gmail].All Mail"    :key ?a))))
+
+(use-package copilot
+  :straight (:host github :repo "zerolfx/copilot.el" :files ("dist" "*.el"))
+  :ensure t
+  :hook
+  (prog-mode . copilot-mode)
+  :config
+  (define-key copilot-completion-map (kbd "<tab>") 'copilot-accept-completion)
+  (define-key copilot-completion-map (kbd "TAB") 'copilot-accept-completion))
+;; you can utilize :map :hook and :config to customize copilot
 
 (use-package edit-server
   :defer t
