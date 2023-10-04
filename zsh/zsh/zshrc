@@ -189,3 +189,5 @@ source $HOME/.local/bin/.tmc-autocomplete.sh || true
 if [ -d $HOME/.rye ]; then
     source "$HOME/.rye/env"
 fi
+
+export LLM_USER_PATH=/mnt/e/Programs/llm/

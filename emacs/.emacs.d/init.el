@@ -1682,14 +1682,16 @@ With a prefix ARG, remove start location."
 ;; Show + - icons for git changes in gutter/fringe
 ;; git-gutter-fringe -> works in gui only (supports along with linum mode)
 ;; git-gutter -> works in both (doesnot go along with linum mode :(
+;; Just not useful ig
 (use-package git-gutter
  :defer t)
 ;; disable on org buffers (interferes with drop down arrow makes look like big space)
-(defun activate-gutter ()
-  (unless (eq major-mode 'org-mode)
-    (git-gutter-mode 1)))
-(add-hook 'prog-mode-hook 'activate-gutter)
-(add-hook 'text-mode-hook 'activate-gutter)
+;; @Just not useful ig
+;; (defun activate-gutter ()
+;;   (unless (eq major-mode 'org-mode)
+;;     (git-gutter-mode 1)))
+;; (add-hook 'prog-mode-hook 'activate-gutter)
+;; (add-hook 'text-mode-hook 'activate-gutter)
 
 (use-package evil-nerd-commenter
   :bind ("M-/" . evilnc-comment-or-uncomment-lines))
