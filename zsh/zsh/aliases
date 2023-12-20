@@ -10,6 +10,9 @@ alias Ss='sudo apt search'
 alias Su='sudo apt update'
 alias Syu='sudo apt update && sudo apt upgrade -y'
 alias syu='sudo apt update && sudo apt upgrade'
+alias gcloud='~/google-cloud-sdk/bin/gcloud'
+alias tele='telepresence'
+alias k='kubectl'
 #alias changelog="git log --pretty=format:'%s' $(git describe --tags --abbrev=0 @^)..@"
 
 alias Ss='apt search'

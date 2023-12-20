@@ -90,6 +90,10 @@ export PYTHONSTARTUP="$XDG_CONFIG_HOME/ptpython/.pythonrc.py"
 
 export MANPATH="/usr/local/man:$MANPATH"
 
+if [ -d /opt/homebrew/ ]; then
+export PATH="/opt/homebrew/bin:$PATH"
+fi
+
 
 if [ -d ~/.config/nvm ]; then
 export NVM_DIR="$HOME/.config/nvm"
@@ -98,9 +102,6 @@ export NVM_DIR="$HOME/.config/nvm"
 fi
 # TODO NVM SUCKS COULDNT MAKE IT LOAD things correctly
 export PATH="$PATH":"$HOME/.config/nvm/versions/node/v16.16.0/bin"
-
-export _ZO_DATA_DIR="$HOME/.config/zsh/"
-eval "$(zoxide init zsh)"
 
 # Fzf history search and keybindings:
 [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
@@ -138,34 +139,7 @@ if echo $OSTYPE | grep -q 'android' ; then
     }
 
     export PATH="$PATH":"$HOME/.cargo/bin/"
-    export DISPLAY=127.0.0.1:0
 fi
-
-
-# If inside Proper linux and using xorg
-# This session check works in fedora and ubuntu 18
-# ON wayland use  gsettings set org.gnome.desktop.input-sources xkb-options "['caps:ctrl_modifier']"
-# session_type = loginctl show-session $(loginctl | grep $(whoami) | awk '{print $1}') -p Type
-if ! uname -a | grep -q "microsoft" && loginctl show-session $(loginctl | grep $(whoami) | awk '{print $1}') -p Type | grep -q "x11" ; then
-        /usr/bin/setxkbmap -option 'caps:ctrl_modifier'
-        /usr/bin/xcape -e 'Caps_Lock=Escape' -t 100
-
-        if ! ps cax | grep -q Audiorelay; then
-            # survive after terminal close, run in background, pause stdinput, not create nohup.out file
-            nohup $HOME/.local/bin/Audiorelay </dev/null >/dev/null 2>&1 &
-        fi
-
-        #sudo nice -n -20 $HOME/.local/caps2esc-legacy/caps2esc >/tmp/caps2esc.log 2>/tmp/caps2esc.err &
-fi
-
-# export pyenv
-# if [ -d ~/.pyenv/bin ]; then
-# 	export PYENV_ROOT="$HOME/.pyenv"
-# 	command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
-#         eval "$(pyenv init -)"
-#         #eval "$(pyenv virtualenv-init -)"
-# fi
-
 
 if [ -d /usr/local/go ]; then
     export GOHOME=$HOME/.local/share/go
@@ -182,12 +156,12 @@ if [ -d ~/.local/pipx ]; then
 eval "$(~/.local/bin/register-python-argcomplete pipx)"
 fi
 
-export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0 #GWSL
-export PULSE_SERVER=tcp:$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}') #GWSL
-source $HOME/.local/bin/.tmc-autocomplete.sh || true
-
 if [ -d $HOME/.rye ]; then
     source "$HOME/.rye/env"
 fi
 
-export LLM_USER_PATH=/mnt/e/Programs/llm/
+export _ZO_DATA_DIR="$HOME/.config/zsh/"
+eval "$(zoxide init zsh)"
+
+
+export GOPRIVATE="github.com/MathGaps/*,go.buf.build"

@@ -74,6 +74,7 @@
 
 ;; tells use-package to use straight as an installer
 (straight-use-package 'use-package)
+(straight-use-package 'org)
 ;; If using the use-package-always-ensure customization, equivalent variable is
 (setq straight-use-package-by-default t)
 
@@ -934,7 +935,6 @@ Version 2019-11-04 2021-02-16"
      (go . t)
      (http . t)
      (js . t)
-     (ein . t)
      (python . t)
      (racket . t)
      (scheme . t)
@@ -957,7 +957,6 @@ Version 2019-11-04 2021-02-16"
   (add-to-list 'org-structure-template-alist '("eml" . "src emacs-lisp :exports both"))
   (add-to-list 'org-structure-template-alist '("go" . "src go :exports both :results output"))
   (add-to-list 'org-structure-template-alist '("ht" . "src http"))
-  (add-to-list 'org-structure-template-alist '("ein" . "src ein-python :session localhost :results output"))
   (add-to-list 'org-structure-template-alist '("py" . "src python :exports both :results output"))
   (add-to-list 'org-structure-template-alist '("rak" . "src racket :exports both :results output"))
   (add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
