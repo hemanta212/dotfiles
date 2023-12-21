@@ -1503,6 +1503,7 @@ With a prefix ARG, remove start location."
   :hook ((go-mode . lsp-deferred)
          (go-mode . lsp-go-install-save-hooks)))
 
+
 (define-key global-map (kbd "C-c l R") '(lambda () (interactive)
                                           (progn
                                             (save-buffer)
@@ -2122,6 +2123,13 @@ With a prefix ARG, remove start location."
   (define-key copilot-completion-map (kbd "<tab>") 'copilot-accept-completion)
   (define-key copilot-completion-map (kbd "TAB") 'copilot-accept-completion))
 ;; you can utilize :map :hook and :config to customize copilot
+
+(use-package codespaces
+  :config (codespaces-setup)
+  (setq vc-handled-backends '(Git))
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+  (setq tramp-ssh-controlmaster-options "")
+  :bind ("C-c S" . #'codespaces-connect))
 
 (use-package edit-server
   :defer t
