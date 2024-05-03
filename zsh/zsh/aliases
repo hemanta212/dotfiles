@@ -13,6 +13,7 @@ alias syu='sudo apt update && sudo apt upgrade'
 alias gcloud='~/google-cloud-sdk/bin/gcloud'
 alias tele='telepresence'
 alias k='kubectl'
+alias py='.venv/bin/python'
 #alias changelog="git log --pretty=format:'%s' $(git describe --tags --abbrev=0 @^)..@"
 
 alias Ss='apt search'
@@ -25,10 +26,15 @@ alias prp='poetry run python'
 alias prpp='poetry run python -m pip'
 alias pr='poetry run'
 
+alias ldc='cd $HOME/dev/tutero/flutter/learning/ && docker compose -f docker-compose-telepresence.yml up --build learning-graphql'
+alias ldcl='cd $HOME/dev/tutero/flutter/learning/ && docker compose -f docker-compose.yml up --build learning-db'
 
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
+alias infras='cd ~/dev/tutero/flutter/infrastructure/ && docker compose -f docker-compose.yml up redpanda keydb --build'
+alias localdb='cd ~/dev/tutero/flutter/learning/ && docker compose -f docker-compose.yml up learning-db --build -d'
+alias locallearning='cd ~/dev/tutero/flutter/learning/ && docker compose -f docker-compose.yml up learning-graphql --build'
 
 # Detect which `ls` flavor is in use
 if ls --color > /dev/null 2>&1; then # GNU `ls`
@@ -39,6 +45,8 @@ fi
 
 # List all files colorized in long format, including dot files
 alias la="ls -lahF ${colorflag}"
+
+alias diff='git diff --color-words=. '
 
 # Always use color output for `ls`
 alias ls="command ls ${colorflag}"

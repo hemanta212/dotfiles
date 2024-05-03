@@ -2,6 +2,10 @@ sbash () {
       source ~/.zshrc
 }
 
+loadenv () {
+      export $(cat .env | xargs)
+}
+
 clone() {
     if [ $# -eq 1 ]
         then

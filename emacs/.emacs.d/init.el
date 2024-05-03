@@ -110,7 +110,7 @@
  ;; Set the fixed pitch face
  (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height efs/default-font-size)
  ;; Set the variable pitch face
- (set-face-attribute 'variable-pitch nil :font "Segoe UI" :height efs/default-variable-font-size :weight 'regular)
+ (set-face-attribute 'variable-pitch nil :font "Comic Sans MS" :height efs/default-variable-font-size :weight 'regular)
 
  ;; Set up the visible bell
  (setq visible-bell nil)
@@ -792,7 +792,7 @@ Version 2019-11-04 2021-02-16"
         org-agenda-start-with-log-mode t
         org-agenda-files
         '("~/dev/personal/org/track.org"))
-  (define-key org-mode-map (kbd "C-c C-r") verb-command-map)
+  ;;(define-key org-mode-map (kbd "C-c C-r") verb-command-map)
 
   (evil-define-key '(normal insert visual) org-mode-map (kbd "C-j") 'org-next-visible-heading)
   (evil-define-key '(normal insert visual) org-mode-map (kbd "C-k") 'org-previous-visible-heading)
@@ -1942,8 +1942,9 @@ With a prefix ARG, remove start location."
 
   :init
   ;; Load Org link support
-  (with-eval-after-load 'org
-    (require 'osm-ol)))
+  ;;(with-eval-after-load 'org
+    ;;(require 'osm-ol))
+    )
 
 (use-package nepali-romanized
     :straight (nepali-romanized
