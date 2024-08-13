@@ -33,8 +33,11 @@ alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 alias infras='cd ~/dev/tutero/flutter/infrastructure/ && docker compose -f docker-compose.yml up redpanda keydb --build'
-alias localdb='cd ~/dev/tutero/flutter/learning/ && docker compose -f docker-compose.yml up learning-db --build -d'
+alias localdb='cd ~/dev/tutero/flutter/learning/ && docker compose -f docker-compose.yml up learning-db learning-latex learning-grpc --build -d'
 alias locallearning='cd ~/dev/tutero/flutter/learning/ && docker compose -f docker-compose.yml up learning-graphql --build'
+alias diag='cd ~/dev/tutero/flutter/diagnostics/ && docker compose -f docker-compose.yml up diagnostics-db --build -d; sleep 15; docker compose -f docker-compose.yml up diagnostics-grpc --build'
+alias diagdb='cd ~/dev/tutero/flutter/diagnostics/ && docker compose -f docker-compose.yml up diagnostics-db --build -d'
+alias gtg="graphql-tooling generate && find ./transport/graph/resolvers -name '*.resolvers.go' | xargs gofumpt -w"
 
 # Detect which `ls` flavor is in use
 if ls --color > /dev/null 2>&1; then # GNU `ls`
@@ -66,3 +69,4 @@ alias serve="browser-sync start -s -f . --no-notify --host 192.168.1.14 --port 9
 if uname -r | grep -q 'microsoft'; then
 	alias emacsg='DISPLAY=:0 emacs'
 fi
+alias dotnet='DOTNET_CLI_TELEMETRY_OPTOUT=1 echo "Tele: off" && dotnet'

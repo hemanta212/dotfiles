@@ -168,3 +168,84 @@ stockinerary(){
     while true; do wget -ca -o /dev/null -O output.txt "http://v.osac.org.np/stockinerary-nepse-scraper.log"; sleep 2; done & 
     tail -f output.txt
   }
+
+
+
+
+# Add this to your .zshrc or a separate file that's sourced by .zshrc
+
+gs() {
+    local config_file="$HOME/.cache/.gitfriendly"
+    
+    # Create the config file if it doesn't exist
+    touch "$config_file"
+
+    # Helper function to find the closest match
+    find_closest_match() {
+        local input="$1"
+        local closest_match=""
+        local highest_score=-1
+
+        while IFS= read -r line; do
+            local friendly_name=$(echo "$line" | cut -d':' -f1)
+            local score=0
+
+            # Calculate the match score based on common characters
+            for (( i=0; i<${#input}; i++ )); do
+                if [[ "$friendly_name" == *"${input:$i:1}"* ]]; then
+                    ((score++))
+                fi
+            done
+
+            if [ "$score" -gt "$highest_score" ]; then
+                closest_match="$friendly_name"
+                highest_score=$score
+            fi
+        done < "$config_file"
+        echo "$closest_match"
+    }
+
+    case "$1" in
+        -a)
+            if [ -z "$2" ]; then
+                echo "Usage: gs -a <friendly_name>"
+                return 1
+            fi
+            local current_branch=$(git rev-parse --abbrev-ref HEAD)
+            echo "$2:$current_branch" >> "$config_file"
+            echo "Added friendly name '$2' for current branch '$current_branch'"
+            ;;
+        -d)
+            local current_branch=$(git rev-parse --abbrev-ref HEAD)
+            local friendly_name=$(grep ":$current_branch$" "$config_file" | cut -d':' -f1)
+            if [ -z "$friendly_name" ]; then
+                echo "No friendly name found for current branch '$current_branch'"
+                return 1
+            fi
+            sed -i '' "/:$current_branch$/d" "$config_file"
+            git branch -D "$current_branch"
+            echo "Deleted friendly name '$friendly_name' and branch '$current_branch'"
+            ;;
+        -l)
+            cat "$config_file"
+            ;;
+        *)
+            if [ -z "$1" ]; then
+                echo "Usage: gs <friendly_name> | -a <friendly_name> | -d | -l"
+                return 1
+            fi
+            local branch=$(grep "^$1:" "$config_file" | cut -d':' -f2)
+            if [ -z "$branch" ]; then
+                local closest_match=$(find_closest_match "$1")
+                if [ -z "$closest_match" ]; then
+                    echo "Friendly name not found. Use 'gs -a <friendly_name>' to create a new friendly name."
+                    return 1
+                fi
+                branch=$(grep "^$closest_match:" "$config_file" | cut -d':' -f2)
+                echo "WARNING: Auto-inferred closest match '$closest_match'"
+            fi
+            git checkout "$branch"
+            ;;
+    esac
+}
+
