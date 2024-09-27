@@ -73,3 +73,11 @@ unset file;
 autoload -Uz compinit
 zstyle ':completion:*' menu select
 fpath+=~/.zfunc
+
+. "$HOME/.cargo/env"
+
+## [Completion]
+## Completion scripts setup. Remove the following line to uninstall
+[[ -f /Users/mac/.config/.dart-cli-completion/zsh-config.zsh ]] && . /Users/mac/.config/.dart-cli-completion/zsh-config.zsh || true
+## [/Completion]
+

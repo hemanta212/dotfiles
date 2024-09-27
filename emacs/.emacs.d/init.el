@@ -18,8 +18,12 @@
 
   ;; Debug errors with more info
   (setq debug-on-error nil)
+
   ;; supress native comp warnings
-  (setq native-comp-async-report-warnings-errors 'silent)
+  (setq native-comp-async-report-warnings-errors nil)
+  ;; (setq native-comp-async-report-warnings-errors 'silent)
+  (when (eq system-type 'darwin) (customize-set-variable 'native-comp-driver-options '("-Wl,-w")))
+
   ;; Suppress “ad-handle-definition: .. redefined” warnings during Emacs startup.
   (custom-set-variables '(ad-redefinition-action (quote accept)))
 
@@ -106,11 +110,11 @@
        (menu-bar-mode 1)
        (scroll-bar-mode -1)))
 
- (set-face-attribute 'default nil :font "Fira Code Retina" :height efs/default-font-size)
+ (set-face-attribute 'default nil :font "Fira Code" :height efs/default-font-size)
  ;; Set the fixed pitch face
- (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height efs/default-font-size)
+ (set-face-attribute 'fixed-pitch nil :font "Fira Code" :height efs/default-font-size)
  ;; Set the variable pitch face
- (set-face-attribute 'variable-pitch nil :font "Comic Sans MS" :height efs/default-variable-font-size :weight 'regular)
+ (set-face-attribute 'variable-pitch nil :font "Segoe UI" :height efs/default-variable-font-size :weight 'regular)
 
  ;; Set up the visible bell
  (setq visible-bell nil)
@@ -744,7 +748,7 @@ Version 2019-11-04 2021-02-16"
                   (org-level-6 . 1.1)
                   (org-level-7 . 1.1)
                   (org-level-8 . 1.1)))
-    (set-face-attribute (car face) nil :font "Fira Code Retina" :weight 'regular :height (cdr face)))
+    (set-face-attribute (car face) nil :font "Fira Code" :weight 'regular :height (cdr face)))
 
   ;; Ensure that anything that should be fixed-pitch in Org files appears that way
   (set-face-attribute 'org-block nil    :foreground nil :inherit 'fixed-pitch)

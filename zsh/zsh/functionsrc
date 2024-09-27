@@ -170,82 +170,253 @@ stockinerary(){
   }
 
 
+#gs() {
+#    local config_file="$HOME/.cache/.gitfriendly"
+#    
+#    # Create the config file if it doesn't exist
+#    touch "$config_file"
+#
+#    # Helper function to use fzf for interactive selection
+#    fzf_select() {
+#        local query="$1"
+#        local result=$(cat "$config_file" | fzf --query="$query" --select-1 --exit-0)
+#        if [[ -z "$result" ]]; then
+#            return 1
+#        fi
+#        echo "$result"
+#    }
+#
+#    # Helper function to get the first fzf match
+#    fzf_first_match() {
+#        local query="$1"
+#        local result=$(cat "$config_file" | fzf --filter="$query" | head -n1)
+#        if [[ -z "$result" ]]; then
+#            return 1
+#        fi
+#        echo "$result"
+#    }
+#
+#    # Helper function to perform actions based on selection
+#    perform_action() {
+#        local action="$1"
+#        local selection="$2"
+#        local friendly_name=$(echo "$selection" | cut -d':' -f1)
+#        local branch=$(echo "$selection" | cut -d':' -f2)
+#
+#        case "$action" in
+#            "switch")
+#                echo "Switching to branch '$branch' (friendly name: '$friendly_name')"
+#                git checkout "$branch"
+#                ;;
+#            "delete")
+#                local current_branch=$(git rev-parse --abbrev-ref HEAD)
+#                if [ "$current_branch" = "$branch" ]; then
+#                    echo "Error: Cannot delete the branch you're currently on"
+#                    return 1
+#                fi
+#                gsed -i '' "/^$friendly_name:/d" "$config_file"
+#                git branch -D "$branch"
+#                echo "Deleted friendly name '$friendly_name' and branch '$branch'"
+#                ;;
+#        esac
+#    }
+#
+#    case "$1" in
+#        -a)
+#            if [ -z "$2" ]; then
+#                echo "Usage: gs -a <friendly_name>"
+#                return 1
+#            fi
+#            local current_branch=$(git rev-parse --abbrev-ref HEAD)
+#            echo "$2:$current_branch" >> "$config_file"
+#            echo "Added friendly name '$2' for current branch '$current_branch'"
+#            ;;
+#        -d)
+#            if [ -z "$2" ]; then
+#                local selection=$(fzf_select "")
+#            else
+#                local first_match=$(fzf_first_match "$2")
+#                if [ $? -ne 0 ]; then
+#                    echo "No matches found for '$2'"
+#                    return 1
+#                fi
+#                local selection=$(fzf_select "$2")
+#            fi
+#            if [ $? -ne 0 ]; then
+#                echo "No selection made. No action taken."
+#                return 1
+#            fi
+#            perform_action "delete" "$selection"
+#            ;;
+#        -l)
+#            cat "$config_file"
+#            ;;
+#        "")
+#            local selection=$(fzf_select "")
+#            if [ $? -ne 0 ]; then
+#                echo "No selection made. No action taken."
+#                return 1
+#            fi
+#            perform_action "switch" "$selection"
+#            ;;
+#        *)
+#            local first_match=$(fzf_first_match "$1")
+#            if [ $? -ne 0 ]; then
+#                echo "No matches found for '$1'"
+#                return 1
+#            fi
+#            local selection=$(fzf_select "$1")
+#            if [ $? -ne 0 ]; then
+#                echo "No selection made. No action taken."
+#                return 1
+#            fi
+#            perform_action "switch" "$selection"
+#            ;;
+#    esac
+#}
 
+hist() {
+    local history_file="$HOME/.cache/zsh/history"
 
-# Add this to your .zshrc or a separate file that's sourced by .zshrc
+    # Helper function to parse history entries
+    parse_history() {
+        gsed -E 's/^: ([0-9]+):[0-9];(.*)$/\2/' "$history_file"
+    }
 
-gs() {
-    local config_file="$HOME/.cache/.gitfriendly"
-    
-    # Create the config file if it doesn't exist
-    touch "$config_file"
+    # Helper function to use fzf for interactive selection
+    fzf_select() {
+        local query="$1"
+        local result=$(parse_history | fzf --query="$query" --select-1 --exit-0)
+        if [[ -z "$result" ]]; then
+            return 1
+        fi
+        echo "$result"
+    }
 
-    # Helper function to find the closest match
-    find_closest_match() {
-        local input="$1"
-        local closest_match=""
-        local highest_score=-1
-
-        while IFS= read -r line; do
-            local friendly_name=$(echo "$line" | cut -d':' -f1)
-            local score=0
-
-            # Calculate the match score based on common characters
-            for (( i=0; i<${#input}; i++ )); do
-                if [[ "$friendly_name" == *"${input:$i:1}"* ]]; then
-                    ((score++))
-                fi
-            done
-
-            if [ "$score" -gt "$highest_score" ]; then
-                closest_match="$friendly_name"
-                highest_score=$score
-            fi
-        done < "$config_file"
-        echo "$closest_match"
+    # Helper function to find line number of selected entry
+    find_line_number() {
+        local selected_entry="$1"
+        grep -n "$selected_entry" "$history_file" | cut -d ':' -f1
     }
 
     case "$1" in
-        -a)
+        -e)
             if [ -z "$2" ]; then
-                echo "Usage: gs -a <friendly_name>"
+                local selection=$(fzf_select "")
+            else
+                local selection=$(fzf_select "$2")
+            fi
+            if [ $? -ne 0 ]; then
+                echo "No selection made. No action taken."
                 return 1
             fi
-            local current_branch=$(git rev-parse --abbrev-ref HEAD)
-            echo "$2:$current_branch" >> "$config_file"
-            echo "Added friendly name '$2' for current branch '$current_branch'"
+            echo "Executing: $selection"
+            eval "$selection"
             ;;
-        -d)
-            local current_branch=$(git rev-parse --abbrev-ref HEAD)
-            local friendly_name=$(grep ":$current_branch$" "$config_file" | cut -d':' -f1)
-            if [ -z "$friendly_name" ]; then
-                echo "No friendly name found for current branch '$current_branch'"
+        -j)
+            if [ -z "$2" ]; then
+                local selection=$(fzf_select "")
+            else
+                local selection=$(fzf_select "$2")
+            fi
+            if [ $? -ne 0 ]; then
+                echo "No selection made. No action taken."
                 return 1
             fi
-            sed -i '' "/:$current_branch$/d" "$config_file"
-            git branch -D "$current_branch"
-            echo "Deleted friendly name '$friendly_name' and branch '$current_branch'"
+            local line_number=$(find_line_number "$selection")
+            if [ -z "$line_number" ]; then
+                echo "Couldn't find the exact line. Opening the history file."
+                $EDITOR "$history_file"
+            else
+                echo "Opening history file at line $line_number"
+                $EDITOR "+$line_number" "$history_file"
+            fi
             ;;
-        -l)
-            cat "$config_file"
+        "")
+            fzf_select ""
             ;;
         *)
-            if [ -z "$1" ]; then
-                echo "Usage: gs <friendly_name> | -a <friendly_name> | -d | -l"
-                return 1
-            fi
-            local branch=$(grep "^$1:" "$config_file" | cut -d':' -f2)
-            if [ -z "$branch" ]; then
-                local closest_match=$(find_closest_match "$1")
-                if [ -z "$closest_match" ]; then
-                    echo "Friendly name not found. Use 'gs -a <friendly_name>' to create a new friendly name."
-                    return 1
-                fi
-                branch=$(grep "^$closest_match:" "$config_file" | cut -d':' -f2)
-                echo "WARNING: Auto-inferred closest match '$closest_match'"
-            fi
-            git checkout "$branch"
+            fzf_select "$1"
             ;;
     esac
 }
 
+
+# -----------------------------------------------------------------------------
+# AI-powered Git Commit Function -- By Andrej Karpathy
+# Copy paste this gist into your ~/.bashrc or ~/.zshrc to gain the gcm command. It:
+# 1) gets the current staged changed diff
+# 2) sends them to an LLM to write the git commit message
+# 3) allows you to easily accept, edit, regenerate, cancel
+# But - just read and edit the code however you like
+# the llm CLI util is awesome, can get it here: https://llm.datasette.io/en/stable/
+ 
+gcm() {
+    # Function to generate commit message
+    generate_commit_message() {
+        git diff --cached | llm "
+Below is a diff of all staged changes, coming from the command:
+ 
+\\\
+git diff --cached
+\\\
+ 
+Please generate a concise, one-line commit message for these changes."
+    }
+ 
+    # Function to read user input compatibly with both Bash and Zsh
+    read_input() {
+        if [ -n "$ZSH_VERSION" ]; then
+            echo -n "$1"
+            read -r REPLY
+        else
+            read -p "$1" -r REPLY
+        fi
+    }
+ 
+    # Main script
+    echo "Generating AI-powered commit message..."
+    commit_message=$(generate_commit_message)
+ 
+    while true; do
+        echo -e "\nProposed commit message:"
+        echo "$commit_message"
+ 
+        read_input "Do you want to (a)ccept, (e)dit, (r)egenerate, or (c)ancel? "
+        choice=$REPLY
+ 
+        case "$choice" in
+            a|A )
+                if git commit -m "$commit_message"; then
+                    echo "Changes committed successfully!"
+                    return 0
+                else
+                    echo "Commit failed. Please check your changes and try again."
+                    return 1
+                fi
+                ;;
+            e|E )
+                read_input "Enter your commit message: "
+                commit_message=$REPLY
+                if [ -n "$commit_message" ] && git commit -m "$commit_message"; then
+                    echo "Changes committed successfully with your message!"
+                    return 0
+                else
+                    echo "Commit failed. Please check your message and try again."
+                    return 1
+                fi
+                ;;
+            r|R )
+                echo "Regenerating commit message..."
+                commit_message=$(generate_commit_message)
+                ;;
+            c|C )
+                echo "Commit cancelled."
+                return 1
+                ;;
+            * )
+                echo "Invalid choice. Please try again."
+                ;;
+        esac
+    done
+}

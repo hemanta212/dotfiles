@@ -1,5 +1,8 @@
 alias hg='history | grep'
-alias pb="curl -F 'sprunge=<-' http://sprunge.us"
+# Alias for uploading with a secret to make the URL harder to guess
+alias pb="curl -F 'file=@-' -F 'secret=' https://0x0.st"
+# Alias for uploading with a secret and setting expiration to 24 hours
+alias pb24="curl -F 'file=@-' -F 'secret=' -F 'expires=24' https://0x0.st"
 alias pg='ping google.com'
 alias memfree='echo "sync && echo 3 > /proc/sys/vm/drop_caches" | sudo sh'
 alias cat='bat'
@@ -38,6 +41,44 @@ alias locallearning='cd ~/dev/tutero/flutter/learning/ && docker compose -f dock
 alias diag='cd ~/dev/tutero/flutter/diagnostics/ && docker compose -f docker-compose.yml up diagnostics-db --build -d; sleep 15; docker compose -f docker-compose.yml up diagnostics-grpc --build'
 alias diagdb='cd ~/dev/tutero/flutter/diagnostics/ && docker compose -f docker-compose.yml up diagnostics-db --build -d'
 alias gtg="graphql-tooling generate && find ./transport/graph/resolvers -name '*.resolvers.go' | xargs gofumpt -w"
+alias ctg='cagen && find ./internal -name "*.go" | xargs gofumpt -w'
+alias coc="COCKROACH_SKIP_ENABLING_DIAGNOSTIC_REPORTING=true cockroach"
+
+# Flutter stuffs
+alias f='fvm flutter'
+alias d='fvm dart'
+alias frcenv="env CHROME_EXECUTABLE=$HOME/.local/bin/flutter-chrome fvm"
+alias fpg="frcenv flutter pub get"
+alias fpu="frcenv flutter pub upgrade"
+alias frc="frcenv flutter run -d chrome --web-port 5000"
+alias frcp="frcenv flutter run -d chrome --web-port"
+#alias frw="frcenv flutter run -d web-server --web-port 5000"
+#alias fre="frcenv flutter run -d edge --web-port 5000"
+alias frdsp="frcenv flutter run -d chrome --web-browser-flag '--disable-web-security' --web-port 5000"
+alias fsp="echo 'Going to schema' && cd $FEWORK/schema && git pull && echo 'Updated schema locally' && echo 'Going back' && cd - && echo 'Back in: ' && pwd && frcenv flutter pub upgrade schema && fvm dart run build_runner build --delete-conflicting-outputs"
+#alias dbrc="frcenv dart run build_runner clean"
+# GIt stuff
+alias gpom="git pull origin main"
+alias gpo="git pull origin"
+alias gf="git fetch"
+alias gfo="git fetch origin"
+alias gfom="git fetch origin main"
+alias gc="git checkout -"
+alias gcar="git commit --amend --reuse-message=HEAD"
+alias gie="git commit -m 'chore: automatic commit' --allow-empty"
+alias gdiff='git diff --color-words=. '
+alias gs='git switch $( (gh pr list --author "@me" --json title,headRefName --jq ".[] | [.title, .headRefName] | @tsv" ; git branch --sort=-committerdate --format="%(refname:short)" | grep -vE "^(TASK|ISSUE)") | fzf --height 20% --layout=reverse --border --ansi | cut -f2)'
+
+# Zsh stuff
+alias zs='source ~/.zshrc'
+alias zsz='source ~/.config/zsh/zshrc'
+alias zsa='source ~/.config/zsh/aliases'
+alias zsf='source ~/.config/zsh/functionsrc'
+alias zea='nvim ~/.config/zsh/aliases'
+alias zef='nvim ~/.config/zsh/functionsrc'
+alias ze='nvim ~/.zshrc'
+alias zez='nvim ~/.config/zsh/zshrc'
+
 
 # Detect which `ls` flavor is in use
 if ls --color > /dev/null 2>&1; then # GNU `ls`
@@ -49,7 +90,6 @@ fi
 # List all files colorized in long format, including dot files
 alias la="ls -lahF ${colorflag}"
 
-alias diff='git diff --color-words=. '
 
 # Always use color output for `ls`
 alias ls="command ls ${colorflag}"
