@@ -164,7 +164,7 @@ fi
 export _ZO_DATA_DIR="$HOME/.config/zsh/"
 eval "$(zoxide init zsh)"
 
-export GOPRIVATE="github.com/MathGaps/*,go.buf.build"
+export GOPRIVATE="github.com/*,go.buf.build"
 
 if [ -d /Users/$USER/Library/Android/sdk ]; then
 export ANDROID_HOME=/Users/$USER/Library/Android/sdk
@@ -180,6 +180,11 @@ fi
 if [ -d "$HOME/Library/Application Support/Neo4j Desktop/Application/relate-data/dbmss/dbms-f46eb3cb-ba46-4f8c-8d08-1c546ececd73/bin" ]; then
 export NEO4J_HOME="$HOME/Library/Application Support/Neo4j Desktop/Application/relate-data/dbmss/dbms-f46eb3cb-ba46-4f8c-8d08-1c546ececd73"
 export PATH=$NEO4J_HOME/bin:$PATH
+fi
+
+ # /Applications/Cursor.app/Contents/MacOS
+if [ -d "/Applications/Cursor.app/Contents/MacOS" ]; then
+  export PATH="/Applications/Cursor.app/Contents/MacOS:$PATH"
 fi
 
 # The next line updates PATH for the Google Cloud SDK.
@@ -209,3 +214,27 @@ if [ -f "$HOME/.cargo/env" ]; then . "$HOME/.cargo/env"; fi
 # Added by LM Studio CLI tool (lms)
 if [ -d "$HOME/.cache/lm-studio/bin" ]; then export PATH="$PATH:$HOME/.cache/lm-studio/bin"; fi
 if [ -d "$HOME/.dotnet/tools" ]; then export PATH="$PATH:$HOME/.dotnet/tools"; fi
+
+
+if [ -f "$HOME/.local/bin/llm" ]; then
+  # Get gemini, claude, openai, and groq values from $(llm keys path) and export only if not set
+  
+  if [ -z "$GEMINI_API_KEY" ]; then
+    export GEMINI_API_KEY=$(jq -r ".gemini" "$(llm keys path)")
+  fi
+  #
+  if [ -z "$ANTHROPIC_API_KEY" ]; then
+    export ANTHROPIC_API_KEY=$(jq -r ".claude" "$(llm keys path)")
+  fi
+  #
+   if [ -z "$OPENAI_API_KEY" ]; then
+     export OPENAI_API_KEY=$(jq -r ".openai" "$(llm keys path)")
+   fi
+  #
+  if [ -z "$GROQ_API_KEY" ]; then
+    export GROQ_API_KEY=$(jq -r ".groq" "$(llm keys path)")
+  fi
+fi
+# Override all apis keys to ''
+#unset OPENAI_API_KEY
+#unset ANTHROPIC_API_KEY

@@ -1,3 +1,22 @@
+# git wrapper that replaces all occurrences of "::" in arguments with the current branch name.
+# Examples:
+#   git checkout ::              → git checkout current-branch
+#   git merge origin/::          → git merge origin/current-branch
+#   git reset --hard origin/::   → git reset --hard origin/current-branch
+# All other arguments are passed to /bin/git unchanged.
+git() {
+    local cur_branch
+    cur_branch=$(/usr/bin/git rev-parse --abbrev-ref HEAD)
+
+    local args=()
+    for arg in "$@"; do
+        arg="${arg//::/$cur_branch}"
+        args+=("$arg")
+    done
+
+    /usr/bin/git "${args[@]}"
+}
+
 sbash () {
       source ~/.zshrc
 }

@@ -15,8 +15,22 @@ alias Syu='sudo apt update && sudo apt upgrade -y'
 alias syu='sudo apt update && sudo apt upgrade'
 alias gcloud='~/google-cloud-sdk/bin/gcloud'
 alias tele='telepresence'
+telec() {
+  # Check if the service is reachable
+  if curl -sSf "http://learning-neo4j-db-lb-neo4j.learning.svc.cluster.local:7474" > /dev/null; then
+    echo ":: telepresence check ✅ Already connected"
+  else
+    echo ":: telepresence check ❌ Reconnecting..."
+    # Set the Kubernetes context to dev
+    kubectl config use-context dev
+    # Quit existing Telepresence session if any and reconnect
+    telepresence quit -s
+    telepresence connect -n learning
+  fi
+}
 alias k='kubectl'
 alias py='.venv/bin/python'
+alias venv='source .venv/bin/activate'
 #alias changelog="git log --pretty=format:'%s' $(git describe --tags --abbrev=0 @^)..@"
 
 alias Ss='apt search'
@@ -34,17 +48,19 @@ alias ldcl='cd $HOME/dev/tutero/flutter/learning/ && docker compose -f docker-co
 
 alias ll='ls -alF'
 alias la='ls -A'
-alias l='ls -CF'
-alias infras='cd ~/dev/tutero/flutter/infrastructure/ && docker compose -f docker-compose.yml up redpanda keydb --build'
+#alias l='ls -CF'
+alias l='facad'
+alias infras='cd ~/dev/tutero/flutter/infrastructure/ && docker compose -f docker-compose.yml up redpanda keydb qdrant --build'
 alias localdb='cd ~/dev/tutero/flutter/learning/ && docker compose -f docker-compose.yml up learning-db learning-latex learning-grpc --build -d'
 alias locallearning='cd ~/dev/tutero/flutter/learning/ && docker compose -f docker-compose.yml up learning-graphql --build'
 alias diag='cd ~/dev/tutero/flutter/diagnostics/ && docker compose -f docker-compose.yml up diagnostics-db --build -d; sleep 15; docker compose -f docker-compose.yml up diagnostics-grpc --build'
 alias diagdb='cd ~/dev/tutero/flutter/diagnostics/ && docker compose -f docker-compose.yml up diagnostics-db --build -d'
-alias gtg="graphql-tooling generate && find ./transport/graph/resolvers -name '*.resolvers.go' | xargs gofumpt -w"
-alias ctg='cagen && find ./internal -name "*.go" | xargs gofumpt -w'
+alias gtg="graphql-tooling generate; find ./transport/graph/resolvers -name '*.resolvers.go' | xargs gofumpt -w"
+alias ctg='cagen; find ./internal -name "*.go" | xargs gofumpt -w'
 alias coc="COCKROACH_SKIP_ENABLING_DIAGNOSTIC_REPORTING=true cockroach"
 
 # Flutter stuffs
+alias go='/usr/local/go/bin/go'
 alias f='fvm flutter'
 alias d='fvm dart'
 alias frcenv="env CHROME_EXECUTABLE=$HOME/.local/bin/flutter-chrome fvm"
@@ -64,10 +80,25 @@ alias gf="git fetch"
 alias gfo="git fetch origin"
 alias gfom="git fetch origin main"
 alias gc="git checkout -"
+alias hawk='git'
 alias gcar="git commit --amend --reuse-message=HEAD"
 alias gie="git commit -m 'chore: automatic commit' --allow-empty"
 alias gdiff='git diff --color-words=. '
 alias gs='git switch $( (gh pr list --author "@me" --json title,headRefName --jq ".[] | [.title, .headRefName] | @tsv" ; git branch --sort=-committerdate --format="%(refname:short)" | grep -vE "^(TASK|ISSUE)") | fzf --height 20% --layout=reverse --border --ansi | cut -f2)'
+alias gg="lazygit"
+alias zz='zellij attach resources'
+# opens lazygit in dir of symlink source, returns to curdir when closed
+lzsym() {
+  [ -z "$1" ] && echo "Usage: lzsym <filepath>" && return 1
+  local orig_dir=$(dirname "$(realpath "$1")")
+  local current_dir=$(pwd)
+  cd "$orig_dir" && lazygit
+  cd "$current_dir"
+}
+
+alias fedit='nvim $(fzf)'
+alias mfy='markdownify'
+
 
 # Zsh stuff
 alias zs='source ~/.zshrc'
@@ -78,6 +109,10 @@ alias zea='nvim ~/.config/zsh/aliases'
 alias zef='nvim ~/.config/zsh/functionsrc'
 alias ze='nvim ~/.zshrc'
 alias zez='nvim ~/.config/zsh/zshrc'
+
+sourcenv(){
+  [ -f .env ] && export $(grep -v "^#" .env | xargs)
+}
 
 
 # Detect which `ls` flavor is in use
