@@ -58,7 +58,7 @@ fi
 zplug load #--verbose
 
 # Some sorcery /////////SOURCING other files //////////////////////
-for file in ~/.config/zsh/{functionsrc,aliases,.mytermuxrc,.mycolabrc,zshrc};
+for file in ~/dev/dotfiles/zsh/zsh/{functionsrc,aliases,.mytermuxrc,.mycolabrc,claude.zsh,zshrc};
  do
     [ -r "$file" ] && [ -f "$file" ] && source "$file";
 done;
@@ -80,4 +80,5 @@ fpath+=~/.zfunc
 ## Completion scripts setup. Remove the following line to uninstall
 [[ -f /Users/mac/.config/.dart-cli-completion/zsh-config.zsh ]] && . /Users/mac/.config/.dart-cli-completion/zsh-config.zsh || true
 ## [/Completion]
+
 

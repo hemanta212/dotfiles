@@ -161,7 +161,7 @@ if [ -d ~/.local/pipx ]; then
 #eval "$(~/.local/bin/register-python-argcomplete pipx)"
 fi
 
-export _ZO_DATA_DIR="$HOME/.config/zsh/"
+export _ZO_DATA_DIR="$HOME/dev/dotfiles/zsh/"
 eval "$(zoxide init zsh)"
 
 export GOPRIVATE="github.com/*,go.buf.build"
@@ -238,3 +238,4 @@ fi
 # Override all apis keys to ''
 #unset OPENAI_API_KEY
 #unset ANTHROPIC_API_KEY
+eval "$(direnv hook zsh)"
