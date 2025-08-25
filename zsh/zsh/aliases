@@ -25,9 +25,63 @@ telec() {
     kubectl config use-context dev
     # Quit existing Telepresence session if any and reconnect
     telepresence quit -s
-    telepresence connect -n learning
+    telepresence connect
   fi
 }
+kneo() {
+     # k port-forward --context=prod -n learning pod/learning-neo4j-2-0 7687:7687 7474:7474
+     # Take first arg context eg "prod", second arg neo4j prefix eg "learning"
+     # and port arg eg 87 converts to 7687 (implies frontend port 7474), 88 -> 7688 (implies frontend 7475) and so on
+     # if no port arg default to 7687
+      local context="$1"
+      local prefix="$2"
+      local port="${3:-87}"
+      port=$((port + 7600))
+      local port_7474=$((port - 213)) # 7687 -> 7474, 7688 -> 7475, etc.
+      if [ -z "$context" ] || [ -z "$prefix" ]; then
+        echo "Usage: kneo <context> <prefix> [port]"
+        return 1
+      fi
+      echo ":: Running kubectl port-forward --context=$context -n learning pod/${prefix}-neo4j-2-0 $port:7687 $port_7474:7474"
+      kubectl port-forward --context="$context" -n "learning" pod/"${prefix}"-neo4j-2-0 "$port":7687 "$port_7474":7474
+}
+kport() {
+    local PREFIX=$1
+    local CONTEXT=$2
+    shift 2
+
+    if [[ -z "$PREFIX" || -z "$CONTEXT" || $# -eq 0 ]]; then
+        echo "Usage: kport <prefix> <context> <local1:remote1> [<local2:remote2> ...]"
+        return 1
+    fi
+
+    # Find the pod and namespace
+    POD_INFO=$(kubectl get pods --context="$CONTEXT" --all-namespaces --no-headers -o custom-columns="NAMESPACE:.metadata.namespace,NAME:.metadata.name" | grep "$PREFIX" | head -n 1)
+
+    if [[ -z "$POD_INFO" ]]; then
+        echo "No pod found with prefix '$PREFIX' in any namespace under context '$CONTEXT'"
+        return 1
+    fi
+
+    local NAMESPACE=$(echo "$POD_INFO" | awk '{print $1}')
+    local POD_NAME=$(echo "$POD_INFO" | awk '{print $2}')
+
+    # Build the port-forward arguments
+    local PORT_ARGS=()
+    for pair in "$@"; do
+        if [[ "$pair" != *:* ]]; then
+            echo "Invalid port format: $pair. Use <local>:<remote>"
+            return 1
+        fi
+        PORT_ARGS+=("$pair")
+    done
+
+    echo "Port forwarding pod $POD_NAME in namespace $NAMESPACE (context: $CONTEXT):"
+    printf ' - %s\n' "${PORT_ARGS[@]}"
+
+    kubectl port-forward --context="$CONTEXT" -n "$NAMESPACE" pod/"$POD_NAME" "${PORT_ARGS[@]}"
+}
+
 alias k='kubectl'
 alias py='.venv/bin/python'
 alias venv='source .venv/bin/activate'
@@ -67,6 +121,8 @@ alias frcenv="env CHROME_EXECUTABLE=$HOME/.local/bin/flutter-chrome fvm"
 alias fpg="frcenv flutter pub get"
 alias fpu="frcenv flutter pub upgrade"
 alias frc="frcenv flutter run -d chrome --web-port 5000"
+#alias frcc="frcenv flutter run -d chrome --web-port 5000"
+alias frcf="frc | grep --line-buffered -F '[WTF]'" # Focused frc filtering only wtf logs
 alias frcp="frcenv flutter run -d chrome --web-port"
 #alias frw="frcenv flutter run -d web-server --web-port 5000"
 #alias fre="frcenv flutter run -d edge --web-port 5000"
@@ -84,9 +140,11 @@ alias hawk='git'
 alias gcar="git commit --amend --reuse-message=HEAD"
 alias gie="git commit -m 'chore: automatic commit' --allow-empty"
 alias gdiff='git diff --color-words=. '
-alias gs='git switch $( (gh pr list --author "@me" --json title,headRefName --jq ".[] | [.title, .headRefName] | @tsv" ; git branch --sort=-committerdate --format="%(refname:short)" | grep -vE "^(TASK|ISSUE)") | fzf --height 20% --layout=reverse --border --ansi | cut -f2)'
+#alias gs='git switch $( (gh pr list --author "@me" --json title,headRefName --jq ".[] | [.title, .headRefName] | @tsv" ; git branch --sort=-committerdate --format="%(refname:short)" | grep -vE "^(TASK|ISSUE)") | fzf --height 20% --layout=reverse --border --ansi | cut -f2)'
 alias gg="lazygit"
-alias zz='zellij attach resources'
+alias vg='EDITOR=vi lazygit'
+alias zz='/opt/homebrew/bin/zellij attach resources'
+alias zellij='/opt/homebrew/bin/zellij attach resources'
 # opens lazygit in dir of symlink source, returns to curdir when closed
 lzsym() {
   [ -z "$1" ] && echo "Usage: lzsym <filepath>" && return 1
@@ -109,7 +167,17 @@ alias zea='nvim ~/.config/zsh/aliases'
 alias zef='nvim ~/.config/zsh/functionsrc'
 alias ze='nvim ~/.zshrc'
 alias zez='nvim ~/.config/zsh/zshrc'
+alias claude='ANTHROPIC_API_KEY="" ~/.claude/local/claude'
+alias gemini="GEMINI_API_KEY='' gemini"
+alias gem='GEMINI_API_KEY='' gemini -y'
+alias oc='EDITOR=/opt/homebrew/bin/nvim ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' opencode --continue'
+alias em='emacs -nw'
+alias gmt='go mod tidy'
+alias ccg='bunx ccusage'
 
+mash(){
+  git status --porcelain | egrep '^(DD|AU|UD|UA|DU|AA|UU)' | awk '{print $2}' | xargs $1
+}
 sourcenv(){
   [ -f .env ] && export $(grep -v "^#" .env | xargs)
 }
@@ -145,3 +213,16 @@ if uname -r | grep -q 'microsoft'; then
 	alias emacsg='DISPLAY=:0 emacs'
 fi
 alias dotnet='DOTNET_CLI_TELEMETRY_OPTOUT=1 echo "Tele: off" && dotnet'
+alias zellij='cat ~/.config/zellij/cope.md'
+
+
+export OLD='/Users/mac/dev/tutero/flutter'
+alias old='cd ~/dev/tutero/flutter'
+alias oldre='cd ~/dev/tutero/flutter/resources'
+alias oldle='cd ~/dev/tutero/flutter/learning'
+alias oldsc='cd ~/dev/tutero/flutter/schools-app'
+alias oldlp='cd ~/dev/tutero/flutter/learning-library/features/lesson_plan/'
+alias oldws='cd ~/dev/tutero/flutter/learning-library/features/worksheets/'
+alias oldll='cd ~/dev/tutero/flutter/learning-library'
+alias oldcf='cd ~/dev/tutero/flutter/core-flutter'
+alias oldlg='cd ~/dev/tutero/flutter/legacy-frontend/packages/core'
