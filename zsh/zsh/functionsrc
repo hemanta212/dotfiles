@@ -1,6 +1,6 @@
 # git wrapper that replaces all occurrences of "::" in arguments with the current branch name.
 # Examples:
-#   git checkout ::              → git checkout current-branch
+#   git push origin ::            → git push origin current-branch
 #   git merge origin/::          → git merge origin/current-branch
 #   git reset --hard origin/::   → git reset --hard origin/current-branch
 # All other arguments are passed to /bin/git unchanged.
@@ -16,6 +16,76 @@ git() {
 
     /usr/bin/git "${args[@]}"
 }
+
+g() {
+  if [[ $# -gt 0 ]]; then
+    git "$@"
+  else
+    gitui
+  fi
+}
+
+# Helper function to determine repository-specific cache file path
+get_cache_file() {
+  # Get repository name (e.g., MathGaps/learning) using GitHub CLI
+  REPO_NAME=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null)
+  if [[ -z "$REPO_NAME" ]]; then
+    echo "ERROR: Unable to determine repository name. Is this a GitHub repository?" >&2
+    return 1
+  fi
+  # Generate a unique hash for the repository name
+  REPO_HASH=$(echo "$REPO_NAME" | md5sum | cut -d' ' -f1)
+  # Define cache file path in a dedicated folder
+  CACHE_DIR="${HOME}/.cache/gh_pr_cache"
+  mkdir -p "$CACHE_DIR"  # Create directory if it doesn’t exist
+  CACHE_FILE="${CACHE_DIR}/gh_pr_list_cache_${REPO_HASH}"
+  echo "$CACHE_FILE"
+}
+
+# gss: Refresh PR list, cache it, and switch to a selected branch
+gss() {
+  CACHE_FILE=$(get_cache_file)
+  if [[ $? -ne 0 ]]; then
+    return 1
+  fi
+  # Fetch and cache PRs authored by the user, then combine with recent branches
+  gh pr list --author "@me" --json title,headRefName \
+    --jq '.[] | [.title, .headRefName] | @tsv' | tee "$CACHE_FILE" \
+    | {
+      # Exclude branches starting with TASK or ISSUE
+      cat - && git branch --sort=-committerdate --format="%(refname:short)" | grep -vE "^(TASK|ISSUE)"
+    } | fzf --height 20% --layout=reverse --border --ansi | awk '{print $NF}' | {
+      # Switch to the selected branch if one is chosen
+      read -r branch
+      if [[ -n "$branch" ]]; then
+        git switch "$branch"
+      fi
+    }
+}
+
+# gs: Use cached PRs or recent branches to switch to a selected branch, delegate to gss if cache is absent
+gs() {
+  CACHE_FILE=$(get_cache_file)
+  if [[ $? -ne 0 ]]; then
+    return 1
+  fi
+  # If cache file doesn’t exist, delegate to gss to refresh it
+  if [[ ! -f "$CACHE_FILE" ]]; then
+    gss
+    return  # Exit after gss handles the refresh and switch
+  fi
+  # Load cached PRs
+  local cached_prs=$(cat "$CACHE_FILE")
+  # Get recent branches, excluding TASK/ISSUE
+  local recent_branches=$(git branch --sort=-committerdate --format="%(refname:short)" | grep -vE "^(TASK|ISSUE)")
+  # Combine cached PRs and recent branches, select with fzf, and switch
+  local selected=$( (echo "$cached_prs"; echo "$recent_branches") \
+    | fzf --height 20% --layout=reverse --border --ansi | awk '{print $NF}')
+  if [[ -n "$selected" ]]; then
+    git switch "$selected"
+  fi
+}
+
 
 sbash () {
       source ~/.zshrc
