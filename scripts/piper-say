@@ -1,0 +1,154 @@
+#!/bin/bash
+# piper-say - Quick Nepali TTS using Piper
+# Usage: piper-say "Your Nepali text here"
+
+set -euo pipefail
+
+# Configuration
+PIPER_DIR="/Users/mac/.config/piper"
+MODEL_PATH="$PIPER_DIR/ne_NP-google-medium.onnx"
+CONFIG_PATH="$PIPER_DIR/ne_NP-google-medium.onnx.json"
+MUTE_FILE="$PIPER_DIR/.muted"
+VOLUME_FILE="$PIPER_DIR/.volume"
+LOG_FILE="$PIPER_DIR/piper-say.log"
+SPEAKER_ID=0
+
+# Logging function
+log_invocation() {
+  local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+  local cwd=$(pwd)
+  local args="$*"
+  local log_entry="[$timestamp] CWD: $cwd | ARGS: $args"
+
+  mkdir -p "$PIPER_DIR"
+
+  # Append new entry
+  echo "$log_entry" >>"$LOG_FILE"
+
+  # Keep only last 10 lines
+  tail -10 "$LOG_FILE" >"$LOG_FILE.tmp" && mv "$LOG_FILE.tmp" "$LOG_FILE"
+}
+
+# Handle log command
+if [ $# -eq 1 ] && [[ "$1" =~ ^(--log|log|l)$ ]]; then
+  if [ -f "$LOG_FILE" ]; then
+    echo "Last 10 piper-say invocations:"
+    cat "$LOG_FILE"
+  else
+    echo "No log entries found."
+  fi
+  exit 0
+fi
+
+# Handle mute/unmute commands
+if [ $# -eq 1 ] && [[ "$1" =~ ^(--mute|m)$ ]]; then
+  log_invocation "$@"
+  mkdir -p "$PIPER_DIR"
+  touch "$MUTE_FILE"
+  echo "Piper-say muted. Use 'piper-say u' to enable."
+  exit 0
+elif [ $# -eq 1 ] && [[ "$1" =~ ^(--unmute|u)$ ]]; then
+  log_invocation "$@"
+  rm -f "$MUTE_FILE"
+  echo "Piper-say unmuted."
+  exit 0
+fi
+
+# Handle volume command (set persistent volume)
+if [ $# -eq 2 ] && [[ "$1" =~ ^(--volume|v)$ ]]; then
+  VOLUME="$2"
+
+  # Validate volume is 0-100
+  if ! [[ "$VOLUME" =~ ^[0-9]+$ ]] || [ "$VOLUME" -lt 0 ] || [ "$VOLUME" -gt 100 ]; then
+    echo "Error: Volume must be between 0-100" >&2
+    exit 1
+  fi
+
+  log_invocation "$@"
+  mkdir -p "$PIPER_DIR"
+  echo "$VOLUME" >"$VOLUME_FILE"
+  echo "Volume set to $VOLUME% for all future piper-say calls."
+  exit 0
+fi
+
+# Log all invocations (except log commands)
+if [ $# -gt 0 ] && ! [[ "$1" =~ ^(--log|log|l)$ ]]; then
+  log_invocation "$@"
+fi
+
+# Check if muted
+if [ -f "$MUTE_FILE" ]; then
+  exit 0
+fi
+
+# Check if text is provided
+if [ $# -eq 0 ] || [ -z "${1:-}" ]; then
+  echo "Usage: piper-say \"Your Nepali text here\"" >&2
+  echo "       piper-say m         # Mute all future calls" >&2
+  echo "       piper-say u         # Unmute" >&2
+  echo "       piper-say l         # Show last 10 invocations" >&2
+  echo "       piper-say v <0-100> # Set persistent volume" >&2
+  echo "Example: piper-say \"नमस्ते संसार\"" >&2
+  exit 1
+fi
+
+# Check if required files exist
+if [ ! -f "$MODEL_PATH" ] || [ ! -f "$CONFIG_PATH" ]; then
+  echo "Error: Piper model files not found in $PIPER_DIR" >&2
+  echo "Expected files:" >&2
+  echo "  - ne_NP-google-medium.onnx" >&2
+  echo "  - ne_NP-google-medium.onnx.json" >&2
+  exit 1
+fi
+
+# Create temporary file for audio output
+TEMP_AUDIO=$(mktemp -t piper-say).wav
+trap "rm -f '$TEMP_AUDIO'" EXIT
+
+# Generate TTS audio
+if ! piper -m "$MODEL_PATH" -c "$CONFIG_PATH" -s "$SPEAKER_ID" -f "$TEMP_AUDIO" -- "$1" 2>/dev/null; then
+  echo "Error: Failed to generate TTS audio" >&2
+  exit 1
+fi
+
+# Play audio using available player in background
+play_audio() {
+  local audio_file="$1"
+  if command -v afplay >/dev/null 2>&1; then
+    # macOS native audio player
+    afplay "$audio_file"
+  elif command -v ffplay >/dev/null 2>&1; then
+    # ffplay with no display and auto-exit
+    ffplay -nodisp -autoexit "$audio_file" 2>/dev/null
+  elif command -v aplay >/dev/null 2>&1; then
+    # ALSA player (Linux)
+    aplay "$audio_file" 2>/dev/null
+  else
+    echo "Warning: No audio player found. Audio saved temporarily at: $audio_file" >&2
+    echo "Install ffplay, afplay (macOS), or aplay (Linux) to play audio directly." >&2
+    return 1
+  fi
+  # Clean up after playing
+  rm -f "$audio_file"
+}
+
+# Check for saved volume setting and apply it
+if [ -f "$VOLUME_FILE" ]; then
+  SAVED_VOLUME=$(cat "$VOLUME_FILE")
+  CURRENT_VOLUME=$(osascript -e "output volume of (get volume settings)")
+  osascript -e "set volume output volume $SAVED_VOLUME"
+  USE_SAVED_VOLUME=1
+fi
+
+# Run audio playback in background, detached from terminal
+if [ "${USE_SAVED_VOLUME:-}" = "1" ]; then
+  # Play audio and restore original volume after
+  nohup bash -c "$(declare -f play_audio); play_audio '$TEMP_AUDIO'; sleep 1; osascript -e 'set volume output volume $CURRENT_VOLUME'" >/dev/null 2>&1 &
+else
+  nohup bash -c "$(declare -f play_audio); play_audio '$TEMP_AUDIO'" >/dev/null 2>&1 &
+fi
+disown
+
+# Don't clean up temp file here since background process will handle it
+trap - EXIT
+

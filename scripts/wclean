@@ -1,0 +1,199 @@
+#!/bin/bash
+
+# wclean - Worktree Cleanup
+# Repo-independent worktree cleanup script
+# Usage: wclean <folder-name> [--force] [--remote]
+# Note: folder-name can be different from branch-name when using AI-generated folder names
+
+set -e
+
+FOLDER_NAME=""
+FORCE_DELETE=false
+DELETE_REMOTE=false
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --force|-f)
+            FORCE_DELETE=true
+            shift
+            ;;
+        --remote|-r)
+            DELETE_REMOTE=true
+            shift
+            ;;
+        -h|--help)
+            echo "wclean - Worktree Cleanup"
+            echo "Repo-independent worktree cleanup script"
+            echo ""
+            echo "Usage: wclean <folder-name> [options]"
+            echo ""
+            echo "Options:"
+            echo "  --force, -f       Force delete local branch without confirmation"
+            echo "  --remote, -r      Also delete remote branch without confirmation"
+            echo "  -h, --help        Show this help message"
+            echo ""
+            echo "Examples:"
+            echo "  # Basic cleanup (interactive)"
+            echo "  wclean store-mobile-signup-emails"
+            echo ""
+            echo "  # Force delete everything including remote"
+            echo "  wclean ./fix-user-auth --force --remote"
+            echo ""
+            echo "Features:"
+            echo "  ✅ Repo-independent - works in any git repository"
+            echo "  ✅ Removes worktree directory safely"
+            echo "  ✅ Handles AI-generated folder names with different branch names"
+            echo "  ✅ Optional local and remote branch deletion"
+            echo "  ✅ Interactive confirmations (unless --force used)"
+            exit 0
+            ;;
+        -*)
+            echo "❌ Unknown option: $1"
+            echo "Use wclean --help for usage information."
+            exit 1
+            ;;
+        *)
+            if [ -z "$FOLDER_NAME" ]; then
+                # Remove ./ prefix if present
+                FOLDER_NAME=$(echo "$1" | sed 's|^\./||')
+            else
+                echo "❌ Multiple folder names provided. Please specify only one."
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Validate we're in a git repository
+if ! git rev-parse --git-dir &> /dev/null; then
+    echo "❌ Not in a git repository. Please run wclean from within a git repository."
+    exit 1
+fi
+
+# Validate folder name provided
+if [ -z "$FOLDER_NAME" ]; then
+    echo "❌ No folder name provided."
+    echo ""
+    echo "Usage: wclean <folder-name> [options]"
+    echo "Use wclean --help for more information."
+    exit 1
+fi
+
+# Get repository info
+REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_NAME=$(basename "$REPO_ROOT")
+CURRENT_DIR=$(pwd)
+
+echo "🧹 Cleaning up worktree: $FOLDER_NAME"
+echo "🏠 Repository: $REPO_NAME"
+echo "📁 Working in: $CURRENT_DIR"
+echo ""
+
+# Check if worktree directory exists
+if [ ! -d "$FOLDER_NAME" ]; then
+    echo "❌ Worktree directory '$FOLDER_NAME' not found in current directory"
+    echo ""
+    echo "Available directories:"
+    ls -la | grep "^d" | grep -v "^\.$" | grep -v "^\.\.$" | awk '{print "  " $9}' | head -10
+    exit 1
+fi
+
+# Function to get branch name from worktree directory
+get_branch_name_from_worktree() {
+    local folder_path="$1"
+    local full_path="$CURRENT_DIR/$folder_path"
+    
+    # Get the branch name associated with this worktree
+    git worktree list --porcelain | awk -v path="$full_path" '
+        $1 == "worktree" && $2 == path { found=1; next }
+        found && $1 == "branch" { 
+            sub(/^refs\/heads\//, "", $2)
+            print $2
+            exit 
+        }
+    '
+}
+
+# Get the actual branch name for this worktree
+BRANCH_NAME=""
+if git worktree list | grep -q "$CURRENT_DIR/$FOLDER_NAME"; then
+    BRANCH_NAME=$(get_branch_name_from_worktree "$FOLDER_NAME")
+    if [ -n "$BRANCH_NAME" ]; then
+        echo "🔍 Detected branch name: $BRANCH_NAME"
+        if [ "$BRANCH_NAME" != "$FOLDER_NAME" ]; then
+            echo "📂 Folder name '$FOLDER_NAME' maps to branch '$BRANCH_NAME'"
+        fi
+    else
+        echo "⚠️  Could not determine branch name for worktree $FOLDER_NAME"
+        BRANCH_NAME="$FOLDER_NAME"  # Fallback to folder name
+    fi
+else
+    echo "⚠️  Directory '$FOLDER_NAME' exists but is not a git worktree"
+    read -p "Remove directory anyway? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        rm -rf "$FOLDER_NAME"
+        echo "🗑️  Directory '$FOLDER_NAME' removed"
+        exit 0
+    else
+        echo "❌ Aborted"
+        exit 1
+    fi
+fi
+
+echo ""
+
+# Remove the worktree
+echo "🗑️  Removing worktree..."
+git worktree remove "$FOLDER_NAME"
+echo "✅ Worktree '$FOLDER_NAME' removed"
+
+# Handle local branch deletion
+LOCAL_BRANCH_EXISTS=false
+if git show-ref --verify --quiet refs/heads/$BRANCH_NAME; then
+    LOCAL_BRANCH_EXISTS=true
+    if [ "$FORCE_DELETE" = true ]; then
+        git branch -D "$BRANCH_NAME"
+        echo "🗑️  Local branch '$BRANCH_NAME' deleted (forced)"
+    else
+        read -p "Delete local branch '$BRANCH_NAME'? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            git branch -D "$BRANCH_NAME"
+            echo "🗑️  Local branch '$BRANCH_NAME' deleted"
+        fi
+    fi
+fi
+
+# Handle remote branch deletion
+REMOTE_BRANCH_EXISTS=false
+if git ls-remote --exit-code origin refs/heads/$BRANCH_NAME &> /dev/null; then
+    REMOTE_BRANCH_EXISTS=true
+    if [ "$DELETE_REMOTE" = true ] || [ "$FORCE_DELETE" = true ]; then
+        git push origin --delete "$BRANCH_NAME"
+        echo "🗑️  Remote branch 'origin/$BRANCH_NAME' deleted"
+    else
+        read -p "Delete remote branch 'origin/$BRANCH_NAME'? (y/N): " -n 1 -r  
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            git push origin --delete "$BRANCH_NAME"
+            echo "🗑️  Remote branch 'origin/$BRANCH_NAME' deleted"
+        fi
+    fi
+fi
+
+echo ""
+echo "✅ Cleanup complete!"
+echo "📊 Summary:"
+echo "  🗑️  Worktree removed: ✅ ($FOLDER_NAME)"
+if [ "$FOLDER_NAME" != "$BRANCH_NAME" ]; then
+    echo "  🌿 Branch name: $BRANCH_NAME"
+fi
+if [ "$LOCAL_BRANCH_EXISTS" = true ]; then
+    echo "  🌿 Local branch: $(git show-ref --verify --quiet refs/heads/$BRANCH_NAME && echo "Still exists" || echo "Deleted")"
+fi
+if [ "$REMOTE_BRANCH_EXISTS" = true ]; then
+    echo "  🌐 Remote branch: $(git ls-remote --exit-code origin refs/heads/$BRANCH_NAME &> /dev/null && echo "Still exists" || echo "Deleted")"
+fi

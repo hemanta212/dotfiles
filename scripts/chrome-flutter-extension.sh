@@ -1,11 +1,13 @@
 #!/bin/bash
 
+pkill -f 'Chromium'
+
 # Path to the actual chrome executable
-CMD="/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta"
+CMD="/Applications/Chromium.app/Contents/MacOS/Chromium"
 
 # TODO: Create a new chrome profile that you'll use for dev
 # then visit chrome://version and use the value of "Profile Path" here
-PROFILE_PATH="/Users/mac/Library/Application Support/Google/Chrome Beta/Default"
+PROFILE_PATH="/Users/mac/Library/Application Support/Chromium/Profile 1"
 
 PROFILE_DIRECTORY="${PROFILE_PATH##*/}"
 USER_DATA_DIR="${PROFILE_PATH%/*}"

@@ -1,0 +1,517 @@
+#!/bin/bash
+
+# wspin - Worktree Spin-up
+# Repo-independent branch creator with parser and worktree support
+# Parses your typical Notion command and creates worktree in current repo
+#
+# Usage:
+#   wspin 'git fetch && git checkout -b ISSUE-10343 && gh pr create -t "[ISSUE-10343] fix: something"'
+#   wspin 'your command' --from origin/dev --against staging
+
+set -e
+
+# Default settings
+BASE_BRANCH="origin/main"
+TARGET_BRANCH="main"
+COMMAND=""
+PARSED_ARGS=()
+
+# First pass: collect all arguments
+while [[ $# -gt 0 ]]; do
+  PARSED_ARGS+=("$1")
+  shift
+done
+
+# Second pass: parse arguments in any order
+for i in "${!PARSED_ARGS[@]}"; do
+  case "${PARSED_ARGS[$i]}" in
+  --from)
+    if [[ $((i + 1)) -lt ${#PARSED_ARGS[@]} ]]; then
+      BASE_BRANCH="${PARSED_ARGS[$((i + 1))]}"
+      # Mark these as processed
+      PARSED_ARGS[$i]=""
+      PARSED_ARGS[$((i + 1))]=""
+    else
+      echo "❌ --from requires a branch name"
+      exit 1
+    fi
+    ;;
+  --against)
+    if [[ $((i + 1)) -lt ${#PARSED_ARGS[@]} ]]; then
+      TARGET_BRANCH="${PARSED_ARGS[$((i + 1))]}"
+      # Mark these as processed
+      PARSED_ARGS[$i]=""
+      PARSED_ARGS[$((i + 1))]=""
+    else
+      echo "❌ --against requires a branch name"
+      exit 1
+    fi
+    ;;
+  -h | --help)
+    echo "wspin - Worktree Spin-up"
+    echo "Repo-independent branch creator with parser and worktree support"
+    echo ""
+    echo "Usage: wspin '<git command>' [--from origin/branch] [--against target_branch]"
+    echo "       wspin [--from origin/branch] [--against target_branch] '<git command>'"
+    echo ""
+    echo "Options:"
+    echo "  --from BRANCH     Branch to branch off from (default: origin/main)"
+    echo "  --against BRANCH  Target branch for PR (default: main)"
+    echo "  -h, --help        Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  # Parse Notion command and create worktree"
+    echo "  wspin 'git fetch && git checkout -b ISSUE-123 && gh pr create -t \"[ISSUE-123] fix: something\"'"
+    echo ""
+    echo "  # With overrides at end (preferred style)"
+    echo "  wspin 'git checkout -b FEATURE-456 && gh pr create -t \"[FEATURE-456] feat: new thing\"' --from origin/dev"
+    echo ""
+    echo "  # Multiple overrides"
+    echo "  wspin 'git checkout -b HOTFIX-789 && gh pr create -t \"[HOTFIX-789] hotfix: urgent fix\"' --from origin/dev --against staging"
+    echo ""
+    echo "Features:"
+    echo "  ✅ Repo-independent - works in any git repository"
+    echo "  ✅ Auto-parses branch name and PR title from your command"
+    echo "  ✅ Creates worktree in BRANCH_NAME/ subdirectory"
+    echo "  ✅ Flexible argument order - options can be anywhere"
+    echo "  ✅ Copies development files (Makefile, makefile.sh, docker-telepresence-config-local.yml, jqtrace)"
+    echo "  ✅ Handles all git operations (fetch, branch, commit, push)"
+    echo "  ✅ Creates draft PR with extracted title and assigns to you"
+    exit 0
+    ;;
+  esac
+done
+
+# Collect remaining arguments as command
+for arg in "${PARSED_ARGS[@]}"; do
+  if [[ -n "$arg" ]]; then
+    if [[ -z "$COMMAND" ]]; then
+      COMMAND="$arg"
+    else
+      echo "❌ Multiple commands provided. Please wrap your command in quotes."
+      exit 1
+    fi
+  fi
+done
+
+# Validate dependencies
+if ! git rev-parse --git-dir &>/dev/null; then
+  echo "❌ Not in a git repository. Please run wspin from within a git repository."
+  exit 1
+fi
+
+if ! command -v jq &>/dev/null; then
+  echo "❌ jq is required for AI branch name generation. Please install it:"
+  echo "  brew install jq"
+  exit 1
+fi
+
+# Get repository info
+REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_NAME=$(basename "$REPO_ROOT")
+CURRENT_DIR=$(pwd)
+
+echo "🏠 Repository: $REPO_NAME"
+echo "📁 Working in: $CURRENT_DIR"
+echo ""
+
+# Validate command provided
+if [ -z "$COMMAND" ]; then
+  echo "❌ No command provided."
+  echo ""
+  echo "Usage: wspin [options] '<your git command>'"
+  echo "Use wspin --help for more information."
+  exit 1
+fi
+
+echo "🔍 Parsing command..."
+echo "Command: $COMMAND"
+echo ""
+
+# Function to extract JSON from response text
+extract_json() {
+  local response="$1"
+  local start_pos end_pos brace_count
+
+  # Find the first opening brace
+  start_pos=$(echo "$response" | grep -b -o '{' | head -1 | cut -d: -f1)
+
+  if [ -z "$start_pos" ]; then
+    return 1 # No opening brace found
+  fi
+
+  # Extract from first brace onwards
+  local json_part="${response:$start_pos}"
+
+  # Find the matching closing brace by counting braces
+  brace_count=0
+  end_pos=0
+
+  for ((i = 0; i < ${#json_part}; i++)); do
+    char="${json_part:$i:1}"
+    if [ "$char" = "{" ]; then
+      ((brace_count++))
+    elif [ "$char" = "}" ]; then
+      ((brace_count--))
+      if [ $brace_count -eq 0 ]; then
+        end_pos=$((i + 1))
+        break
+      fi
+    fi
+  done
+
+  if [ $end_pos -gt 0 ]; then
+    echo "${json_part:0:$end_pos}"
+    return 0
+  else
+    return 1 # No matching closing brace found
+  fi
+}
+
+# Function to generate AI folder name from PR title
+generate_folder_name() {
+  local pr_title="$1"
+  local existing_folders="$2"
+  local prompt_input="PR Title: \"$pr_title\""
+
+  echo "🤖 Generating AI folder name from PR title..." >&2
+
+  local max_retries=3
+  local retry_count=0
+
+  while [ $retry_count -lt $max_retries ]; do
+    # Call Claude Haiku with the branch name prompt
+    local ai_response
+    #ai_response=$(mkdir -p /tmp/empty && pushd /tmp/empty && /Users/mac/.claude/local/claude --model 'haiku' --output-format 'json' --append-system-prompt '/Users/mac/Coding/metarepo/scripts/branch-name.prompt' --dangerously-skip-permissions -p "$prompt_input" 2>/dev/null && popd)
+    ai_response=$(mkdir -p /tmp/empty && pushd /tmp/empty && opencode --agent 'branch-namer' run "$pr_title" 2>/dev/null && popd)
+
+    if [ $? -eq 0 ] && [ -n "$ai_response" ]; then
+      # Extract JSON portion from response
+      local json_part
+      if json_part=$(extract_json "$ai_response"); then
+        # Try to parse JSON and extract branch name
+        local branch_name
+        branch_name=$(echo "$json_part" | jq -r '.branchName' 2>/dev/null)
+
+        if [ $? -eq 0 ] && [ "$branch_name" != "null" ] && [ -n "$branch_name" ]; then
+          # Validate folder name format
+          if [[ $branch_name =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+            echo "✨ Generated folder name: $branch_name" >&2
+            echo "$branch_name"
+            return 0
+          else
+            echo "⚠️  Invalid folder name format: $branch_name (retry $((retry_count + 1))/$max_retries)" >&2
+          fi
+        else
+          echo "⚠️  Failed to parse JSON field (retry $((retry_count + 1))/$max_retries)" >&2
+        fi
+      else
+        echo "⚠️  Failed to extract JSON from response (retry $((retry_count + 1))/$max_retries)" >&2
+        echo "Raw response: $ai_response" >&2
+      fi
+    else
+      echo "⚠️  Claude API call failed (retry $((retry_count + 1))/$max_retries)" >&2
+    fi
+
+    retry_count=$((retry_count + 1))
+    if [ $retry_count -lt $max_retries ]; then
+      echo "🔄 Retrying..." >&2
+      sleep 1
+    fi
+  done
+
+  echo "❌ Failed to generate folder name after $max_retries retries" >&2
+  return 1
+}
+
+# Function to extract issue/task code from text
+extract_issue_code() {
+  local text="$1"
+  if [[ $text =~ \[?(ISSUE|TASK|FEATURE|HOTFIX|BUG)-([0-9]+)\]? ]]; then
+    echo "${BASH_REMATCH[1]}-${BASH_REMATCH[2]}"
+    return 0
+  fi
+  return 1
+}
+
+# Extract branch name and determine folder name strategy
+BRANCH_NAME=""
+FOLDER_NAME=""
+AI_GENERATED=false
+USE_READABLE_FOLDER=false
+
+# First, try to extract branch name from command
+if [[ $COMMAND =~ git[[:space:]]+checkout[[:space:]]+-b[[:space:]]+([A-Za-z0-9_.-]+) ]]; then
+  BRANCH_NAME="${BASH_REMATCH[1]}"
+elif [[ $COMMAND =~ checkout[[:space:]]+-b[[:space:]]+([A-Za-z0-9_.-]+) ]]; then
+  BRANCH_NAME="${BASH_REMATCH[1]}"
+fi
+
+# Extract PR title for potential AI generation
+PR_TITLE=""
+if [[ $COMMAND =~ gh[[:space:]]+pr[[:space:]]+create.*-t[[:space:]]+\"([^\"]+)\" ]]; then
+  PR_TITLE="${BASH_REMATCH[1]}"
+elif [[ $COMMAND =~ pr[[:space:]]+create.*-t[[:space:]]+\"([^\"]+)\" ]]; then
+  PR_TITLE="${BASH_REMATCH[1]}"
+fi
+
+# Determine naming strategy
+if [ -n "$PR_TITLE" ]; then
+  # Try to extract issue code from PR title
+  if ISSUE_CODE=$(extract_issue_code "$PR_TITLE"); then
+    echo "🔍 Found issue code: $ISSUE_CODE"
+
+    # If no branch name in command, use issue code
+    if [ -z "$BRANCH_NAME" ]; then
+      BRANCH_NAME="$ISSUE_CODE"
+      echo "📝 Using issue code as branch: $BRANCH_NAME"
+    fi
+
+    # Get existing directories to avoid conflicts
+    EXISTING_FOLDERS=$(ls -1 . 2>/dev/null | grep -E '^[a-z0-9-]+$' || true)
+
+    if FOLDER_NAME=$(generate_folder_name "$PR_TITLE" "$EXISTING_FOLDERS"); then
+      USE_READABLE_FOLDER=true
+      AI_GENERATED=true
+      echo "📝 AI-generated folder: $FOLDER_NAME"
+      echo "📝 Branch will be: $BRANCH_NAME"
+    else
+      echo "⚠️  Could not generate folder name, using branch name for folder"
+      FOLDER_NAME="$BRANCH_NAME"
+    fi
+  else
+    # No issue code found, use original AI generation for branch name
+    if [ -z "$BRANCH_NAME" ]; then
+      echo "🔍 No issue code found, will generate branch name from PR title..."
+
+      # Get existing branch names to avoid conflicts
+      EXISTING_BRANCHES=$(git branch -a --format='%(refname:short)' 2>/dev/null | grep -v '^HEAD' | sort | uniq || true)
+
+      if BRANCH_NAME=$(generate_folder_name "$PR_TITLE" "$EXISTING_BRANCHES"); then
+        FOLDER_NAME="$BRANCH_NAME"
+        AI_GENERATED=true
+        echo "📝 AI-generated branch and folder: $BRANCH_NAME"
+      else
+        echo "❌ Could not generate branch name from PR title"
+        echo "Please include a branch name in your command"
+        exit 1
+      fi
+    else
+      FOLDER_NAME="$BRANCH_NAME"
+    fi
+  fi
+else
+  # No PR title, must have branch name in command
+  if [ -z "$BRANCH_NAME" ]; then
+    echo "❌ Could not extract branch name from command and no PR title found"
+    echo "Expected patterns:"
+    echo "  - 'git checkout -b BRANCH_NAME' or 'checkout -b BRANCH_NAME'"
+    echo "  - 'gh pr create ... -t \"TITLE\"' (for AI generation)"
+    echo ""
+    echo "Your command: $COMMAND"
+    exit 1
+  fi
+  FOLDER_NAME="$BRANCH_NAME"
+  echo "📝 Extracted branch: $BRANCH_NAME"
+fi
+
+# Extract PR title if not already extracted during AI generation
+if [ -z "$PR_TITLE" ]; then
+  if [[ $COMMAND =~ gh[[:space:]]+pr[[:space:]]+create.*-t[[:space:]]+\"([^\"]+)\" ]]; then
+    PR_TITLE="${BASH_REMATCH[1]}"
+  elif [[ $COMMAND =~ pr[[:space:]]+create.*-t[[:space:]]+\"([^\"]+)\" ]]; then
+    PR_TITLE="${BASH_REMATCH[1]}"
+  fi
+
+  if [ -z "$PR_TITLE" ]; then
+    echo "❌ Could not extract PR title from command"
+    echo "Expected pattern: 'gh pr create ... -t \"TITLE\"' or 'pr create ... -t \"TITLE\"'"
+    echo ""
+    echo "Your command: $COMMAND"
+    exit 1
+  fi
+fi
+
+echo "📝 PR title: $PR_TITLE"
+
+# If we need to update the command with our determined branch name
+if [ "$AI_GENERATED" = true ] || [[ ! $COMMAND =~ git[[:space:]]+checkout[[:space:]]+-b ]] && [[ ! $COMMAND =~ checkout[[:space:]]+-b ]]; then
+  echo "🔧 Updating command to use branch name: $BRANCH_NAME"
+
+  # Replace any existing checkout or add it if missing
+  if [[ $COMMAND =~ git[[:space:]]+checkout[[:space:]]+-b[[:space:]]+[A-Za-z0-9_.-]+ ]] || [[ $COMMAND =~ checkout[[:space:]]+-b[[:space:]]+[A-Za-z0-9_.-]+ ]]; then
+    # Replace existing branch name
+    COMMAND=$(echo "$COMMAND" | sed -E 's/(git[[:space:]]+)?checkout[[:space:]]+-b[[:space:]]+[A-Za-z0-9_.-]+/git checkout -b '"$BRANCH_NAME"'/')
+  else
+    # Add checkout command at the beginning if missing
+    if [[ $COMMAND =~ ^git[[:space:]]+fetch ]]; then
+      COMMAND=$(echo "$COMMAND" | sed 's/git fetch[^&]*/& \&\& git checkout -b '"$BRANCH_NAME"'/')
+    else
+      COMMAND="git checkout -b $BRANCH_NAME && $COMMAND"
+    fi
+  fi
+
+  echo "📝 Updated command: $COMMAND"
+fi
+
+echo ""
+
+# Show what will be created
+echo "🚀 Creating branch and worktree with:"
+echo "  Repository: $REPO_NAME"
+echo "  Branch name: $BRANCH_NAME"
+if [ "$USE_READABLE_FOLDER" = true ]; then
+  echo "  Folder name: $FOLDER_NAME (readable)"
+else
+  echo "  Folder name: $FOLDER_NAME"
+fi
+echo "  Base branch: $BASE_BRANCH"
+echo "  Target branch: $TARGET_BRANCH"
+echo "  PR title: $PR_TITLE"
+echo "  Worktree location: $CURRENT_DIR/$FOLDER_NAME/"
+echo ""
+
+# Check if folder already exists as worktree
+if [ -d "$FOLDER_NAME" ]; then
+  echo "⚠️  Directory $FOLDER_NAME already exists!"
+  read -p "Remove existing directory and continue? (y/N): " -n 1 -r
+  echo
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    # Try to remove worktree first, then directory
+    git worktree remove "$FOLDER_NAME" 2>/dev/null || true
+    rm -rf "$FOLDER_NAME"
+    echo "🗑️  Cleaned up existing directory"
+  else
+    echo "❌ Aborted"
+    exit 1
+  fi
+fi
+
+# Fetch latest changes
+echo "📡 Fetching latest changes..."
+git fetch --all --prune
+
+# Extract remote and branch from BASE_BRANCH (e.g. origin/main -> origin, main)
+REMOTE_NAME=$(echo $BASE_BRANCH | cut -d'/' -f1)
+REMOTE_BRANCH=$(echo $BASE_BRANCH | cut -d'/' -f2-)
+
+# Fetch the specific branch if it's not main
+if [ "$REMOTE_BRANCH" != "main" ]; then
+  echo "📡 Fetching $REMOTE_NAME $REMOTE_BRANCH..."
+  git fetch "$REMOTE_NAME" "$REMOTE_BRANCH" || {
+    echo "❌ Failed to fetch $BASE_BRANCH"
+    echo "Make sure the branch exists on the remote"
+    exit 1
+  }
+fi
+
+# Always delete local branch if it exists (fresh start)
+if git show-ref --verify --quiet refs/heads/$BRANCH_NAME; then
+  echo "🗑️  Deleting existing local branch $BRANCH_NAME for fresh start..."
+  git branch -D "$BRANCH_NAME" 2>/dev/null || true
+fi
+
+# Check if remote branch exists
+REMOTE_BRANCH_EXISTS=false
+if git ls-remote --exit-code origin refs/heads/$BRANCH_NAME &>/dev/null; then
+  REMOTE_BRANCH_EXISTS=true
+  echo "📡 Remote branch 'origin/$BRANCH_NAME' exists"
+else
+  echo "🆕 No remote branch found - will create new branch"
+fi
+
+# Create worktree based on remote branch existence
+if [ "$REMOTE_BRANCH_EXISTS" = true ]; then
+  # Create worktree from remote branch
+  echo "🌿 Creating worktree from remote branch origin/$BRANCH_NAME..."
+  git fetch origin "$BRANCH_NAME"
+  git worktree add "$FOLDER_NAME" -b "$BRANCH_NAME" "origin/$BRANCH_NAME"
+else
+  # Create new worktree from base branch
+  echo "🌿 Creating new worktree from $BASE_BRANCH..."
+  git worktree add "$FOLDER_NAME" -b "$BRANCH_NAME" "$BASE_BRANCH"
+fi
+
+# Copy development files from invocation directory to new worktree
+echo "📋 Copying development files to worktree..."
+COPY_FILES=("Makefile" "makefile.sh" "docker-telepresence-config-local.yml" "jqtrace")
+COPIED_COUNT=0
+
+for file in "${COPY_FILES[@]}"; do
+  if [ -f "$CURRENT_DIR/$file" ]; then
+    cp "$CURRENT_DIR/$file" "$FOLDER_NAME/$file"
+    echo "  ✅ Copied: $file"
+    ((COPIED_COUNT++))
+  fi
+done
+
+if [ $COPIED_COUNT -eq 0 ]; then
+  echo "  ℹ️  No development files found to copy"
+else
+  echo "  📋 Copied $COPIED_COUNT development file(s)"
+fi
+
+# Change to worktree directory
+echo "📁 Entering worktree directory: $FOLDER_NAME"
+cd "$FOLDER_NAME"
+
+# Handle commit and PR creation based on remote branch existence
+if [ "$REMOTE_BRANCH_EXISTS" = true ]; then
+  echo "📡 Branch synced with remote - checking PR status..."
+
+  # Check if PR already exists
+  PR_EXISTS=false
+  if gh pr list --head "$BRANCH_NAME" --json number --jq length | grep -q "1"; then
+    PR_EXISTS=true
+    PR_URL=$(gh pr list --head "$BRANCH_NAME" --json url --jq '.[0].url')
+    echo "✅ PR already exists: $PR_URL"
+  fi
+
+  # Ask user if they want to create PR if none exists
+  if [ "$PR_EXISTS" = false ]; then
+    read -p "🔄 No PR found for this branch. Create one? (Y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+      echo "⏭️  Skipping PR creation"
+    else
+      echo "🔄 Creating pull request..."
+      gh pr create -B "$TARGET_BRANCH" -t "$PR_TITLE" -a "@me" -d -f
+    fi
+  fi
+else
+  # New branch - create empty commit, push, and create PR
+  echo "📝 Creating initial commit..."
+  git commit --allow-empty -m "chore: Init commit"
+
+  echo "⬆️  Pushing branch to origin..."
+  git push -u origin "$BRANCH_NAME"
+
+  echo "🔄 Creating pull request..."
+  gh pr create -B "$TARGET_BRANCH" -t "$PR_TITLE" -a "@me" -d -f
+fi
+
+echo ""
+echo "✅ Success! Branch and worktree created:"
+echo "  📁 Current location: $(pwd)"
+if [ "$REMOTE_BRANCH_EXISTS" = true ]; then
+  echo "  🌿 Branch: $BRANCH_NAME (synced from remote)"
+else
+  echo "  🌿 Branch: $BRANCH_NAME (based on $BASE_BRANCH)"
+fi
+if [ "$USE_READABLE_FOLDER" = true ]; then
+  echo "  📂 Folder: $FOLDER_NAME (AI-generated readable name)"
+fi
+echo "  🎯 Target branch: $TARGET_BRANCH"
+if [ "$AI_GENERATED" = true ]; then
+  echo "  🤖 Names generated by AI"
+fi
+echo ""
+echo "💡 You are now in the worktree directory and ready to work!"
+echo ""
+echo "💡 To clean up later:"
+echo "  wclean $FOLDER_NAME"
+
+# Start a new shell in the worktree directory
+echo ""
+echo "🚀 Starting new shell in worktree directory..."
+exec $SHELL
