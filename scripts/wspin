@@ -273,6 +273,21 @@ if [ -n "$PR_TITLE" ]; then
     if FOLDER_NAME=$(generate_folder_name "$PR_TITLE" "$EXISTING_FOLDERS"); then
       USE_READABLE_FOLDER=true
       AI_GENERATED=true
+
+      # Detect ISSUE/TASK prefix and add appropriate prefix
+      if [[ $ISSUE_CODE =~ ^(ISSUE|TASK) ]]; then
+        # Check if PR title suggests fix or feature and avoid duplicate prefixes from AI name
+        if [[ $PR_TITLE =~ (fix|bug|hotfix) ]]; then
+          if [[ $FOLDER_NAME != fix-* ]]; then
+            FOLDER_NAME="fix-$FOLDER_NAME"
+          fi
+        else
+          if [[ $FOLDER_NAME != feat-* ]]; then
+            FOLDER_NAME="feat-$FOLDER_NAME"
+          fi
+        fi
+      fi
+
       echo "📝 AI-generated folder: $FOLDER_NAME"
       echo "📝 Branch will be: $BRANCH_NAME"
     else
@@ -434,7 +449,7 @@ fi
 
 # Copy development files from invocation directory to new worktree
 echo "📋 Copying development files to worktree..."
-COPY_FILES=("Makefile" "makefile.sh" "docker-telepresence-config-local.yml" "jqtrace")
+COPY_FILES=("Makefile" "makefile.sh" "docker-telepresence-config-local.yml" "jqtrace" "run")
 COPIED_COUNT=0
 
 for file in "${COPY_FILES[@]}"; do
