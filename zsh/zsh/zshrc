@@ -68,7 +68,6 @@ preexec() { echo -ne '\e[5 q' ;} # Use beam shape cursor for each new prompt.
 #//////////////////////////EXPORTS///////////////////////////////
 export EDITOR=nvim
 export PATH="$PATH":"$HOME/bin"
-export PATH="$PATH":"$HOME/local/flutter/bin/"
 export PATH="$PATH":"$HOME/local/tools/bin/"
 export PATH="$PATH":"$HOME/.local/bin/"
 export PATH="/usr/local/sbin:$PATH";
@@ -148,11 +147,16 @@ if [ -d /usr/local/go ]; then
     export GOBIN=$GOHOME/bin
     export PATH=$PATH:/usr/local/go/bin:$GOBIN
 fi
-if [ -d $HOME/local/flutter ]; then
+if [ -d $HOME/fvm/default/bin ]; then
+    export PATH=$PATH:$HOME/fvm/default/bin
+elif [ -d $HOME/local/flutter ]; then
     export PATH=$PATH:$HOME/local/flutter/bin
 fi
 if [ -d $HOME/.pub-cache/bin ]; then
     export PATH=$PATH:$HOME/.pub-cache/bin
+fi
+if [ -d $HOME/.config/emacs/bin ]; then
+    export PATH=$PATH:$HOME/.config/emacs/bin
 fi
 if [ -d $HOME/.cargo ]; then
  source $HOME/.cargo/env

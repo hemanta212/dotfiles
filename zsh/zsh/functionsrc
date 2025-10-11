@@ -509,3 +509,46 @@ Please generate a concise, one-line commit message for these changes."
         esac
     done
 }
+
+# OSO Credit Range Counter
+oso_count_range() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: oso_count_range <min> [max]"
+        echo "Examples:"
+        echo "  oso_count_range 0 3    # Count users with 0-3 credits"
+        echo "  oso_count_range 10     # Count users with exactly 10 credits"
+        echo "  oso_count_range 15 99  # Count users with 15-99 credits"
+        return 1
+    fi
+
+    local min=$1
+    local max=${2:-$1}
+
+    # Validate integers
+    if ! [[ $min =~ ^[0-9]+$ && $max =~ ^[0-9]+$ ]]; then
+        echo "Error: arguments must be non-negative integers" >&2
+        return 1
+    fi
+
+    # Normalize if min > max
+    if [ "$min" -gt "$max" ]; then
+        local tmp="$min"; min="$max"; max="$tmp"
+    fi
+
+    echo "Counting users with $min-$max credits..."
+
+    # Single oso-cloud call; filter and count in one pass (POSIX awk)
+    oso-cloud query has_tokens _ _ _ \
+      | awk -v min="$min" -v max="$max" '
+          {
+            n = $0
+            sub(/^.*Integer:/, "", n)
+            sub(/\).*/, "", n)
+            if (n ~ /^[0-9]+$/) {
+              v = n + 0
+              if (v >= min && v <= max) count++
+            }
+          }
+          END { print count + 0 }
+        '
+}

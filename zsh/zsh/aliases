@@ -1,3 +1,4 @@
+alias ed='emacsclient -a "" -c -nw'
 alias hg='history | grep'
 # Alias for uploading with a secret to make the URL harder to guess
 alias pb="curl -F 'file=@-' -F 'secret=' https://0x0.st"
@@ -15,18 +16,39 @@ alias Syu='sudo apt update && sudo apt upgrade -y'
 alias syu='sudo apt update && sudo apt upgrade'
 alias gcloud='~/google-cloud-sdk/bin/gcloud'
 alias tele='telepresence'
+code() {
+    /Applications/Visual\ Studio\ Code.app/Contents/MacOS/Electron "$@" > /dev/null 2>&1 &
+}
+run() {
+  ./run
+}
 telec() {
+  local lock_dir="/tmp/telec.lock"
+
+  # if r arg is passed, we're recursing
+  [ "$1" = "r" ] && { isRecursing=true; shift; } || isRecursing=false
+
+  # Ensure only one telec invocation runs at a time
+  if ! mkdir "${lock_dir}" 2>/dev/null; then
+    # only echo first time not in recursion
+    [ "$isRecursing" = false ] && echo " lockfile: $lock_dir exists ..."
+    sleep 1
+    telec r "$@"
+    return
+  fi
   # Check if the service is reachable
-  if curl -sSf "http://learning-neo4j-db-lb-neo4j.learning.svc.cluster.local:7474" > /dev/null; then
+  if curl -sSf "http://resources-neo4j-db-lb-neo4j.learning.svc.cluster.local:7474/browser/" > /dev/null; then
     echo ":: telepresence check ✅ Already connected"
   else
     echo ":: telepresence check ❌ Reconnecting..."
-    # Set the Kubernetes context to dev
-    kubectl config use-context dev
     # Quit existing Telepresence session if any and reconnect
     telepresence quit -s
+    # Set the Kubernetes context to dev
+    current_context=$(kubectl config current-context)
+    kubectl config use-context dev
     telepresence connect
   fi
+  rmdir "${lock_dir}"
 }
 kneo() {
      # k port-forward --context=prod -n learning pod/learning-neo4j-2-0 7687:7687 7474:7474
@@ -42,7 +64,7 @@ kneo() {
         echo "Usage: kneo <context> <prefix> [port]"
         return 1
       fi
-      echo ":: Running kubectl port-forward --context=$context -n learning pod/${prefix}-neo4j-2-0 $port:7687 $port_7474:7474"
+      echo ":: Running kubectl port-forward --context=$context -n learning pod/${prefix}-neo4j-3-0 $port:7687 $port_7474:7474"
       kubectl port-forward --context="$context" -n "learning" pod/"${prefix}"-neo4j-2-0 "$port":7687 "$port_7474":7474
 }
 kport() {
@@ -130,6 +152,9 @@ alias frdsp="frcenv flutter run -d chrome --web-browser-flag '--disable-web-secu
 alias fsp="echo 'Going to schema' && cd $FEWORK/schema && git pull && echo 'Updated schema locally' && echo 'Going back' && cd - && echo 'Back in: ' && pwd && frcenv flutter pub upgrade schema && fvm dart run build_runner build --delete-conflicting-outputs"
 #alias dbrc="frcenv dart run build_runner clean"
 # GIt stuff
+alias gRmain='git fetch origin main && git reset --hard origin/main'
+alias gMmain='git fetch origin main && git merge origin/main'
+alias gRbeta='git fetch origin beta && git reset --hard origin/beta'
 alias gpom="git pull origin main"
 alias gpo="git pull origin"
 alias gf="git fetch"
@@ -169,8 +194,9 @@ alias ze='nvim ~/.zshrc'
 alias zez='nvim ~/.config/zsh/zshrc'
 alias claude='ANTHROPIC_API_KEY="" ~/.claude/local/claude'
 alias gemini="GEMINI_API_KEY='' gemini"
-alias gem='GEMINI_API_KEY='' gemini -y'
+alias gem='GEMINI_API_KEY='' gemini --yolo --checkpointing'
 alias oc='EDITOR=/opt/homebrew/bin/nvim ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' opencode --continue'
+alias ac='OPENAI_API_KEY='' codex --search --dangerously-bypass-approvals-and-sandbox'
 alias em='emacs -nw'
 alias gmt='go mod tidy'
 alias ccg='bunx ccusage'
