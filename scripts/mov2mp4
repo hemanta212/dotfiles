@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+
+DESKTOP_DIR="$HOME/Desktop"
+
+latest_mov=$(find "$DESKTOP_DIR" -maxdepth 1 -name "*.mov" -type f -print0 | xargs -0 ls -t | head -n 1)
+
+if [ -z "$latest_mov" ]; then
+  echo "No .mov files found in $DESKTOP_DIR"
+  exit 1
+fi
+
+output_file="${latest_mov%.mov}.mp4"
+
+if [ -f "$output_file" ]; then
+    echo "MP4 already exists: $output_file"
+    exit 0
+fi
+
+echo "Converting: $latest_mov"
+echo "Output: $output_file"
+
+ffmpeg -i "$latest_mov" -c:v libx264 -preset ultrafast -crf 23 -c:a aac "$output_file"
+
+echo "Done: $output_file"

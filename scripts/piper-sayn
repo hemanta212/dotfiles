@@ -1,19 +1,19 @@
 #!/bin/bash
-# piper-say - Quick English TTS using Piper HTTP Server
-# Usage: piper-say "Your English text here"
+# piper-sayn - Quick Nepali TTS using Piper HTTP Server
+# Usage: piper-sayn "Your Nepali text here"
 
 set -euo pipefail
 
 PIPER_DIR="/Users/mac/.config/piper"
-MODEL_NAME="en_US-libritts_r-medium"
+MODEL_NAME="ne_NP-google-medium"
 MODEL_PATH="$PIPER_DIR/${MODEL_NAME}.onnx"
 CONFIG_PATH="$PIPER_DIR/${MODEL_NAME}.onnx.json"
 MUTE_FILE="$PIPER_DIR/.muted"
 VOLUME_FILE="$PIPER_DIR/.volume"
 LOG_FILE="$PIPER_DIR/piper-say.log"
-PID_FILE="$PIPER_DIR/.piper-server.pid"
+PID_FILE="$PIPER_DIR/.piper-server-nepali.pid"
 SERVER_HOST="127.0.0.1"
-SERVER_PORT=5656
+SERVER_PORT=5657
 SPEAKER_ID=0
 
 log_invocation() {
@@ -102,7 +102,7 @@ stop_server() {
       fi
     fi
     rm -f "$PID_FILE"
-    echo "Piper server stopped."
+    echo "Piper Nepali server stopped."
   else
     echo "No server PID file found."
   fi
@@ -110,15 +110,15 @@ stop_server() {
 
 if [ $# -eq 1 ] && [[ "$1" =~ ^(--help|help|h|-h)$ ]]; then
   cat <<'EOF'
-piper-say - Quick English TTS using Piper HTTP Server
+piper-sayn - Quick Nepali TTS using Piper HTTP Server
 
 USAGE:
-  piper-say "Your English text here"
-  piper-say [COMMAND] [OPTIONS]
+  piper-sayn "Your Nepali text here"
+  piper-sayn [COMMAND] [OPTIONS]
 
 COMMANDS:
-  m, --mute         Mute all future piper-say calls
-  u, --unmute       Unmute piper-say
+  m, --mute         Mute all future piper-sayn calls
+  u, --unmute       Unmute piper-sayn
   l, --log          Show last 10 invocations
   v, --volume NUM   Set persistent volume (0-100)
   stop              Stop the background HTTP server
@@ -126,26 +126,26 @@ COMMANDS:
 
 EXAMPLES:
   Basic usage:
-    piper-say "Hello World"
-    piper-say "Task completed successfully"
+    piper-sayn "नमस्ते संसार"
+    piper-sayn "काम सकियो"
 
   Mute/unmute:
-    piper-say m                    # Mute all future calls
-    piper-say u                    # Unmute
+    piper-sayn m                   # Mute all future calls
+    piper-sayn u                   # Unmute
 
   Volume control:
-    piper-say v 50                 # Set volume to 50%
-    piper-say v 100                # Set volume to 100%
+    piper-sayn v 50                # Set volume to 50%
+    piper-sayn v 100               # Set volume to 100%
 
   View logs:
-    piper-say l                    # Show last 10 invocations
+    piper-sayn l                   # Show last 10 invocations
 
   Server management:
-    piper-say stop                 # Stop background server
+    piper-sayn stop                # Stop background server
 
   In scripts:
-    make build && piper-say "Build complete"
-    piper-say "Starting server" && npm start
+    make build && piper-sayn "बिल्ड कम्प्लिट भयो"
+    piper-sayn "सर्भर स्टार्ट भयो" && npm start
 
 FEATURES:
   - HTTP server daemon (auto-starts on first use)
@@ -157,21 +157,21 @@ FEATURES:
 
 SERVER:
   Host:       127.0.0.1
-  Port:       5656
+  Port:       5657
   Start:      ~/.local/pipx/venvs/piper-tts/bin/python -m piper.http_server
-  PID file:   /Users/mac/.config/piper/.piper-server.pid
+  PID file:   /Users/mac/.config/piper/.piper-server-nepali.pid
 
 FILES:
-  Models:     /Users/mac/.config/piper/en_US-libritts_r-medium.onnx
-  Config:     /Users/mac/.config/piper/en_US-libritts_r-medium.onnx.json
+  Models:     /Users/mac/.config/piper/ne_NP-google-medium.onnx
+  Config:     /Users/mac/.config/piper/ne_NP-google-medium.onnx.json
   Mute state: /Users/mac/.config/piper/.muted
   Volume:     /Users/mac/.config/piper/.volume
   Logs:       /Users/mac/.config/piper/piper-say.log
 
 NOTES:
-  - For Nepali TTS, use 'piper-sayn' instead
+  - For English TTS, use 'piper-say' instead
   - HTTP server starts automatically and persists between calls
-  - Volume setting persists across all piper-say calls
+  - Volume setting persists across all piper-sayn calls
   - Audio plays in background and doesn't block terminal
 EOF
   exit 0
@@ -184,7 +184,7 @@ fi
 
 if [ $# -eq 1 ] && [[ "$1" =~ ^(--log|log|l)$ ]]; then
   if [ -f "$LOG_FILE" ]; then
-    echo "Last 10 piper-say invocations:"
+    echo "Last 10 piper-sayn invocations:"
     cat "$LOG_FILE"
   else
     echo "No log entries found."
@@ -196,12 +196,12 @@ if [ $# -eq 1 ] && [[ "$1" =~ ^(--mute|m)$ ]]; then
   log_invocation "$@"
   mkdir -p "$PIPER_DIR"
   touch "$MUTE_FILE"
-  echo "Piper-say muted. Use 'piper-say u' to enable."
+  echo "Piper-sayn muted. Use 'piper-sayn u' to enable."
   exit 0
 elif [ $# -eq 1 ] && [[ "$1" =~ ^(--unmute|u)$ ]]; then
   log_invocation "$@"
   rm -f "$MUTE_FILE"
-  echo "Piper-say unmuted."
+  echo "Piper-sayn unmuted."
   exit 0
 fi
 
@@ -216,7 +216,7 @@ if [ $# -eq 2 ] && [[ "$1" =~ ^(--volume|v)$ ]]; then
   log_invocation "$@"
   mkdir -p "$PIPER_DIR"
   echo "$VOLUME" >"$VOLUME_FILE"
-  echo "Volume set to $VOLUME% for all future piper-say calls."
+  echo "Volume set to $VOLUME% for all future piper-sayn calls."
   exit 0
 fi
 
@@ -229,8 +229,8 @@ if [ -f "$MUTE_FILE" ]; then
 fi
 
 if [ $# -eq 0 ] || [ -z "${1:-}" ]; then
-  echo "Usage: piper-say \"Your English text here\"" >&2
-  echo "       piper-say --help    # Show detailed help" >&2
+  echo "Usage: piper-sayn \"Your Nepali text here\"" >&2
+  echo "       piper-sayn --help   # Show detailed help" >&2
   exit 1
 fi
 
@@ -239,7 +239,7 @@ if ! ensure_server_running; then
   exit 1
 fi
 
-TEMP_AUDIO=$(mktemp -t piper-say).wav
+TEMP_AUDIO=$(mktemp -t piper-sayn).wav
 trap "rm -f '$TEMP_AUDIO'" EXIT
 
 if ! curl -s -X POST \

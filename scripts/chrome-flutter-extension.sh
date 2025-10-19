@@ -1,13 +1,15 @@
 #!/bin/bash
 
-pkill -f 'Chromium'
+pkill -f 'Thorium'
 
 # Path to the actual chrome executable
-CMD="/Applications/Chromium.app/Contents/MacOS/Chromium"
+#CMD="/Applications/Chromium.app/Contents/MacOS/Chromium"
+CMD="/Applications/Thorium.app/Contents/MacOS/Thorium"
 
 # TODO: Create a new chrome profile that you'll use for dev
 # then visit chrome://version and use the value of "Profile Path" here
-PROFILE_PATH="/Users/mac/Library/Application Support/Chromium/Profile 1"
+#PROFILE_PATH="/Users/mac/Library/Application Support/Chromium/Profile 1"
+PROFILE_PATH="/Users/mac/Library/Application Support/Thorium/Profile 1"
 
 PROFILE_DIRECTORY="${PROFILE_PATH##*/}"
 USER_DATA_DIR="${PROFILE_PATH%/*}"
