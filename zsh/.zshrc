@@ -81,4 +81,4 @@ fpath+=~/.zfunc
 [[ -f /Users/mac/.config/.dart-cli-completion/zsh-config.zsh ]] && . /Users/mac/.config/.dart-cli-completion/zsh-config.zsh || true
 ## [/Completion]
 
-
+#export JAVA_HOME='/Users/mac/Library/Application Support/neo4j-desktop/Application/Cache/runtime/zulu21.44.17-ca-jdk21.0.8-macosx_aarch64/zulu-21.jdk/Contents/Home' 
