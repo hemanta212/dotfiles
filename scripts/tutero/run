@@ -489,9 +489,9 @@ prepare_env() {
     SERVICE_DISPLAY="${SERVICE_NAME:-$SERVICE_DEFAULT}"
   fi
 
-  if [[ -n "${TEST_DEBUG:-}" ]]; then
-    ENV_VARS+=(TEST_DEBUG="$TEST_DEBUG")
-    log_info "TEST_DEBUG=$TEST_DEBUG enabled"
+  if [[ -n "${DEBUG_PREFIX:-}" ]]; then
+    ENV_VARS+=(DEBUG_PREFIX="$DEBUG_PREFIX")
+    log_info "DEBUG_PREFIX=$DEBUG_PREFIX enabled (filtering JSON logs by prefix)"
   fi
 
   log_info "branch=${BRANCH} -- graphql:grpc ${GRAPHQL_PORT}:${GRPC_PORT}"
@@ -516,6 +516,23 @@ format_service_line() {
   local line=$1
 
   if printf '%s' "$line" | jq empty 2>/dev/null; then
+    if [[ -n "${DEBUG_PREFIX:-}" ]]; then
+      local severity prefix should_show
+      severity=$(printf '%s' "$line" | jq -r '.severity // .level // ""' 2>/dev/null)
+      prefix=$(printf '%s' "$line" | jq -r '.prefix // ""' 2>/dev/null)
+
+      should_show=0
+      if [[ "$severity" =~ ^(warn|warning|error|fatal|panic|dpanic)$ ]]; then
+        should_show=1
+      elif [[ "$prefix" == "$DEBUG_PREFIX" ]]; then
+        should_show=1
+      fi
+
+      if ((should_show == 0)); then
+        return
+      fi
+    fi
+
     local has_error_stack
     has_error_stack=$(printf '%s' "$line" | jq -r 'if type == "object" and has("error") and (.error | type == "object" and has("stacktrace")) then "yes" else "no" end' 2>/dev/null || echo "no")
 
