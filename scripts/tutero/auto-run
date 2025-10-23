@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Ensure we run relative to the repo root where this script lives.
+INVOCATION_DIR="$(pwd)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
-
 RUN_SCRIPT="$SCRIPT_DIR/run"
+
+cd "$INVOCATION_DIR"
 if [ ! -f "$RUN_SCRIPT" ]; then
   echo "Error: expected executable at ./run but file is missing." >&2
   exit 1
