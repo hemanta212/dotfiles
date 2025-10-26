@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -272,6 +273,10 @@ func (e *Neo4jUsageExporter) collectBlocks(path, relativePath string) ([]string,
 		return nil, nil
 	}
 
+	if isLikelyBinary(content) {
+		return nil, nil
+	}
+
 	ext := filepath.Ext(path)
 	if ext == ".py" {
 		return nil, nil
@@ -446,6 +451,27 @@ func isCypherLine(line string) bool {
 	return false
 }
 
+func isLikelyBinary(data []byte) bool {
+	if len(data) == 0 {
+		return false
+	}
+
+	if bytes.IndexByte(data, 0) >= 0 {
+		return true
+	}
+
+	sample := data
+	if len(sample) > 1024 {
+		sample = sample[:1024]
+	}
+	for _, b := range sample {
+		if b < 0x09 {
+			return true
+		}
+	}
+	return false
+}
+
 func (e *Neo4jUsageExporter) usesNeogo(content string) bool {
 	for _, marker := range e.config.NeogoMarkers {
 		if strings.Contains(content, marker) {
@@ -478,8 +504,11 @@ func (e *Neo4jUsageExporter) walkSourceTree(directory string, fn func(path, rela
 			return nil
 		}
 
-		if d.IsDir() && ignoredSet[d.Name()] {
-			return fs.SkipDir
+		if d.IsDir() {
+			name := d.Name()
+			if ignoredSet[name] || strings.HasPrefix(name, "exports") {
+				return fs.SkipDir
+			}
 		}
 
 		if !d.IsDir() {
