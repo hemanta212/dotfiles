@@ -169,7 +169,7 @@ func NewNeo4jUsageExporter(config *ExportConfig) (*Neo4jUsageExporter, error) {
 		outputFolder = filepath.Join(root, config.OutputFolder)
 	}
 
-	if err := os.MkdirAll(outputFolder, 0755); err != nil {
+	if err := os.MkdirAll(outputFolder, 0o755); err != nil {
 		return nil, err
 	}
 
@@ -245,21 +245,21 @@ func (e *Neo4jUsageExporter) exportNeogoUsage() error {
 		}
 		outputName := e.neogoOutputName(key)
 		outputFile := filepath.Join(e.outputFolder, outputName)
-		if err := os.WriteFile(outputFile, []byte(strings.Join(blocks, "")), 0644); err != nil {
+		if err := os.WriteFile(outputFile, []byte(strings.Join(blocks, "")), 0o644); err != nil {
 			return err
 		}
 	}
 
 	if len(edgesContent) > 0 {
 		outputFile := filepath.Join(e.outputFolder, "all_edges.txt")
-		if err := os.WriteFile(outputFile, []byte(strings.Join(edgesContent, "")), 0644); err != nil {
+		if err := os.WriteFile(outputFile, []byte(strings.Join(edgesContent, "")), 0o644); err != nil {
 			return err
 		}
 	}
 
 	if len(entitiesContent) > 0 {
 		outputFile := filepath.Join(e.outputFolder, "all_entities.txt")
-		if err := os.WriteFile(outputFile, []byte(strings.Join(entitiesContent, "")), 0644); err != nil {
+		if err := os.WriteFile(outputFile, []byte(strings.Join(entitiesContent, "")), 0o644); err != nil {
 			return err
 		}
 	}
@@ -558,7 +558,7 @@ func (e *Neo4jUsageExporter) exportAPISubfolders() error {
 		}
 
 		outputFile := filepath.Join(e.outputFolder, dirName+"_api.txt")
-		if err := os.WriteFile(outputFile, []byte(strings.Join(contents, "")), 0644); err != nil {
+		if err := os.WriteFile(outputFile, []byte(strings.Join(contents, "")), 0o644); err != nil {
 			return err
 		}
 	}
@@ -630,7 +630,7 @@ func exportNeo4jSchema(target, outputFolder string) (string, error) {
 		return "", fmt.Errorf(":: Schema export skipped due to error, other files have been exported: %s", strings.TrimSpace(string(output)))
 	}
 
-	if err := os.MkdirAll(outputFolder, 0755); err != nil {
+	if err := os.MkdirAll(outputFolder, 0o755); err != nil {
 		return "", err
 	}
 
@@ -650,7 +650,7 @@ func exportNeo4jSchema(target, outputFolder string) (string, error) {
 func postprocessSchemaOutput(rawOutput, outputPath string) error {
 	lines := strings.Split(rawOutput, "\n")
 	if len(lines) == 0 {
-		return os.WriteFile(outputPath, []byte(""), 0644)
+		return os.WriteFile(outputPath, []byte(""), 0o644)
 	}
 
 	var dataLines []string
@@ -661,12 +661,12 @@ func postprocessSchemaOutput(rawOutput, outputPath string) error {
 	}
 
 	if len(dataLines) == 0 {
-		return os.WriteFile(outputPath, []byte(""), 0644)
+		return os.WriteFile(outputPath, []byte(""), 0o644)
 	}
 
 	contentWithoutHeader := strings.TrimSpace(strings.Join(dataLines, "\n"))
 	if contentWithoutHeader == "" {
-		return os.WriteFile(outputPath, []byte(""), 0644)
+		return os.WriteFile(outputPath, []byte(""), 0o644)
 	}
 
 	jsonPayload, err := extractSchemaJSON(contentWithoutHeader)
@@ -689,7 +689,7 @@ func postprocessSchemaOutput(rawOutput, outputPath string) error {
 		formattedStr += "\n"
 	}
 
-	return os.WriteFile(outputPath, []byte(formattedStr), 0644)
+	return os.WriteFile(outputPath, []byte(formattedStr), 0o644)
 }
 
 func extractSchemaJSON(content string) (interface{}, error) {
