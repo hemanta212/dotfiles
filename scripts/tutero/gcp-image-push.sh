@@ -91,7 +91,42 @@ set_gcloud_context() {
   fi
 }
 
-# Fetch existing image tags from Artifact Registry
+# Fetch description from image config blob (without pulling)
+fetch_image_description() {
+  local image_name="$1"  # e.g., "learning-latex"
+  local tag="$2"         # e.g., "1.2.7"
+  
+  # Get access token
+  local token
+  token=$(gcloud auth print-access-token 2>/dev/null)
+  
+  # Get manifest to find config blob digest
+  local manifest
+  manifest=$(curl -s -L \
+    -H "Authorization: Bearer $token" \
+    "https://${GCP_LOCATION}-docker.pkg.dev/v2/${GCP_PROJECT}/${REPOSITORY_NAME}/${image_name}/manifests/${tag}" 2>/dev/null)
+  
+  # Extract config digest
+  local config_digest
+  config_digest=$(echo "$manifest" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('config', {}).get('digest', ''))" 2>/dev/null || echo "")
+  
+  if [[ -z "$config_digest" ]]; then
+    echo ""
+    return 0
+  fi
+  
+  # Fetch config blob and extract description
+  local description
+  description=$(curl -s -L \
+    -H "Authorization: Bearer $token" \
+    -H "Accept: application/vnd.docker.container.image.v1+json" \
+    "https://${GCP_LOCATION}-docker.pkg.dev/v2/${GCP_PROJECT}/${REPOSITORY_NAME}/${image_name}/blobs/${config_digest}" \
+    | python3 -c "import sys, json; data=json.load(sys.stdin); labels=data.get('config', {}).get('Labels', {}); print(labels.get('description', labels.get('org.opencontainers.image.description', '')))" 2>/dev/null || echo "")
+  
+  echo "$description"
+}
+
+# Fetch existing image tags from Artifact Registry with descriptions
 fetch_image_tags() {
   local image_name="$1"
 
@@ -144,9 +179,56 @@ select_version() {
   local suggested_version="1.0.0"
 
   if [[ -n "$existing_tags" ]]; then
-    # Show existing versions
+    # Show existing versions immediately
     info "Recent versions:"
-    echo "$existing_tags" | sed 's/^/  • /' >&2
+    
+    # Create temp directory for descriptions
+    local temp_dir
+    temp_dir=$(mktemp -d)
+    
+    # Display versions immediately and fetch descriptions in parallel
+    local tag_count=0
+    while IFS= read -r tag; do
+      if [[ -n "$tag" ]]; then
+        tag_count=$((tag_count + 1))
+        echo -e "  ${GREEN}•${NC} ${YELLOW}${tag}${NC} ${CYAN}(loading...)${NC}" >&2
+        
+        # Fetch description in background
+        (
+          desc=$(fetch_image_description "$image_name" "$tag")
+          echo "$desc" > "${temp_dir}/${tag}.desc"
+        ) &
+      fi
+    done <<< "$existing_tags"
+    
+    # Wait for all background jobs to complete
+    wait
+    
+    # Clear the lines we just printed
+    for ((i=0; i<tag_count+1; i++)); do
+      echo -ne "\033[1A\033[2K" >&2  # Move up and clear line
+    done
+    
+    # Re-display with descriptions
+    info "Recent versions:"
+    while IFS= read -r tag; do
+      if [[ -n "$tag" ]]; then
+        desc=""
+        if [[ -f "${temp_dir}/${tag}.desc" ]]; then
+          desc=$(cat "${temp_dir}/${tag}.desc")
+        fi
+        
+        if [[ -n "$desc" ]]; then
+          echo -e "  ${GREEN}•${NC} ${YELLOW}${tag}${NC} - ${desc}" >&2
+        else
+          echo -e "  ${GREEN}•${NC} ${YELLOW}${tag}${NC}" >&2
+        fi
+      fi
+    done <<< "$existing_tags"
+    
+    # Cleanup
+    rm -rf "$temp_dir"
+    
     echo "" >&2
 
     # Get the latest version and suggest next
@@ -241,6 +323,24 @@ push_image() {
   fi
 }
 
+# Attach description as README to Artifact Registry
+attach_description() {
+  local full_tag="$1"
+  local description="$2"
+  local version="$3"
+
+  if [[ -z "$description" ]]; then
+    return 0
+  fi
+
+  # Note: gcloud artifacts attachments is not available in SDK 486.0.0
+  # The description is already embedded in Docker labels which can be viewed with:
+  # docker inspect <image> or gcloud artifacts docker images describe <image>
+  
+  info "Description saved in image labels (use 'docker inspect' to view)"
+  return 0
+}
+
 # Display summary
 show_summary() {
   local image_name="$1"
@@ -257,6 +357,7 @@ show_summary() {
   info "Version: ${version}"
   if [[ -n "$description" ]]; then
     info "Description: ${description}"
+    info "💡 View labels: docker inspect ${full_tag}"
   fi
   info "Full tag: ${full_tag}"
   info "Maintainer: ${MAINTAINER}"
@@ -344,6 +445,10 @@ main() {
 
   # Push image
   push_image "$full_tag" || exit 1
+  echo "" >&2
+
+  # Attach description to Artifact Registry
+  attach_description "$full_tag" "$description" "$version"
 
   # Show summary
   show_summary "$image_name" "$version" "$description" "$full_tag"
