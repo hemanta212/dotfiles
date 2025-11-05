@@ -2,16 +2,19 @@
 set -euo pipefail
 
 # Neo4j Docker Database Restore Script
-# Usage: ./restore-db.sh <gsutil-url> [database] [container]
-# Example: ./restore-db.sh gs://neo4j-backups-prod/resources/neo4j-2025-11-04T12-03-33.backup
+# Usage: ./restore-db.sh [--prod] [gsutil-url] [database] [container]
+# Interactive mode (dev): ./restore-db.sh
+# Interactive mode (prod): ./restore-db.sh --prod
+# Direct mode: ./restore-db.sh gs://neo4j-backups-prod/resources/neo4j-2025-11-04T12-03-33.backup
 # Example: ./restore-db.sh gs://neo4j-backups-dev/learning/admin-2023-04-17T03-55-38.backup admin
-# Example: ./restore-db.sh gs://neo4j-backups-prod/resources/neo4j-2025-11-04T12-03-33.backup neo4j my-neo4j-container
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
 
 # Default credentials
@@ -21,6 +24,12 @@ NEO4J_PASSWORD="${NEO4J_PASSWORD:-password}"
 # Cache settings
 CACHE_DIR="/tmp"
 MAX_CACHE_FILES=5
+
+# GCS bucket configuration
+BUCKET_PREFIX="gs://"
+DEV_BUCKET="neo4j-backups-dev"
+PROD_BUCKET="neo4j-backups-prod"
+PROD_CONTEXT="tutero"  # or mathgaps-56d5a
 
 # Function to print colored messages
 info() {
@@ -33,6 +42,218 @@ error() {
 
 warn() {
     echo -e "${YELLOW}!${NC} $*" >&2
+}
+
+heading() {
+    echo -e "${CYAN}▸${NC} ${BLUE}$*${NC}" >&2
+}
+
+# Function to check if fzf is available
+check_fzf() {
+    if ! command -v fzf &> /dev/null; then
+        warn "fzf not found. Install it for better UI: brew install fzf"
+        return 1
+    fi
+    return 0
+}
+
+# Function to set kubectl context for production
+set_prod_context() {
+    heading "Setting kubectl context to ${PROD_CONTEXT}..."
+    
+    if kubectl config use-context "$PROD_CONTEXT" &>/dev/null; then
+        info "Switched to context: ${PROD_CONTEXT}"
+    else
+        warn "Failed to switch context to ${PROD_CONTEXT}, continuing anyway..."
+    fi
+}
+
+# Function to list backups in a bucket, sorted by date descending
+list_backups() {
+    local bucket="$1"
+    local path_filter="${2:-}"
+    
+    heading "Fetching backups from ${bucket}..."
+    
+    local search_path="${BUCKET_PREFIX}${bucket}/"
+    if [[ -n "$path_filter" ]]; then
+        search_path="${search_path}${path_filter}/"
+    fi
+    
+    # List all .backup files with their metadata
+    local backups
+    backups=$(gsutil ls -l "${search_path}**/*.backup" 2>/dev/null || echo "")
+    
+    if [[ -z "$backups" ]]; then
+        error "No backups found in ${search_path}"
+        return 1
+    fi
+    
+    # Parse and format backup information
+    # Format: timestamp|size|url|filename|date_display
+    echo "$backups" | grep -v "^TOTAL:" | grep "\.backup$" | while read -r size datetime url; do
+        if [[ -n "$url" && "$url" =~ \.backup$ ]]; then
+            local filename
+            filename=$(basename "$url")
+            
+            # Extract timestamp from filename (e.g., neo4j-2025-11-04T12-03-33.backup)
+            local timestamp=""
+            if [[ "$filename" =~ ([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}) ]]; then
+                timestamp="${BASH_REMATCH[1]}"
+                # Convert to sortable format (YYYY-MM-DD HH:MM:SS)
+                timestamp=$(echo "$timestamp" | sed 's/T/ /' | tr '-' ':' | sed 's/:/-/1' | sed 's/:/-/1')
+            else
+                # Use datetime from gsutil (e.g., 2023-04-12T17:01:55Z)
+                timestamp=$(echo "$datetime" | sed 's/T/ /' | sed 's/Z$//')
+            fi
+            
+            # Format size for display
+            local size_display="$size"
+            if [[ "$size" =~ ^[0-9]+$ ]]; then
+                size_display=$(numfmt --to=iec-i --suffix=B "$size" 2>/dev/null || echo "$size")
+            fi
+            
+            # Get relative path
+            local rel_path
+            rel_path=$(echo "$url" | sed "s|${BUCKET_PREFIX}${bucket}/||")
+            
+            # Format datetime for display
+            local date_display
+            date_display=$(echo "$datetime" | sed 's/T/ /' | sed 's/Z$//')
+            
+            echo "${timestamp}|${size_display}|${url}|${filename}|${date_display}|${rel_path}"
+        fi
+    done | sort -t'|' -k1 -r
+}
+
+# Function to select backup interactively
+select_backup() {
+    local bucket="$1"
+    local path_filter="${2:-}"
+    
+    local backups
+    backups=$(list_backups "$bucket" "$path_filter") || return 1
+    
+    if check_fzf; then
+        local selected
+        selected=$(echo "$backups" | awk -F'|' '{printf "%-25s  %-10s  %s\n", $4, $2, $6}' | fzf \
+            --height 60% \
+            --reverse \
+            --border \
+            --prompt="Select backup: " \
+            --header="Available Backups (sorted by date, newest first)" \
+            --preview="echo {} | awk '{print \$1}' | xargs -I {} echo 'Filename: {}'" \
+            --preview-window=up:3 \
+            --bind 'ctrl-/:toggle-preview')
+        
+        if [[ -z "$selected" ]]; then
+            error "No backup selected"
+            return 1
+        fi
+        
+        # Extract filename and find corresponding URL
+        local selected_filename
+        selected_filename=$(echo "$selected" | awk '{print $1}')
+        local url
+        url=$(echo "$backups" | grep "|${selected_filename}|" | cut -d'|' -f3)
+        
+        echo "$url"
+    else
+        # Fallback to simple selection
+        heading "Available backups:"
+        echo "$backups" | awk -F'|' '{printf "%s  %-10s  %s\n", $4, $2, $6}' | nl -w2 -s'. ' >&2
+        echo -n "Select backup number: " >&2
+        read -r selection
+        echo "$backups" | sed -n "${selection}p" | cut -d'|' -f3
+    fi
+}
+
+# Function to select subdirectory/path within bucket
+select_path() {
+    local bucket="$1"
+    
+    heading "Fetching subdirectories in ${bucket}..."
+    
+    local paths
+    paths=$(gsutil ls "${BUCKET_PREFIX}${bucket}/" | grep '/$' | sed "s|${BUCKET_PREFIX}${bucket}/||" | sed 's|/$||' || echo "")
+    
+    if [[ -z "$paths" ]]; then
+        warn "No subdirectories found, searching root of bucket"
+        echo ""
+        return 0
+    fi
+    
+    # Add option for root directory
+    paths="(root directory)
+$paths"
+    
+    if check_fzf; then
+        local selected
+        selected=$(echo "$paths" | fzf \
+            --height 40% \
+            --reverse \
+            --border \
+            --prompt="Select path: " \
+            --header="Select subdirectory (or root)" \
+            --preview-window=hidden)
+        
+        if [[ -z "$selected" || "$selected" == "(root directory)" ]]; then
+            echo ""
+        else
+            echo "$selected"
+        fi
+    else
+        echo "$paths" | nl -w2 -s'. ' >&2
+        echo -n "Select path number (1 for root): " >&2
+        read -r selection
+        local path
+        path=$(echo "$paths" | sed -n "${selection}p")
+        if [[ "$path" == "(root directory)" ]]; then
+            echo ""
+        else
+            echo "$path"
+        fi
+    fi
+}
+
+# Function to interactive mode
+interactive_mode() {
+    local is_prod="$1"
+    local bucket="$DEV_BUCKET"
+    local env_label="Development"
+    
+    if [[ "$is_prod" == "true" ]]; then
+        bucket="$PROD_BUCKET"
+        env_label="Production"
+        set_prod_context
+    fi
+    
+    echo -e "${MAGENTA}╔════════════════════════════════════════╗${NC}" >&2
+    echo -e "${MAGENTA}║  Neo4j Backup Restore - Interactive   ║${NC}" >&2
+    echo -e "${MAGENTA}║  Environment: ${env_label}$(printf '%*s' $((24 - ${#env_label})) '')║${NC}" >&2
+    echo -e "${MAGENTA}╚════════════════════════════════════════╝${NC}" >&2
+    echo "" >&2
+    
+    info "Using bucket: ${bucket}"
+    echo "" >&2
+    
+    # Step 1: Select path within bucket
+    local path_filter
+    path_filter=$(select_path "$bucket") || return 1
+    if [[ -n "$path_filter" ]]; then
+        info "Selected path: ${path_filter}"
+    else
+        info "Selected path: (root)"
+    fi
+    echo "" >&2
+    
+    # Step 2: Select backup
+    local url
+    url=$(select_backup "$bucket" "$path_filter") || return 1
+    info "Selected backup: ${url}"
+    echo "" >&2
+    
+    echo "$url"
 }
 
 # Function to validate gsutil URL
@@ -241,25 +462,32 @@ restore_database() {
 
 # Main script
 main() {
-    # Check arguments
-    if [[ $# -lt 1 ]]; then
-        error "Usage: $0 <gsutil-url> [database] [container]"
-        error ""
-        error "Arguments:"
-        error "  gsutil-url   GCS URL of the backup file (required)"
-        error "  database     Database name: neo4j or admin (optional, auto-inferred from filename)"
-        error "  container    Docker container name (optional, default: resources-db)"
-        error ""
-        error "Examples:"
-        error "  $0 gs://neo4j-backups-prod/resources/neo4j-2025-11-04T12-03-33.backup"
-        error "  $0 gs://neo4j-backups-dev/learning/admin-2023-04-17T03-55-38.backup admin"
-        error "  $0 gs://neo4j-backups-prod/resources/neo4j-2025-11-04T12-03-33.backup neo4j my-container"
-        exit 1
+    local url=""
+    local database=""
+    local container="resources-db"
+    local is_prod="false"
+    
+    # Check for --prod flag
+    if [[ "${1:-}" == "--prod" ]]; then
+        is_prod="true"
+        shift
     fi
     
-    local url="$1"
-    local database="${2:-}"
-    local container="${3:-resources-db}"
+    # Check if URL is provided (direct mode) or start interactive mode
+    if [[ $# -eq 0 ]]; then
+        # Interactive mode
+        url=$(interactive_mode "$is_prod") || exit 1
+    else
+        # Direct mode with arguments
+        url="$1"
+        database="${2:-}"
+        container="${3:-resources-db}"
+        
+        # If using prod bucket in direct mode, set context
+        if [[ "$url" =~ neo4j-backups-prod ]]; then
+            set_prod_context
+        fi
+    fi
     
     # Validate URL
     validate_url "$url" || exit 1
