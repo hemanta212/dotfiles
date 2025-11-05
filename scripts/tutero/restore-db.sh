@@ -1,0 +1,309 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Neo4j Docker Database Restore Script
+# Usage: ./restore-db.sh <gsutil-url> [database] [container]
+# Example: ./restore-db.sh gs://neo4j-backups-prod/resources/neo4j-2025-11-04T12-03-33.backup
+# Example: ./restore-db.sh gs://neo4j-backups-dev/learning/admin-2023-04-17T03-55-38.backup admin
+# Example: ./restore-db.sh gs://neo4j-backups-prod/resources/neo4j-2025-11-04T12-03-33.backup neo4j my-neo4j-container
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Default credentials
+NEO4J_USER="${NEO4J_USER:-neo4j}"
+NEO4J_PASSWORD="${NEO4J_PASSWORD:-password}"
+
+# Cache settings
+CACHE_DIR="/tmp"
+MAX_CACHE_FILES=5
+
+# Function to print colored messages
+info() {
+    echo -e "${GREEN}✓${NC} $*" >&2
+}
+
+error() {
+    echo -e "${RED}✗${NC} $*" >&2
+}
+
+warn() {
+    echo -e "${YELLOW}!${NC} $*" >&2
+}
+
+# Function to validate gsutil URL
+validate_url() {
+    local url="$1"
+    if [[ ! "$url" =~ ^gs:// ]]; then
+        error "Invalid URL: must start with gs://"
+        return 1
+    fi
+    if [[ ! "$url" =~ \.backup$ ]]; then
+        error "Invalid URL: must end with .backup"
+        return 1
+    fi
+}
+
+# Function to extract filename from URL
+extract_filename() {
+    local url="$1"
+    basename "$url"
+}
+
+# Function to determine environment from URL (dev/prod)
+detect_environment() {
+    local url="$1"
+    if [[ "$url" =~ neo4j-backups-prod ]]; then
+        echo "prod"
+    elif [[ "$url" =~ neo4j-backups-dev ]]; then
+        echo "dev"
+    else
+        echo "unknown"
+    fi
+}
+
+# Function to infer database name from filename
+infer_database() {
+    local filename="$1"
+    if [[ "$filename" =~ ^admin- ]]; then
+        echo "admin"
+    elif [[ "$filename" =~ ^neo4j- ]]; then
+        echo "neo4j"
+    else
+        error "Cannot infer database from filename: $filename"
+        error "Filename must start with 'neo4j-' or 'admin-'"
+        return 1
+    fi
+}
+
+# Function to validate database name
+validate_database() {
+    local db="$1"
+    if [[ "$db" != "neo4j" && "$db" != "admin" ]]; then
+        error "Invalid database name: $db (must be 'neo4j' or 'admin')"
+        return 1
+    fi
+}
+
+# Function to list running Docker containers
+list_containers() {
+    echo -e "${BLUE}Available running containers:${NC}" >&2
+    docker ps --format "  • {{.Names}} ({{.Image}})" >&2
+}
+
+# Function to get cache file path
+get_cache_path() {
+    local filename="$1"
+    local env="$2"
+    
+    # Add environment suffix if prod
+    if [[ "$env" == "prod" ]]; then
+        echo "${CACHE_DIR}/${filename%.backup}.prod.backup"
+    else
+        echo "${CACHE_DIR}/${filename}"
+    fi
+}
+
+# Function to check if backup exists in cache
+check_cache() {
+    local cache_path="$1"
+    
+    if [[ -f "$cache_path" ]]; then
+        local size
+        size=$(du -h "$cache_path" | cut -f1)
+        info "Found cached backup: ${cache_path} (${size})"
+        return 0
+    fi
+    return 1
+}
+
+# Function to manage cache (keep only last N files)
+manage_cache() {
+    local pattern="$1"
+    
+    # Find all backup files matching the pattern and sort by modification time (newest first)
+    # Using stat for cross-platform compatibility
+    local cache_files
+    mapfile -t cache_files < <(
+        find "$CACHE_DIR" -maxdepth 1 -name "${pattern}" -type f 2>/dev/null | while read -r file; do
+            # macOS uses stat -f %m, Linux uses stat -c %Y
+            if stat -f %m "$file" &>/dev/null; then
+                echo "$(stat -f %m "$file") $file"
+            else
+                echo "$(stat -c %Y "$file") $file"
+            fi
+        done | sort -rn | cut -d' ' -f2-
+    )
+    
+    # If we have more than MAX_CACHE_FILES, delete the oldest ones
+    if [[ ${#cache_files[@]} -gt $MAX_CACHE_FILES ]]; then
+        local files_to_delete=("${cache_files[@]:$MAX_CACHE_FILES}")
+        for file in "${files_to_delete[@]}"; do
+            warn "Removing old cached backup: $(basename "$file")"
+            rm -f "$file"
+        done
+    fi
+}
+
+# Function to check if Docker container exists and is running
+check_container() {
+    local container="$1"
+    
+    # Check if any containers are running
+    if ! docker ps -q &> /dev/null; then
+        error "Docker is not running or no containers are available"
+        return 1
+    fi
+    
+    # Check if specific container is running
+    if ! docker ps --format '{{.Names}}' | grep -q "^${container}$"; then
+        error "Container '${container}' is not running"
+        echo "" >&2
+        list_containers
+        return 1
+    fi
+    
+    info "Container '${container}' is running"
+}
+
+# Function to download backup
+download_backup() {
+    local url="$1"
+    local filename="$2"
+    local env="$3"
+    local output_path
+    output_path=$(get_cache_path "$filename" "$env")
+    
+    # Check if backup exists in cache
+    if check_cache "$output_path"; then
+        echo "$output_path"
+        return 0
+    fi
+    
+    # Download backup
+    info "Downloading backup to ${output_path}..."
+    if gsutil cp "$url" "$output_path"; then
+        local size
+        size=$(du -h "$output_path" | cut -f1)
+        info "Download complete (${size})"
+        
+        # Manage cache to keep only last N files
+        manage_cache "*neo4j-*.backup" || true
+        manage_cache "*neo4j-*.prod.backup" || true
+        manage_cache "*admin-*.backup" || true
+        manage_cache "*admin-*.prod.backup" || true
+        
+        echo "$output_path"
+    else
+        error "Failed to download backup"
+        return 1
+    fi
+}
+
+# Function to restore database
+restore_database() {
+    local backup_path="$1"
+    local database="$2"
+    local container="$3"
+    local backup_filename
+    backup_filename=$(basename "$backup_path")
+    local container_backup_name="${backup_filename%.prod.backup}.backup"
+    
+    info "Copying backup to container..."
+    docker cp "$backup_path" "${container}:/var/lib/neo4j/import/${container_backup_name}"
+    
+    info "Stopping database '${database}'..."
+    docker exec "$container" cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -d system "STOP DATABASE ${database}"
+    
+    info "Restoring database '${database}' from backup..."
+    docker exec "$container" neo4j-admin database restore \
+        --overwrite-destination=true \
+        --from-path="/var/lib/neo4j/import/${container_backup_name}" \
+        "$database"
+    
+    info "Starting database '${database}'..."
+    docker exec "$container" cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -d system "START DATABASE ${database}"
+    
+    info "Executing metadata restoration..."
+    docker exec "$container" cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -d "$database" \
+        -f "/data/scripts/${database}/restore_metadata.cypher" \
+        --param "database => \"${database}\""
+    
+    info "Cleaning up container backup..."
+    docker exec "$container" rm "/var/lib/neo4j/import/${container_backup_name}"
+    
+    info "Backup preserved at: ${backup_path}"
+}
+
+# Main script
+main() {
+    # Check arguments
+    if [[ $# -lt 1 ]]; then
+        error "Usage: $0 <gsutil-url> [database] [container]"
+        error ""
+        error "Arguments:"
+        error "  gsutil-url   GCS URL of the backup file (required)"
+        error "  database     Database name: neo4j or admin (optional, auto-inferred from filename)"
+        error "  container    Docker container name (optional, default: resources-db)"
+        error ""
+        error "Examples:"
+        error "  $0 gs://neo4j-backups-prod/resources/neo4j-2025-11-04T12-03-33.backup"
+        error "  $0 gs://neo4j-backups-dev/learning/admin-2023-04-17T03-55-38.backup admin"
+        error "  $0 gs://neo4j-backups-prod/resources/neo4j-2025-11-04T12-03-33.backup neo4j my-container"
+        exit 1
+    fi
+    
+    local url="$1"
+    local database="${2:-}"
+    local container="${3:-resources-db}"
+    
+    # Validate URL
+    validate_url "$url" || exit 1
+    
+    # Extract filename and environment
+    local filename
+    filename=$(extract_filename "$url")
+    local env
+    env=$(detect_environment "$url")
+    
+    info "Backup file: ${filename}"
+    info "Environment: ${env}"
+    
+    # Determine database name
+    if [[ -z "$database" ]]; then
+        info "Database not specified, inferring from filename..."
+        database=$(infer_database "$filename") || exit 1
+        info "Inferred database: ${database}"
+    else
+        validate_database "$database" || exit 1
+        info "Target database: ${database}"
+    fi
+    
+    # Show container info
+    info "Target container: ${container}"
+    
+    # Check container
+    check_container "$container" || exit 1
+    
+    # Download backup
+    local backup_path
+    backup_path=$(download_backup "$url" "$filename" "$env") || exit 1
+    
+    # Restore database
+    restore_database "$backup_path" "$database" "$container" || exit 1
+    
+    echo "" >&2
+    info "Database '${database}' restored successfully in container '${container}'!"
+    info "Backup saved at: ${backup_path}"
+    
+    # Audio feedback if piper-say is available
+    if command -v piper-say &> /dev/null; then
+        piper-say "Database ${database} restored successfully"
+    fi
+}
+
+main "$@"
