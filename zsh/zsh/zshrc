@@ -181,10 +181,10 @@ export PATH=/opt/homebrew/opt/postgresql@12/bin:$PATH
 alias startpg="pg_ctl -D /opt/homebrew/var/postgresql@12"
 fi
 
-if [ -d "$HOME/Library/Application Support/Neo4j Desktop/Application/relate-data/dbmss/dbms-f46eb3cb-ba46-4f8c-8d08-1c546ececd73/bin" ]; then
-export NEO4J_HOME="$HOME/Library/Application Support/Neo4j Desktop/Application/relate-data/dbmss/dbms-f46eb3cb-ba46-4f8c-8d08-1c546ececd73"
-export PATH=$NEO4J_HOME/bin:$PATH
-fi
+# if [ -d "$HOME/Library/Application Support/Neo4j Desktop/Application/relate-data/dbmss/dbms-f46eb3cb-ba46-4f8c-8d08-1c546ececd73/bin" ]; then
+# export NEO4J_HOME="$HOME/Library/Application Support/Neo4j Desktop/Application/relate-data/dbmss/dbms-f46eb3cb-ba46-4f8c-8d08-1c546ececd73"
+# export PATH=$NEO4J_HOME/bin:$PATH
+# fi
 
  # /Applications/Cursor.app/Contents/MacOS
 if [ -d "/Applications/Cursor.app/Contents/MacOS" ]; then

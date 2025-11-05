@@ -23,94 +23,6 @@ run() {
   ./run
 }
 
-telec() {
-  local lock_dir="/tmp/telec.lock"
-  local url="${1:-http://cosmo-router.infrastructure.svc.cluster.local:3002/}"
-  local kube_ctx="${2:-dev}"
-
-  if ! mkdir "${lock_dir}" 2>/dev/null; then
-    echo " lockfile: $lock_dir exists ..."
-    sleep 1
-    telec "$url" "$kube_ctx"
-    return
-  fi
-
-  _svc_up() {
-    local rc
-    curl -fsS --max-time 3 -o /dev/null "$1" 2>/dev/null
-    rc=$?
-    [[ $rc -eq 0 || $rc -eq 22 ]]   # 0=OK; 22=HTTP error (4xx/5xx) ⇒ still “reachable”
-  }
-
-  if _svc_up "$url"; then
-    echo ":: telepresence check ✅ Service reachable ($url)"
-  else
-    echo ":: telepresence check ❌ No HTTP response — reconnecting..."
-    telepresence quit -s >/dev/null 2>&1 || true
-    local current_ctx
-    current_ctx="$(kubectl config current-context 2>/dev/null || true)"
-    [[ "$current_ctx" != "$kube_ctx" ]] && kubectl config use-context "$kube_ctx" >/dev/null
-    telepresence connect
-  fi
-
-  rmdir "${lock_dir}"
-}
-
-
-kneo() {
-     # k port-forward --context=prod -n learning pod/learning-neo4j-2-0 7687:7687 7474:7474
-     # Take first arg context eg "prod", second arg neo4j prefix eg "learning"
-     # and port arg eg 87 converts to 7687 (implies frontend port 7474), 88 -> 7688 (implies frontend 7475) and so on
-     # if no port arg default to 7687
-      local context="$1"
-      local prefix="$2"
-      local port="${3:-87}"
-      port=$((port + 7600))
-      local port_7474=$((port - 213)) # 7687 -> 7474, 7688 -> 7475, etc.
-      if [ -z "$context" ] || [ -z "$prefix" ]; then
-        echo "Usage: kneo <context> <prefix> [port]"
-        return 1
-      fi
-      echo ":: Running kubectl port-forward --context=$context -n learning pod/${prefix}-neo4j-1-0 $port:7687 $port_7474:7474"
-      kubectl port-forward --context="$context" -n "learning" pod/"${prefix}"-neo4j-2-0 "$port":7687 "$port_7474":7474
-}
-kport() {
-    local PREFIX=$1
-    local CONTEXT=$2
-    shift 2
-
-    if [[ -z "$PREFIX" || -z "$CONTEXT" || $# -eq 0 ]]; then
-        echo "Usage: kport <prefix> <context> <local1:remote1> [<local2:remote2> ...]"
-        return 1
-    fi
-
-    # Find the pod and namespace
-    POD_INFO=$(kubectl get pods --context="$CONTEXT" --all-namespaces --no-headers -o custom-columns="NAMESPACE:.metadata.namespace,NAME:.metadata.name" | grep "$PREFIX" | head -n 1)
-
-    if [[ -z "$POD_INFO" ]]; then
-        echo "No pod found with prefix '$PREFIX' in any namespace under context '$CONTEXT'"
-        return 1
-    fi
-
-    local NAMESPACE=$(echo "$POD_INFO" | awk '{print $1}')
-    local POD_NAME=$(echo "$POD_INFO" | awk '{print $2}')
-
-    # Build the port-forward arguments
-    local PORT_ARGS=()
-    for pair in "$@"; do
-        if [[ "$pair" != *:* ]]; then
-            echo "Invalid port format: $pair. Use <local>:<remote>"
-            return 1
-        fi
-        PORT_ARGS+=("$pair")
-    done
-
-    echo "Port forwarding pod $POD_NAME in namespace $NAMESPACE (context: $CONTEXT):"
-    printf ' - %s\n' "${PORT_ARGS[@]}"
-
-    kubectl port-forward --context="$CONTEXT" -n "$NAMESPACE" pod/"$POD_NAME" "${PORT_ARGS[@]}"
-}
-
 alias k='kubectl'
 alias py='.venv/bin/python'
 alias venv='source .venv/bin/activate'
@@ -205,12 +117,15 @@ alias claude='ANTHROPIC_API_KEY="" ~/.claude/local/claude'
 alias gemini="GEMINI_API_KEY='' gemini"
 alias gem='GEMINI_API_KEY='' gemini --yolo --checkpointing'
 alias oc='EDITOR=/opt/homebrew/bin/nvim ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' opencode --continue'
+alias am='EDITOR=/opt/homebrew/bin/nvim AMP_URL=http://localhost:8317 amp --dangerously-allow-all --no-ide'
+alias amx='EDITOR=/opt/homebrew/bin/nvim AMP_URL=http://localhost:8317 amp  --dangerously-allow-all -x'
 alias ocn='EDITOR=/opt/homebrew/bin/nvim ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' bun x opencode-ai@opentui -- --continue'
 alias ac='OPENAI_API_KEY='' codex --search --dangerously-bypass-approvals-and-sandbox'
 alias co='OPENAI_API_KEY='' ANTHROPIC_API_KEY='' GEMINI_API_KEY='' copilot  --disable-builtin-mcps --allow-all-paths  --allow-all-tools --resume'
 alias em='emacs -nw'
 alias gmt='go mod tidy'
 alias ccg='bunx ccusage'
+alias goplay='yaegi'
 
 mash(){
   git status --porcelain | egrep '^(DD|AU|UD|UA|DU|AA|UU)' | awk '{print $2}' | xargs $1
