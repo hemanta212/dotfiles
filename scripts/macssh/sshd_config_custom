@@ -1,0 +1,22 @@
+# Custom SSH server configuration for Mac
+# Disable password authentication - ONLY allow SSH keys
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+UsePAM no
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+
+# Security settings
+PermitRootLogin no
+PermitEmptyPasswords no
+MaxAuthTries 3
+
+# Allow port forwarding (needed for reverse tunnels)
+AllowTcpForwarding yes
+GatewayPorts no
+
+# Additional hardening
+AllowUsers mac
+LoginGraceTime 10
+ClientAliveInterval 300
+ClientAliveCountMax 2

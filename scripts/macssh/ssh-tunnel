@@ -1,0 +1,140 @@
+#!/bin/bash
+# SSH Reverse Tunnel - Manual control with auto-retry
+# Usage: ssh-tunnel [start|stop|status|logs]
+
+VPS_HOST="vps"
+VPS_PORT="6969"
+PID_FILE="$HOME/.ssh-tunnel.pid"
+MONITOR_PID_FILE="$HOME/.ssh-tunnel-monitor.pid"
+LOG_FILE="$HOME/.ssh-tunnel.log"
+ERROR_LOG="$HOME/.ssh-tunnel-error.log"
+RETRY_COUNT_FILE="$HOME/.ssh-tunnel-retries"
+
+GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
+
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"; }
+
+is_tunnel_running() {
+    [ -f "$PID_FILE" ] && ps -p "$(cat $PID_FILE)" > /dev/null 2>&1
+}
+
+is_monitor_running() {
+    [ -f "$MONITOR_PID_FILE" ] && ps -p "$(cat $MONITOR_PID_FILE)" > /dev/null 2>&1
+}
+
+check_network() {
+    ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1
+}
+
+start_ssh_connection() {
+    log "🔌 Establishing SSH tunnel"
+    ssh -N -R ${VPS_PORT}:localhost:22 \
+        -o ServerAliveInterval=30 \
+        -o ServerAliveCountMax=3 \
+        -o ExitOnForwardFailure=yes \
+        -o ConnectTimeout=10 \
+        -o TCPKeepAlive=yes \
+        "$VPS_HOST" >> "$LOG_FILE" 2>> "$ERROR_LOG" &
+    echo $! > "$PID_FILE"
+}
+
+monitor_loop() {
+    echo "0" > "$RETRY_COUNT_FILE"
+    log "👁️  Monitor started"
+    
+    while true; do
+        [ -f "$HOME/.ssh-tunnel-stop" ] && { log "🛑 Stop requested"; rm -f "$HOME/.ssh-tunnel-stop"; break; }
+        
+        if ! is_tunnel_running; then
+            RETRY_COUNT=$(cat "$RETRY_COUNT_FILE" 2>/dev/null || echo "0")
+            
+            # Exponential backoff: 0s, 10s, 20s, 40s, 80s, max 300s
+            DELAY=0
+            [ "$RETRY_COUNT" -gt 0 ] && DELAY=$((10 * (2 ** (RETRY_COUNT - 1))))
+            [ "$DELAY" -gt 300 ] && DELAY=300
+            
+            [ "$DELAY" -gt 0 ] && { log "⏳ Retry #$RETRY_COUNT - waiting ${DELAY}s"; sleep "$DELAY"; }
+            
+            # Check network before retry
+            if ! check_network; then
+                log "📡 No network, waiting 30s"
+                sleep 30
+                echo $((RETRY_COUNT + 1)) > "$RETRY_COUNT_FILE"
+                continue
+            fi
+            
+            log "🚀 Attempt #$((RETRY_COUNT + 1))"
+            start_ssh_connection
+            echo $((RETRY_COUNT + 1)) > "$RETRY_COUNT_FILE"
+            sleep 3
+            
+            # Reset counter after 5min stable
+            is_tunnel_running && {
+                log "✅ Connected (PID: $(cat $PID_FILE))"
+                (sleep 300; is_tunnel_running && { echo "0" > "$RETRY_COUNT_FILE"; log "🎯 Stable 5min, reset counter"; }) &
+            }
+        fi
+        sleep 10
+    done
+    rm -f "$MONITOR_PID_FILE"
+}
+
+start() {
+    is_monitor_running && { echo -e "${YELLOW}Already running${NC}"; return 1; }
+    rm -f "$HOME/.ssh-tunnel-stop"
+    echo -e "${GREEN}Starting tunnel...${NC}"
+    log "▶️  Start requested"
+    monitor_loop & echo $! > "$MONITOR_PID_FILE"
+    sleep 3
+    is_monitor_running && {
+        echo -e "${GREEN}✓ Started${NC} - Connect: ${BLUE}ssh -p ${VPS_PORT} mac@vps.osac.org.np${NC}"
+    } || echo -e "${RED}✗ Failed${NC}"
+}
+
+stop() {
+    is_monitor_running || { echo -e "${YELLOW}Not running${NC}"; return 1; }
+    echo -e "${YELLOW}Stopping...${NC}"
+    log "⏹️  Stop requested"
+    touch "$HOME/.ssh-tunnel-stop"
+    kill "$(cat $MONITOR_PID_FILE 2>/dev/null)" 2>/dev/null
+    is_tunnel_running && kill "$(cat $PID_FILE)" 2>/dev/null
+    rm -f "$PID_FILE" "$MONITOR_PID_FILE" "$HOME/.ssh-tunnel-stop"
+    echo -e "${GREEN}✓ Stopped${NC}"
+}
+
+status() {
+    if is_monitor_running; then
+        echo -e "Monitor:   ${GREEN}✓ Running${NC} (PID: $(cat $MONITOR_PID_FILE))"
+        is_tunnel_running && echo -e "Tunnel:    ${GREEN}✓ Connected${NC} (PID: $(cat $PID_FILE))" || echo -e "Tunnel:    ${YELLOW}⏳ Reconnecting${NC}"
+        echo -e "Retries:   $(cat $RETRY_COUNT_FILE 2>/dev/null || echo 0)"
+        echo -e "Port:      VPS:${VPS_PORT} → Mac:22"
+        echo -e "Connect:   ${BLUE}ssh -p ${VPS_PORT} mac@vps.osac.org.np${NC}"
+    else
+        echo -e "Status:    ${RED}✗ Not running${NC}"
+        echo -e "Start:     ${YELLOW}ssh-tunnel start${NC}"
+    fi
+}
+
+logs() {
+    case "$1" in
+        error) tail -f "$ERROR_LOG" ;;
+        -f|follow) tail -f "$LOG_FILE" ;;
+        *) tail -30 "$LOG_FILE" ;;
+    esac
+}
+
+case "${1:-status}" in
+    start) start ;;
+    stop) stop ;;
+    restart) stop; sleep 2; start ;;
+    status) status ;;
+    logs) logs "${2}" ;;
+    help|--help|-h)
+        echo "Usage: ssh-tunnel [start|stop|restart|status|logs [-f|error]]"
+        echo ""
+        echo "Features: Manual control, auto-reconnect, exponential backoff, network checks"
+        echo "Tunnel:   Mac:22 → VPS:${VPS_PORT}"
+        echo "Connect:  ssh -p ${VPS_PORT} mac@vps.osac.org.np"
+        ;;
+    *) echo -e "${RED}Unknown: $1${NC}"; exit 1 ;;
+esac
