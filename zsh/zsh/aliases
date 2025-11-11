@@ -58,11 +58,22 @@ alias coc="COCKROACH_SKIP_ENABLING_DIAGNOSTIC_REPORTING=true cockroach"
 alias go='/usr/local/go/bin/go'
 alias f='fvm flutter'
 alias d='fvm dart'
-alias frcc='CHROME_EXECUTABLE="/Applications/Chromium.app/Contents/MacOS/Chromium" fvm flutter run -d chrome --web-port 5000'
+
+alias frcc='mkdir -p ~/.cache/scripts/flutter-build; \
+LOGFILE="$HOME/.cache/scripts/flutter-build/flutter-build-$(date +%Y%m%d-%H%M%S).log"; \
+CHROME_EXECUTABLE="/Applications/Chromium.app/Contents/MacOS/Chromium" \
+echo $LOGFILE; \
+fvm flutter run -d chrome --web-port 5000 2>&1 | tee "$LOGFILE"'
+
+#alias frc="frcenv flutter run -d chrome --web-port 5000"
+alias frc='mkdir -p ~/.cache/scripts/flutter-build; \
+LOGFILE="$HOME/.cache/scripts/flutter-build/flutter-build-$(date +%Y%m%d-%H%M%S).log"; \
+echo $LOGFILE; \
+frcenv flutter run -d chrome --web-port 5000 2>&1 | tee "$LOGFILE"'
+
 alias frcenv="env CHROME_EXECUTABLE=$HOME/.local/bin/flutter-chrome fvm"
 alias fpg="frcenv flutter pub get"
 alias fpu="frcenv flutter pub upgrade"
-alias frc="frcenv flutter run -d chrome --web-port 5000"
 #alias frcc="frcenv flutter run -d chrome --web-port 5000"
 alias frcf="frc | grep --line-buffered -F '[WTF]'" # Focused frc filtering only wtf logs
 alias frcp="frcenv flutter run -d chrome --web-port"
@@ -178,3 +189,15 @@ alias oldws='cd ~/dev/tutero/flutter/learning-library/features/worksheets/'
 alias oldll='cd ~/dev/tutero/flutter/learning-library'
 alias oldcf='cd ~/dev/tutero/flutter/core-flutter'
 alias oldlg='cd ~/dev/tutero/flutter/legacy-frontend/packages/core'
+
+latest_file() {
+  local dir="${1:-$PWD}"
+  find "$dir" -type f -exec stat -f "%m %N" {} + 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-
+}
+
+tails() {
+  local dir="$HOME/.cache/scripts/${1:-}"
+  echo "tail -f $(latest_file "$dir")"
+  tail -f "$(latest_file "$dir")"
+}
+

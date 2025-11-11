@@ -82,3 +82,4 @@ fpath+=~/.zfunc
 ## [/Completion]
 
 #export JAVA_HOME='/Users/mac/Library/Application Support/neo4j-desktop/Application/Cache/runtime/zulu21.44.17-ca-jdk21.0.8-macosx_aarch64/zulu-21.jdk/Contents/Home' 
+export PATH="$HOME/Applications/CMake-3.29.app/Contents/bin:$PATH"
