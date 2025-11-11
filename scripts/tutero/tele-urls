@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# List all telepresence forwarded URLs with .cluster.local suffix
+# This script queries the Kubernetes cluster for all services
+
+echo "📡 Telepresence Forwarded URLs (.cluster.local)"
+echo "================================================"
+echo ""
+
+kubectl get services --all-namespaces -o jsonpath='{range .items[*]}{.metadata.name}.{.metadata.namespace}.svc.cluster.local{"\n"}{end}' 2>/dev/null | sort
