@@ -15,10 +15,11 @@ while [[ $# -gt 0 ]]; do
     echo "       EOF" >&2
     echo "" >&2
     echo "Examples:" >&2
-    echo "  big-brain \"How should we refactor the auth system?\"" >&2
-    echo "  echo \"What's the best approach for real-time notifications?\" | big-brain" >&2
-    echo "  big-brain <<EOF" >&2
-    echo "  Should we use a monorepo or separate repos?" >&2
+    echo "  session-hunter \"Find session where UpdateLessonPlanForClass was replaced\"" >&2
+    echo "  session-hunter \"Which session modified worksheet_app_bar.dart?\"" >&2
+    echo "  echo \"Find all sessions that touched frontend/app/schools-app\" | session-hunter" >&2
+    echo "  session-hunter <<EOF" >&2
+    echo "  Find the session where we fixed worksheet renaming" >&2
     echo "  EOF" >&2
     exit 0
     ;;
@@ -52,18 +53,18 @@ else
 fi
 
 # Setup logging
-LOG_DIR="${HOME}/.cache/scripts/big-brain"
+LOG_DIR="${HOME}/.cache/scripts/session-hunter"
 mkdir -p "$LOG_DIR"
 
 timestamp="$(date "+%Y%m%dT%H%M%S")"
 log_file="$LOG_DIR/${timestamp}-$$.log"
-full_output_file="/tmp/big-brain-full-output-$$.txt"
+full_output_file="/tmp/session-hunter-full-output-$$.txt"
 
 # Execute opencode from the invoked directory
 cd "$INVOKE_DIR"
 
 set +e
-opencode run --agent big-brain "$prompt" >"$full_output_file" 2>&1
+opencode run --agent session-hunter "$prompt" >"$full_output_file" 2>&1
 exit_code=$?
 set -e
 
@@ -95,8 +96,8 @@ retry_count=0
 haiku_success=false
 
 while [ $retry_count -lt $max_retries ]; do
-  haiku_output_file="/tmp/big-brain-haiku-output-$$-${retry_count}.txt"
-  haiku_stderr_file="/tmp/big-brain-haiku-stderr-$$-${retry_count}.txt"
+  haiku_output_file="/tmp/session-hunter-haiku-output-$$-${retry_count}.txt"
+  haiku_stderr_file="/tmp/session-hunter-haiku-stderr-$$-${retry_count}.txt"
   
   set +e
   echo "$extraction_prompt" | opencode run --model=anthropic/claude-haiku-4-5 >"$haiku_output_file" 2>"$haiku_stderr_file"
@@ -124,7 +125,7 @@ if [ "$haiku_success" = false ]; then
   echo "========================================" >&2
   echo "ERROR: Failed to extract clean output" >&2
   echo "========================================" >&2
-  echo "Both big-brain model and Haiku ($max_retries attempts) failed to provide clean output." >&2
+  echo "Both session-hunter model and Haiku ($max_retries attempts) failed to provide clean output." >&2
   echo "" >&2
   echo "Raw log file saved at: $log_file" >&2
   echo "You can view the full output with: cat $log_file" >&2

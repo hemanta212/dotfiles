@@ -76,6 +76,39 @@ mkdir -p "$LOG_DIR"
 timestamp="$(date "+%Y%m%dT%H%M%S")"
 log_file="$LOG_DIR/${timestamp}-$$.log"
 output_file="/tmp/autist-output-$$.txt"
+session_marker="/tmp/autist-session-marker-$$.txt"
+
+# Start background log watcher to extract session ID as soon as available
+# This runs concurrently while codex is executing (non-blocking read)
+(
+  # Wait for log file to be created
+  timeout=10
+  while [ ! -f "$log_file" ] && [ $timeout -gt 0 ]; do
+    sleep 0.1
+    timeout=$((timeout - 1))
+  done
+  
+  if [ -f "$log_file" ]; then
+    # Tail the log file and extract session ID when it appears
+    tail -f "$log_file" 2>/dev/null | while IFS= read -r line; do
+      if echo "$line" | grep -q 'session id:'; then
+        extracted_id="$(echo "$line" | grep -oE 'session id: [[:alnum:]-]+' | cut -d' ' -f3)"
+        if [ -n "$extracted_id" ]; then
+          echo "$extracted_id" > "$session_marker"
+          printf "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" >&2
+          printf "⏱️  Session started: %s\n" "$extracted_id" >&2
+          printf "💡 If timeout occurs, continue with:\n" >&2
+          printf "   autist -s %s <<'EOF'\n" "$extracted_id" >&2
+          printf "   continue\n" >&2
+          printf "   EOF\n" >&2
+          printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" >&2
+          break
+        fi
+      fi
+    done
+  fi
+) &
+watcher_pid=$!
 
 # Execute codex with the detected directory
 set +e
@@ -103,14 +136,29 @@ else
 fi
 set -e
 
+# Kill the background watcher (if still running)
+kill "$watcher_pid" 2>/dev/null || true
+wait "$watcher_pid" 2>/dev/null || true
+
 # Handle output
 if [ $exit_code -eq 0 ]; then
   cat "$output_file"
 
-  # Extract and display session ID for follow-ups
-  extracted_session_id="$(grep -oE 'session id: [[:alnum:]-]+' "$log_file" | cut -d' ' -f3)"
+  # Display session ID again for follow-ups (read from marker file or extract from log)
+  extracted_session_id=""
+  if [ -f "$session_marker" ]; then
+    extracted_session_id="$(cat "$session_marker")"
+  else
+    extracted_session_id="$(grep -oE 'session id: [[:alnum:]-]+' "$log_file" | cut -d' ' -f3 || true)"
+  fi
+  
   if [ -n "$extracted_session_id" ]; then
-    printf "\n--------------\nTo follow up on this conversation! use the command: autist -s %s <prompt via pipe|heredoc>\n" "$extracted_session_id"
+    printf "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    printf "✅ Session completed: %s\n" "$extracted_session_id"
+    printf "💬 To follow up, use: autist -s %s <<'EOF'\n" "$extracted_session_id"
+    printf "   [your follow-up prompt]\n"
+    printf "   EOF\n"
+    printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
   fi
 
   # Show where logs are stored
@@ -121,7 +169,7 @@ else
   printf "\n[debug] Logs saved to: %s\n" "$log_file" >&2
 fi
 
-# Cleanup temp file
-rm -f "$output_file"
+# Cleanup temp files
+rm -f "$output_file" "$session_marker"
 
 exit "$exit_code"

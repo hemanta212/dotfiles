@@ -75,13 +75,17 @@ cd "$HOME"
 
 set +e
 if [ "$verbose" = true ]; then
-  opencode run --agent local-librarian "${args[@]}" 2>"$log_file"
+  opencode run --agent local-librarian "${args[@]}" 2>"${log_file}.tmp"
   exit_code=$?
 else
-  opencode run --agent local-librarian "${args[@]}" 2>"$log_file"
+  opencode run --agent local-librarian "${args[@]}" 2>"${log_file}.tmp"
   exit_code=$?
 fi
 set -e
+
+# Filter out binary data from log file
+strings "${log_file}.tmp" > "$log_file"
+rm -f "${log_file}.tmp"
 
 if [ $exit_code -eq 0 ]; then
   if [ "$verbose" = false ]; then
