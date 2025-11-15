@@ -1,0 +1,317 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# pub-override: Manage pubspec_overrides.yaml entries
+# Usage: pub-override <component1> [component2] [component3...]
+# Example: pub-override worksheets
+# Example: pub-override worksheets ws-refactor
+# Example: pub-override learning-library ws-refactor
+# Example: pub-override ws-refactor features worksheets
+
+METAREPO_ROOT="${HOME}/Coding/metarepo"
+OVERRIDES_FILE="pubspec_overrides.yaml"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+error() {
+    echo -e "${RED}Error: $1${NC}" >&2
+    exit 1
+}
+
+info() {
+    echo -e "${GREEN}$1${NC}"
+}
+
+warn() {
+    echo -e "${YELLOW}$1${NC}"
+}
+
+debug() {
+    if [ "${DEBUG:-0}" = "1" ]; then
+        echo -e "${BLUE}$1${NC}" >&2
+    fi
+}
+
+# Check if arguments are provided
+if [ $# -eq 0 ]; then
+    error "Usage: pub-override <component1> [component2] [component3...]\nExample: pub-override worksheets\nExample: pub-override worksheets ws-refactor\nExample: pub-override learning-library ws-refactor"
+fi
+
+# Store all path components
+COMPONENTS=("$@")
+PACKAGE_NAME="${COMPONENTS[0]}"  # First component is used as package name by default
+
+# Check if we're in a Flutter/Dart project
+if [ ! -f "pubspec.yaml" ]; then
+    error "No pubspec.yaml found in current directory. Are you in a Flutter/Dart project?"
+fi
+
+# Function to check if a path contains all components
+path_contains_all_components() {
+    local path="$1"
+    shift
+    local components=("$@")
+    
+    for comp in "${components[@]}"; do
+        if [[ ! "$path" =~ (^|/)$comp(/|$) ]]; then
+            return 1
+        fi
+    done
+    return 0
+}
+
+# Function to generate permutations of path components
+try_exact_paths() {
+    local -a components=("$@")
+    local found_dirs=()
+    
+    # Try all permutations of components as direct paths
+    # For 2 components: A/B, B/A
+    # For 3 components: A/B/C, A/C/B, B/A/C, B/C/A, C/A/B, C/B/A
+    if [ ${#components[@]} -eq 1 ]; then
+        local path="$METAREPO_ROOT/${components[0]}"
+        if [ -d "$path" ] && [ -f "$path/pubspec.yaml" ]; then
+            found_dirs+=("$path")
+        fi
+    elif [ ${#components[@]} -eq 2 ]; then
+        for perm in "${components[0]}/${components[1]}" "${components[1]}/${components[0]}"; do
+            local path="$METAREPO_ROOT/$perm"
+            if [ -d "$path" ] && [ -f "$path/pubspec.yaml" ]; then
+                found_dirs+=("$path")
+            fi
+        done
+    elif [ ${#components[@]} -eq 3 ]; then
+        local c0="${components[0]}" c1="${components[1]}" c2="${components[2]}"
+        for perm in "$c0/$c1/$c2" "$c0/$c2/$c1" "$c1/$c0/$c2" "$c1/$c2/$c0" "$c2/$c0/$c1" "$c2/$c1/$c0"; do
+            local path="$METAREPO_ROOT/$perm"
+            if [ -d "$path" ] && [ -f "$path/pubspec.yaml" ]; then
+                found_dirs+=("$path")
+            fi
+        done
+    fi
+    
+    # Only output if we found something
+    if [ ${#found_dirs[@]} -gt 0 ]; then
+        printf '%s\n' "${found_dirs[@]}"
+    fi
+}
+
+# OPTIMIZATION: Try exact path matches first (instant for common cases)
+debug "Trying exact path combinations..."
+mapfile -t FOUND_DIRS < <(try_exact_paths "${COMPONENTS[@]}")
+
+if [ ${#FOUND_DIRS[@]} -eq 0 ]; then
+    if [ ${#COMPONENTS[@]} -eq 1 ]; then
+        debug "Searching for package '${COMPONENTS[0]}' under $METAREPO_ROOT..."
+    else
+        debug "Searching for path containing components: ${COMPONENTS[*]}"
+    fi
+    
+    # Try each component and find intersection
+    # This handles both "worksheets ws-refactor" and "ws-refactor worksheets"
+    declare -A all_candidates
+    
+    for comp in "${COMPONENTS[@]}"; do
+        debug "Searching for component '$comp'..."
+        
+        # Use fd if available (much faster), otherwise fall back to find
+        if command -v fd &> /dev/null; then
+            while IFS= read -r dir; do
+                all_candidates["$dir"]=1
+            done < <(fd -t d -H "^${comp}$" "$METAREPO_ROOT" 2>/dev/null)
+        else
+            while IFS= read -r dir; do
+                all_candidates["$dir"]=1
+            done < <(find "$METAREPO_ROOT" -type d -name "$comp" 2>/dev/null)
+        fi
+    done
+    
+    debug "Found ${#all_candidates[@]} candidate directories"
+    
+    # Filter candidates to match all components and have pubspec.yaml
+    FOUND_DIRS=()
+    for dir in "${!all_candidates[@]}"; do
+        if [ -f "$dir/pubspec.yaml" ] && path_contains_all_components "$dir" "${COMPONENTS[@]}"; then
+            FOUND_DIRS+=("$dir")
+        fi
+    done
+fi
+
+if [ ${#FOUND_DIRS[@]} -eq 0 ]; then
+    error "No package found under $METAREPO_ROOT containing all components: ${COMPONENTS[*]}"
+fi
+
+# If multiple matches, show all and error out
+if [ ${#FOUND_DIRS[@]} -gt 1 ]; then
+    error "Multiple packages found containing components '${COMPONENTS[*]}':\n$(printf '  %s\n' "${FOUND_DIRS[@]}")\n\nPlease be more specific with your path components."
+fi
+
+# Exactly one match - use it
+PACKAGE_DIR="${FOUND_DIRS[0]}"
+
+if [ -z "$PACKAGE_DIR" ]; then
+    error "Package directory is empty - this should not happen"
+fi
+
+debug "Found package at: $PACKAGE_DIR"
+
+# Extract the actual package name from the directory with pubspec.yaml
+# Read the name from pubspec.yaml if possible
+YAML_NAME=$(grep "^name:" "$PACKAGE_DIR/pubspec.yaml" 2>/dev/null | head -1 | sed 's/^name:[[:space:]]*//' | tr -d '"' | tr -d "'" || true)
+
+if [ -n "$YAML_NAME" ]; then
+    PACKAGE_NAME="$YAML_NAME"
+    debug "Using package name from pubspec.yaml: $PACKAGE_NAME"
+else
+    PACKAGE_NAME=$(basename "$PACKAGE_DIR")
+    debug "Using directory name as package name: $PACKAGE_NAME"
+fi
+
+# Compute relative path from current directory to package directory
+# macOS doesn't have realpath --relative-to, so use Python
+CURRENT_DIR=$(pwd)
+RELATIVE_PATH=$(python3 -c "import os.path; print(os.path.relpath('$PACKAGE_DIR', '$CURRENT_DIR'))")
+
+debug "Relative path: $RELATIVE_PATH"
+
+# Create pubspec_overrides.yaml if it doesn't exist
+if [ ! -f "$OVERRIDES_FILE" ]; then
+    debug "Creating $OVERRIDES_FILE..."
+    cat > "$OVERRIDES_FILE" << EOF
+dependency_overrides:
+EOF
+fi
+
+# Check if package already exists in the file (commented or not)
+# Search from bottom first as requested
+if tac "$OVERRIDES_FILE" | grep -qE "^[[:space:]]*#?[[:space:]]*${PACKAGE_NAME}:"; then
+    PACKAGE_FOUND=true
+else
+    PACKAGE_FOUND=false
+fi
+
+# Process the file
+TEMP_FILE=$(mktemp)
+trap 'rm -f "$TEMP_FILE"' EXIT
+
+if [ "$PACKAGE_FOUND" = true ]; then
+    debug "Found existing entry for '$PACKAGE_NAME'. Checking state..."
+    
+    # Read file from bottom to find FIRST (from bottom) occurrence
+    # Store line number of the match
+    MATCH_LINE=$(tac "$OVERRIDES_FILE" | grep -n -m 1 -E "^[[:space:]]*#?[[:space:]]*${PACKAGE_NAME}:" | cut -d: -f1)
+    
+    if [ -n "$MATCH_LINE" ]; then
+        # Convert tac line number to actual line number
+        TOTAL_LINES=$(wc -l < "$OVERRIDES_FILE")
+        ACTUAL_LINE=$((TOTAL_LINES - MATCH_LINE + 1))
+        
+        debug "Found match at line $ACTUAL_LINE (from bottom: line $MATCH_LINE)"
+        
+        # Check if the entry is currently commented and what path it has
+        CURRENT_PKG_LINE=$(sed -n "${ACTUAL_LINE}p" "$OVERRIDES_FILE")
+        CURRENT_PATH_LINE=$(sed -n "$((ACTUAL_LINE + 1))p" "$OVERRIDES_FILE")
+        
+        # Extract current path if it exists
+        CURRENT_PATH=$(echo "$CURRENT_PATH_LINE" | sed -nE 's/^[[:space:]]*#?[[:space:]]*path:[[:space:]]*//p')
+        
+        # Check if currently commented
+        IS_COMMENTED=false
+        if echo "$CURRENT_PKG_LINE" | grep -q "^[[:space:]]*#"; then
+            IS_COMMENTED=true
+        fi
+        
+        # Check if path matches
+        PATHS_MATCH=false
+        if [ "$CURRENT_PATH" = "$RELATIVE_PATH" ]; then
+            PATHS_MATCH=true
+        fi
+        
+        debug "Current path: '$CURRENT_PATH'"
+        debug "New path: '$RELATIVE_PATH'"
+        debug "Is commented: $IS_COMMENTED"
+        debug "Paths match: $PATHS_MATCH"
+        
+        # Toggle logic: if uncommented and path matches, comment it out
+        if [ "$IS_COMMENTED" = "false" ] && [ "$PATHS_MATCH" = "true" ]; then
+            debug "Entry is active with same path. Commenting it out (toggle off)..."
+            
+            # Comment out the entry
+            awk -v pkg="$PACKAGE_NAME" -v target_line="$ACTUAL_LINE" '
+            NR == target_line {
+                print "  # " pkg ":"
+                next
+            }
+            NR == target_line + 1 && match($0, "^[[:space:]]*path:") {
+                # Extract the path and comment it
+                sub(/^[[:space:]]*/, "")
+                print "    # " $0
+                next
+            }
+            { print }
+            ' "$OVERRIDES_FILE" > "$TEMP_FILE"
+            
+            mv "$TEMP_FILE" "$OVERRIDES_FILE"
+            
+            info "\n✓ Commented out override for '$PACKAGE_NAME'\n"
+        else
+            debug "Updating entry (uncomment and/or update path)..."
+            
+            # Uncomment and update the entry
+            awk -v pkg="$PACKAGE_NAME" -v path="$RELATIVE_PATH" -v target_line="$ACTUAL_LINE" '
+            BEGIN { replaced = 0 }
+            NR == target_line && !replaced {
+                # This is the target package line - uncomment and update it
+                print "  " pkg ":"
+                replaced = 1
+                next
+            }
+            NR == target_line + 1 && replaced == 1 && match($0, "^[[:space:]]*#?[[:space:]]*path:") {
+                # This is the path line immediately after target - update it
+                print "    path: " path
+                replaced = 2
+                next
+            }
+            {
+                # Print everything else as-is
+                print
+            }
+            ' "$OVERRIDES_FILE" > "$TEMP_FILE"
+            
+            mv "$TEMP_FILE" "$OVERRIDES_FILE"
+            
+            # Show the updated entry
+            echo ""
+            info "Override for '$PACKAGE_NAME':"
+            grep -A 1 "^[[:space:]]*${PACKAGE_NAME}:" "$OVERRIDES_FILE" | head -4 || true
+            echo ""
+        fi
+    fi
+else
+    debug "No existing entry found for '$PACKAGE_NAME'. Adding new entry..."
+    
+    # Check if dependency_overrides section exists
+    if ! grep -q "^dependency_overrides:" "$OVERRIDES_FILE"; then
+        echo "dependency_overrides:" >> "$OVERRIDES_FILE"
+    fi
+    
+    # Append the new entry
+    cat >> "$OVERRIDES_FILE" << EOF
+  ${PACKAGE_NAME}:
+    path: ${RELATIVE_PATH}
+EOF
+    
+    debug "Added new entry for '$PACKAGE_NAME' with path: $RELATIVE_PATH"
+    
+    # Show the new entry
+    echo ""
+    info "Override for '$PACKAGE_NAME':"
+    grep -A 1 "^[[:space:]]*${PACKAGE_NAME}:" "$OVERRIDES_FILE" | head -4 || true
+    echo ""
+fi
