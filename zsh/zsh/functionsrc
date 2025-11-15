@@ -691,9 +691,13 @@ klogs() {
     echo ""
 
     # Stream all pods in parallel with prefixes
+    # Fix: Use process substitution instead of pipe to preserve PIDS array
     local PIDS=()
+    
+    # Trap SIGINT (Ctrl+C) to kill all background processes
+    trap 'echo "\n⚠️  Stopping all log streams..."; kill "${PIDS[@]}" 2>/dev/null; return' INT
 
-    echo "$POD_INFOS" | while read -r line; do
+    while read -r line; do
       local NAMESPACE=$(echo "$line" | awk '{print $1}')
       local POD_NAME=$(echo "$line" | awk '{print $2}')
 
@@ -702,10 +706,13 @@ klogs() {
         --prefix=true 2>&1 | sed "s/^/[$NAMESPACE\/$POD_NAME] /" &
 
       PIDS+=($!)
-    done
+    done < <(echo "$POD_INFOS")
 
     # Wait for all background processes
     wait "${PIDS[@]}"
+    
+    # Clean up trap
+    trap - INT
   fi
 }
 
@@ -752,8 +759,11 @@ klogst() {
     echo ""
 
     local PIDS=()
+    
+    # Trap SIGINT (Ctrl+C) to kill all background processes
+    trap 'echo "\n⚠️  Stopping all log streams..."; kill "${PIDS[@]}" 2>/dev/null; return' INT
 
-    echo "$POD_INFOS" | while read -r line; do
+    while read -r line; do
       local NAMESPACE=$(echo "$line" | awk '{print $1}')
       local POD_NAME=$(echo "$line" | awk '{print $2}')
 
@@ -761,8 +771,11 @@ klogst() {
         2>&1 | sed "s/^/[$NAMESPACE\/$POD_NAME] /" &
 
       PIDS+=($!)
-    done
+    done < <(echo "$POD_INFOS")
 
     wait "${PIDS[@]}"
+    
+    # Clean up trap
+    trap - INT
   fi
 }

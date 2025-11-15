@@ -71,6 +71,7 @@ LOGFILE="$HOME/.cache/scripts/flutter-build/flutter-build-$(date +%Y%m%d-%H%M%S)
 echo $LOGFILE; \
 frcenv flutter run -d chrome --web-port 5000 2>&1 | tee "$LOGFILE"'
 
+alias pubd='pub-override'
 alias frcenv="env CHROME_EXECUTABLE=$HOME/.local/bin/flutter-chrome fvm"
 alias fpg="frcenv flutter pub get"
 alias fpu="frcenv flutter pub upgrade"
@@ -189,6 +190,11 @@ alias oldws='cd ~/dev/tutero/flutter/learning-library/features/worksheets/'
 alias oldll='cd ~/dev/tutero/flutter/learning-library'
 alias oldcf='cd ~/dev/tutero/flutter/core-flutter'
 alias oldlg='cd ~/dev/tutero/flutter/legacy-frontend/packages/core'
+
+
+alias k9sp='k9s --context=prod'
+alias k9spu='k9s --context=prod-us'
+alias k9ss='k9s --context=staging'
 
 latest_file() {
   local dir="${1:-$PWD}"
