@@ -1,4 +1,11 @@
 #!/bin/bash
+# Summary: Adds Telegram IP ranges via the utun4 WireGuard interface.
+# Description:
+# Verifies the utun4 interface exists before touching routes.
+# Adds static routes for known Telegram CIDRs through utun4.
+# Sleeps indefinitely afterward so the interface stays bound until you stop it.
+# Exits early if the interface is down so you can rerun the script later.
+
 
 if ! wg show utun4 >/dev/null; then
   sleep 10

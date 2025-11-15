@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Summary: Interactive Neo4j backup restore utility for dev and prod buckets.
+# Description:
+# Lists available backups from gs://neo4j-backups-{dev,prod}, optionally letting fzf pick one.
+# Switches kubectl context to the configured prod context and caches selected URLs in /tmp.
+# Downloads the backup, runs the restore job, and streams progress with colored headings and logs.
+# Keeps recent choices cached, warns when dependencies are missing, and exits cleanly on errors.
+
 set -euo pipefail
 
 # Neo4j Docker Database Restore Script

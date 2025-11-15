@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Summary: Manages building and launching the resources service with caching, telemetry, and log plumbing.
+# Description:
+# Prepares config defaults, port constants, and lock-backed cache files before launching the Go server.
+# Parses flags for telemetry (-otel), estimate-only modes, config overrides, and additional go args.
+# Creates a FIFO log pipe, tails it for structured output, and ensures graphql/grpc ports stay free.
+# Tracks interrupts, records boot estimates, and checks telepresence router reachability before starting.
+
 set -euo pipefail
 
 readonly CONFIG_DEFAULT="config.yml"

@@ -1,4 +1,11 @@
 #!/bin/bash
+# Summary: Triggers and monitors Neo4j backup cronjobs across prod contexts.
+# Description:
+# Creates manual jobs derived from the cronjob on both prod and prod-us contexts.
+# Finds the backup pod, streams status, and polls until the job completes or fails.
+# Shows container statuses and relevant logs when a job finishes.
+# Uses colored helpers to highlight info, success, and error states for each context.
+
 
 # Script to trigger and monitor Neo4j backups across prod and prod-us contexts
 # Usage: ./trigger-backup.sh [cronjob-name] [namespace]

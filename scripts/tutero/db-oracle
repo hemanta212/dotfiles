@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Summary: Single-entry point to run codex against the resources/learning/teaching oracle with logs.
+# Description:
+# Requires the -db flag (resources, learning, or teaching) and optional extra dirs to build the prompt.
+# Runs codex exec inside ~/Coding/metarepo with low reasoning effort and optional verbose mode.
+# Writes logs to ~/.cache/scripts/oracle-logs plus /tmp output files so the result can be re-read.
+# Prints any session ID it sees so you can resume with --continue and surfaces the log path on failure.
+
 set -euo pipefail
 
 db=""

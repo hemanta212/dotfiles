@@ -1,4 +1,11 @@
 #!/bin/bash
+# Summary: Installs gh-deliver CLI/daemon into ~/.local/bin and seeds the cache directory.
+# Description:
+# Ensures ~/.local/bin exists, warns if it is missing from PATH, and makes every script executable.
+# Symlinks gh-deliver into ~/.local/bin so the CLI is globally available.
+# Creates ~/.cache/scripts/gh-deliver-monitor and bootstraps repos/config/state JSON defaults.
+# Prints quick-start steps covering add/start/status/log commands plus how to get help.
+
 
 # Install script for gh-deliver
 

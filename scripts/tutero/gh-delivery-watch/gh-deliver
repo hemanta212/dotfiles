@@ -1,4 +1,11 @@
 #!/bin/bash
+# Summary: CLI to configure and control the gh-deliver monitoring daemon for GitHub Delivery workflows.
+# Description:
+# Bootstraps ~/.cache/scripts/gh-deliver-monitor state/config/repos/log files and keeps ANSI CLI help ready.
+# Supports add/remove/list commands with repo/workflow filters plus enable/disable and reset helpers.
+# Starts/stops/restarts the daemon, fetches statuses/logs, and lets you tail output with -f.
+# Exposes config show/set for interval/window/notifications and reloads the daemon whenever repos or config change.
+
 
 # gh-deliver - GitHub Delivery Workflow Monitor CLI
 # Main command interface for managing the delivery monitor service

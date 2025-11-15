@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Summary: Simpler codex wrapper tuned to the current project with low reasoning.
+# Description:
+# Runs codex exec from the invoking folder with model_reasoning_effort defaulting to low.
+# Accepts --session to resume existing conversations and -r to raise reasoning effort.
+# Captures output to ~/.cache/scripts/project-oracle logs and echoes follow-up commands when done.
+# Prints log paths and cleans up temporary output files after each run.
+
 set -euo pipefail
 
 # Capture the directory from which this script was invoked

@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Summary: Watches resources-graphql pods and alerts when CPU usage exceeds 60% of the limit.
+# Description:
+# Uses kubectl top pods for the learning namespace, calculates percent of the 300m CPU limit, and logs color-coded statuses.
+# Keeps a list of alerted pods to avoid spamming notifications and clears entries when values drop below threshold.
+# Sends macOS notifications via osascript and prints warnings when CPU approaches higher bounds.
+# Loops every 15 seconds, verifies namespace access before starting, and traps INT/TERM for a graceful shutdown.
+
 
 # Monitor resources-graphql pods CPU usage and alert when over 60%
 # Usage: ./monitor-cpu.sh

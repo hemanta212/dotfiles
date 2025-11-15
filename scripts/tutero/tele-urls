@@ -1,4 +1,11 @@
 #!/bin/bash
+# Summary: Lists all telepresence-forwarded .cluster.local service URLs.
+# Description:
+# Queries kubectl get services across namespaces and prints <name>.<namespace>.svc.cluster.local hosts.
+# Sorts the output for readability and hides stderr to keep the list clean.
+# Adds a brief header so the context is obvious when the script runs.
+# Is a quick way to check what is currently routed via telepresence.
+
 
 # List all telepresence forwarded URLs with .cluster.local suffix
 # This script queries the Kubernetes cluster for all services

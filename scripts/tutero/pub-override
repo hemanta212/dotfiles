@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Summary: Automatically finds a Flutter package and writes it into pubspec_overrides.yaml.
+# Description:
+# Searches ~/Coding/metarepo for directories matching the provided path components.
+# Creates pubspec_overrides.yaml if missing and avoids duplicate entries.
+# Derives the package name from the package pubspec.yaml before writing the override.
+# Records the override and points you back to the file for future edits.
+
 
 set -euo pipefail
 

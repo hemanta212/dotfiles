@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Summary: Pipe-only wrapper that feeds stdin prompts into the db-oracle opencode agent.
+# Description:
+# Requires the -db flag, ensures prompts are provided via stdin, and optionally records additional project directories.
+# Builds a final prompt string that includes referenced directories and the piped query before calling opencode.
+# Runs from ~/Coding/metarepo, captures stderr into a temp log, and flushes a cleaned log into ~/.cache/scripts/oracle-logs.
+# Prints the final log when verbose and otherwise echoes the agent output, making it easy to inspect failures.
+
 set -euo pipefail
 
 db=""

@@ -1,3 +1,10 @@
+// Summary: Exports Neo4j usage/context artifacts by scanning Go sources and pulling schema dumps.
+// Description:
+// Parses Go files for Neo4j/neogo operations while keeping brace depth and string literal state under control.
+// Aggregates edge/entity definition files plus API subfolders into organized exports under the configured directory.
+// Queries Neo4j schema via kubectl from running pods and writes JSON schema files per namespace.
+// Limits block lengths, skips ignored directories, and produces data tailored for AI tooling needs.
+
 package main
 
 import (

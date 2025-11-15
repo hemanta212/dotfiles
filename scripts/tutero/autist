@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Summary: Wraps codex exec sessions with background logging and resume help.
+# Description:
+# Executes Codex in the invoking directory while redirecting output into timestamped ~/.cache/scripts/autist logs.
+# Spawns a background watcher that polls the log for the session ID so it can be replayed.
+# Reads prompts from args or stdin and prefixes a strict oracle instruction before running the agent.
+# Prints follow-up command templates and shows where the complete log lives on success or failure.
+
 set -euo pipefail
 
 # Capture the directory from which this script was invoked

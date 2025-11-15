@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Summary: Runs the opencode big-brain agent and extracts only its user-facing response.
+# Description:
+# Redirects the agent output to a temp file and then strings the binary output into a cached log under ~/.cache/scripts/big-brain.
+# Looks for <output> tags and prints just the clean body when possible, removing tooling noise.
+# Falls back to Claude Haiku extraction with retries if tags are missing, filtering out plugin/status chatter.
+# Echoes detailed failure diagnostics including the raw log tail when the response cannot be extracted.
+
 set -euo pipefail
 
 # Capture the directory from which this script was invoked

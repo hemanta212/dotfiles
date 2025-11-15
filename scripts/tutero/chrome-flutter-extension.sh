@@ -1,4 +1,11 @@
 #!/bin/bash
+# Summary: Launches Thorium/Chromium with a dedicated profile while filtering Flutter flags.
+# Description:
+# Kills any existing Thorium instance, resolves the desired profile path, and starts the browser backgrounded.
+# Drops Flutter-specified params like --disable-extensions, --bwsi, and user-data-dir so the chosen profile stays intact.
+# Traps termination signals to cleanly kill the spawned browser once Flutter stops.
+# Waits in the foreground so Flutter tooling can detect when the browser exists and the test run completes.
+
 
 pkill -f 'Thorium'
 

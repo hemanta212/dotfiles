@@ -1,4 +1,11 @@
 #!/bin/bash
+# Summary: Repo-agnostic worktree cleanup tool that optionally removes local/remote branches.
+# Description:
+# Accepts a folder name, validates the git repo, and removes the worktree safely.
+# Detects the branch associated with the worktree and prompts before deleting it unless --force is used.
+# Supports deleting remote branches when --remote or --force is supplied.
+# Prints a summary of the cleanup and handles missing directories gracefully.
+
 
 # wclean - Worktree Cleanup
 # Repo-independent worktree cleanup script

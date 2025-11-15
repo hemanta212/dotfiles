@@ -1,4 +1,11 @@
 #!/bin/bash
+# Summary: Background worker that polls GitHub Delivery workflows and posts alerts for failures.
+# Description:
+# Loads repo/config/state JSON, enumerates enabled repos, and queries gh run list for recent workflows.
+# Records alerted run IDs to avoid duplicated alerts, updating repo metadata after each check.
+# Sends optional audio/desktop notifications plus colored logs when new failures appear.
+# Supports a once-mode, respects configurable intervals/check limits, and retries with backoff when needed.
+
 
 # gh-deliver-daemon - Background service for monitoring GitHub workflows
 

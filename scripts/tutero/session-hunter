@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Summary: Runs the session-hunter agent and extracts the clean output from noisy logs.
+# Description:
+# Invokes opencode session-hunter from the current directory, reading prompts from stdin or args.
+# Stores raw output under ~/.cache/scripts/session-hunter and strings it to remove binaries.
+# Looks for <output> tags and falls back to Claude Haiku extraction with retries when needed.
+# Prints follow-up instructions and log locations when extraction succeeds or fails.
+
 set -euo pipefail
 
 # Capture the directory from which this script was invoked

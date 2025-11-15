@@ -1,4 +1,11 @@
 #!/bin/bash
+# Summary: Parses git/PR commands, optionally generates AI names, and spins up a worktree/PR.
+# Description:
+# Scans the provided command for branch names or PR titles and invokes the branch-namer agent when needed.
+# Generates formatted branch/folder names, updates the command to include checkout, and prints diagnostics.
+# Creates the worktree (using remote branch when available), copies dev files, and enters the new folder.
+# Pushes new branches, prompts to create GH PRs when missing, and drops you into a shell inside the worktree.
+
 
 # wspin - Worktree Spin-up
 # Repo-independent branch creator with parser and worktree support

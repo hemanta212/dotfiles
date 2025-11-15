@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Summary: Interactive helper to version, build, and push Docker images into the mathgaps Artifact Registry.
+# Description:
+# Validates docker/gcloud/fzf, switches gcloud to the mathgaps project, and prompts for image name/tag selection.
+# Lists recent tags with parallel description lookups, suggests semantic increments, and records the chosen tag.
+# Builds the container with docker buildx for linux/amd64, pushes it to the regional Artifact Registry, and prints progress.
+# Fetches existing tag descriptions via the Registry API and logs key info so the next push is easier to decide.
+
 set -euo pipefail
 
 # Docker Image Build & Push Script

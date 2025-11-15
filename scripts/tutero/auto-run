@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Summary: Starts ./run, tails its log, and waits for the RUNNING signal before exiting.
+# Description:
+# Validates that ./run exists next to the caller and is executable before launching it with nohup.
+# Streams the log via tail -f so you can see startup events while the script waits for the service to stabilize.
+# Times out after RUN_AUTO_TIMEOUT (default 60s) if the RUNNING indicator never appears and dumps the tail.
+# Prints the log path on success so you can follow it yourself and stops the tail feed cleanly as it exits.
+
 set -euo pipefail
 
 INVOCATION_DIR="$(pwd)"
