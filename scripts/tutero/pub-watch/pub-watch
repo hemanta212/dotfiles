@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # pub-watch - Package Update Watcher CLI
 # Monitors GitHub repos for package updates and auto-creates PRs
 
@@ -47,7 +47,8 @@ if [ ! -f "$CONFIG_FILE" ]; then
   "pub_availability_timeout": 300,
   "enable_desktop_notif": true,
   "pub_read_token": "readonly54321",
-  "worktree_base": "/tmp/pub-watch-worktrees"
+  "worktree_base": "/tmp/pub-watch-worktrees",
+  "default_owner": ""
 }
 EOF
 fi
@@ -88,13 +89,24 @@ usage() {
     echo ""
     echo -e "    ${BLUE}author${NC} <watch-repo> <email/username>  Set author to watch for commits"
     echo ""
+    echo -e "    ${BLUE}bump${NC} <apply-repo> <source-repo>...  Manual package update from multiple repos"
+    echo "                                        apply-repo: owner/name to update"
+    echo "                                        source-repos: owner/name to pull from"
+    echo ""
     echo -e "${GREEN}EXAMPLES:${NC}"
-    echo "    pub-watch add hemanta212/learning-library hemanta212/schools-app"
-    echo "    pub-watch author MathGaps/learning-library sharmahemanta.212@gmail.com"
+    echo "    # Set default owner for shorter commands"
+    echo "    pub-watch config set default_owner hemanta212"
+    echo ""
+    echo "    # Add repos (with default owner)"
+    echo "    pub-watch add learning-library schools-app"
+    echo "    pub-watch add hemanta212/learning-library hemanta212/schools-app  # explicit"
+    echo ""
+    echo "    pub-watch author learning-library sharmahemanta.212@gmail.com"
     echo "    pub-watch list"
     echo "    pub-watch start"
     echo "    pub-watch logs -f"
     echo "    pub-watch config set check_interval 180"
+    echo "    pub-watch bump schools-app MathGaps/learning-library core-flutter"
     echo ""
     echo -e "${GREEN}FILES:${NC}"
     echo "    Config:  ${DATA_DIR}/config.json"
@@ -102,6 +114,29 @@ usage() {
     echo "    State:   ${DATA_DIR}/state.json"
     echo "    Logs:    ${DATA_DIR}/daemon.log"
     echo ""
+}
+
+# Expand repo name with default owner if needed
+expand_repo_name() {
+    local repo="$1"
+    
+    # If repo contains /, it's already fully qualified
+    if [[ "$repo" == */* ]]; then
+        echo "$repo"
+        return
+    fi
+    
+    # Get default owner from config
+    local default_owner=$(jq -r '.default_owner // ""' "$CONFIG_FILE")
+    
+    # If no default owner set, return as-is
+    if [ -z "$default_owner" ]; then
+        echo "$repo"
+        return
+    fi
+    
+    # Prepend default owner
+    echo "${default_owner}/${repo}"
 }
 
 # Add repository pair
@@ -114,6 +149,10 @@ cmd_add() {
         echo "Usage: pub-watch add <watch-owner/repo> <apply-owner/repo>"
         exit 1
     fi
+    
+    # Expand repo names with default owner
+    watch_repo=$(expand_repo_name "$watch_repo")
+    apply_repo=$(expand_repo_name "$apply_repo")
     
     # Validate repo format
     if [[ ! "$watch_repo" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+$ ]]; then
@@ -184,6 +223,9 @@ cmd_remove() {
         echo "Usage: pub-watch remove <watch-owner/repo>"
         exit 1
     fi
+    
+    # Expand repo name with default owner
+    watch_repo=$(expand_repo_name "$watch_repo")
     
     # Check if exists
     if ! jq -e --arg repo "$watch_repo" '.repos[] | select(.watch_repo == $repo)' "$REPOS_FILE" &>/dev/null; then
@@ -400,7 +442,7 @@ cmd_config_set() {
     if ! jq -e --arg key "$key" 'has($key)' "$CONFIG_FILE" &>/dev/null; then
         echo -e "${RED}Error:${NC} Unknown configuration key: $key"
         echo "Valid keys: check_interval, release_metadata_timeout, pub_availability_timeout,"
-        echo "            enable_desktop_notif, pub_read_token, worktree_base"
+        echo "            enable_desktop_notif, pub_read_token, worktree_base, default_owner"
         exit 1
     fi
     
@@ -435,6 +477,9 @@ cmd_author() {
         exit 1
     fi
     
+    # Expand repo name with default owner
+    watch_repo=$(expand_repo_name "$watch_repo")
+    
     # Check if watch exists
     if ! jq -e --arg repo "$watch_repo" '.repos[] | select(.watch_repo == $repo)' "$REPOS_FILE" &>/dev/null; then
         echo -e "${RED}Error:${NC} Repository '$watch_repo' is not being watched"
@@ -455,6 +500,213 @@ cmd_author() {
         echo -n "Reloading daemon... "
         kill -HUP $(cat "$PID_FILE") 2>/dev/null && echo -e "${GREEN}Done${NC}" || echo -e "${YELLOW}Daemon not responding${NC}"
     fi
+}
+
+# Manual bump command
+cmd_bump() {
+    local apply_repo="${1:-}"
+    shift
+    local source_repos=("$@")
+    
+    if [ -z "$apply_repo" ]; then
+        echo -e "${RED}Error:${NC} Apply repository required"
+        echo "Usage: pub-watch bump <apply-owner/repo> <source-owner/repo> [<source-owner/repo>...]"
+        exit 1
+    fi
+    
+    if [ ${#source_repos[@]} -eq 0 ]; then
+        echo -e "${RED}Error:${NC} At least one source repository required"
+        echo "Usage: pub-watch bump <apply-owner/repo> <source-owner/repo> [<source-owner/repo>...]"
+        exit 1
+    fi
+    
+    # Expand apply repo with default owner
+    apply_repo=$(expand_repo_name "$apply_repo")
+    
+    # Expand source repos with default owner
+    local expanded_sources=()
+    for repo in "${source_repos[@]}"; do
+        expanded_sources+=("$(expand_repo_name "$repo")")
+    done
+    source_repos=("${expanded_sources[@]}")
+    
+    # Validate apply repo format
+    if [[ ! "$apply_repo" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+$ ]]; then
+        echo -e "${RED}Error:${NC} Invalid apply repository format. Use: owner/repo"
+        exit 1
+    fi
+    
+    echo -e "${CYAN}Manual Package Bump${NC}"
+    echo ""
+    echo -e "Apply repo: ${GREEN}$apply_repo${NC}"
+    echo -e "Source repos: ${BLUE}${source_repos[*]}${NC}"
+    echo ""
+    
+    # Load config for pub server settings
+    PUB_READ_TOKEN=$(jq -r '.pub_read_token' "$CONFIG_FILE")
+    WORKTREE_BASE=$(jq -r '.worktree_base' "$CONFIG_FILE")
+    
+    # Collect all packages from all source repos
+    declare -A all_packages  # associative array: package_name -> version:sha256:source_repo
+    
+    for source_repo in "${source_repos[@]}"; do
+        echo -e "${YELLOW}Processing:${NC} $source_repo"
+        
+        # Validate repo format
+        if [[ ! "$source_repo" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+$ ]]; then
+            echo -e "${RED}  Error:${NC} Invalid repository format: $source_repo"
+            continue
+        fi
+        
+        # Get last 10 commits
+        echo -n "  Fetching commits... "
+        local commits=$(gh api "/repos/${source_repo}/commits?per_page=10" 2>/dev/null)
+        if [ -z "$commits" ]; then
+            echo -e "${RED}Failed${NC}"
+            continue
+        fi
+        echo -e "${GREEN}OK${NC}"
+        
+        # Find latest release metadata commit
+        echo -n "  Finding release metadata... "
+        local metadata_commit=$(echo "$commits" | jq -r \
+            '.[] | select(.commit.message | startswith("chore: Update release metadata")) | .sha' \
+            | head -n 1)
+        
+        if [ -z "$metadata_commit" ] || [ "$metadata_commit" = "null" ]; then
+            echo -e "${YELLOW}Not found${NC}"
+            continue
+        fi
+        echo -e "${GREEN}${metadata_commit:0:8}${NC}"
+        
+        # Extract packages from commit
+        echo -n "  Extracting packages... "
+        local tmpfile=$(mktemp)
+        gh api "/repos/${source_repo}/commits/${metadata_commit}" 2>/dev/null > "$tmpfile"
+        
+        if [ ! -s "$tmpfile" ]; then
+            echo -e "${RED}Failed${NC}"
+            rm -f "$tmpfile"
+            continue
+        fi
+        
+        # Get list of pubspec.yaml files
+        local files=$(cat "$tmpfile" | jq -r '.files[] | select(.filename | endswith("pubspec.yaml")) | .filename')
+        local pkg_count=0
+        
+        # Process each file
+        for filename in $files; do
+            if [ -z "$filename" ]; then continue; fi
+            
+            # Get patch for this file
+            patch=$(cat "$tmpfile" | jq -r ".files[] | select(.filename == \"$filename\") | .patch // empty")
+            
+            # Extract package name from path
+            pkg_name=""
+            if echo "$filename" | grep -q '^features/'; then
+                pkg_name=$(echo "$filename" | awk -F/ '{print $2}')
+            elif [ "$filename" = "pubspec.yaml" ]; then
+                # Use repo name as package name for root pubspec
+                pkg_name=$(echo "$source_repo" | awk -F/ '{print $2}')
+                # Try common patterns: learning_library, core-flutter -> core_flutter
+                pkg_name=$(echo "$pkg_name" | tr '-' '_')
+            fi
+            
+            # Extract new version from patch (+version: X.Y.Z)
+            pkg_version=$(echo "$patch" | grep '^+version:' | head -n 1 | sed 's/^+version: *//' | tr -d '"' | tr -d "'" | xargs)
+            
+            if [ -n "$pkg_name" ] && [ -n "$pkg_version" ]; then
+                # Query pub server for SHA256
+                sha256=$(query_pub_server "$pkg_name" "$pkg_version")
+                if [ -n "$sha256" ]; then
+                    all_packages["$pkg_name"]="${pkg_version}:${sha256}:${source_repo}"
+                    pkg_count=$((pkg_count + 1))
+                fi
+            fi
+        done
+        
+        rm -f "$tmpfile"
+        
+        if [ $pkg_count -gt 0 ]; then
+            echo -e "  ${GREEN}✓${NC} Found $pkg_count package(s)"
+        else
+            echo -e "  ${YELLOW}No packages found${NC}"
+        fi
+        echo ""
+    done
+    
+    # Check if we found any packages
+    if [ ${#all_packages[@]} -eq 0 ]; then
+        echo -e "${RED}Error:${NC} No packages found in any source repository"
+        exit 1
+    fi
+    
+    echo -e "${GREEN}Aggregated Packages:${NC}"
+    for pkg_name in "${!all_packages[@]}"; do
+        local pkg_info="${all_packages[$pkg_name]}"
+        local version=$(echo "$pkg_info" | cut -d: -f1)
+        local source=$(echo "$pkg_info" | cut -d: -f3)
+        echo -e "  ${BLUE}$pkg_name${NC} @ $version (from $source)"
+    done
+    echo ""
+    
+    # Call daemon with manual bump mode
+    echo -e "${YELLOW}Creating PR...${NC}"
+    
+    # Prepare packages JSON for daemon
+    local packages_json="["
+    local first=true
+    for pkg_name in "${!all_packages[@]}"; do
+        local pkg_info="${all_packages[$pkg_name]}"
+        local version=$(echo "$pkg_info" | cut -d: -f1)
+        local sha256=$(echo "$pkg_info" | cut -d: -f2)
+        
+        if [ "$first" = true ]; then
+            first=false
+        else
+            packages_json+=","
+        fi
+        packages_json+="{\"name\":\"$pkg_name\",\"version\":\"$version\",\"sha256\":\"$sha256\"}"
+    done
+    packages_json+="]"
+    
+    # Create temporary file with packages
+    local pkg_file=$(mktemp)
+    echo "$packages_json" > "$pkg_file"
+    
+    # Call daemon in manual bump mode
+    if "$SCRIPT_DIR/pub-watch-daemon" --manual-bump "$apply_repo" "$pkg_file"; then
+        echo -e "${GREEN}✓ PR created successfully!${NC}"
+        rm -f "$pkg_file"
+        exit 0
+    else
+        echo -e "${RED}✗ Failed to create PR${NC}"
+        rm -f "$pkg_file"
+        exit 1
+    fi
+}
+
+# Query pub server for package SHA256
+query_pub_server() {
+    local package="$1"
+    local version="$2"
+    
+    local response=$(curl -s -w "\n%{http_code}" \
+        -H "Authorization: Bearer ${PUB_READ_TOKEN}" \
+        "https://pub.tutero.dev/api/packages/${package}/versions/${version}" 2>/dev/null || echo -e "\n000")
+    
+    local http_code=$(echo "$response" | tail -n 1)
+    local body=$(echo "$response" | sed '$d')
+    
+    if [ "$http_code" = "200" ]; then
+        local sha256=$(echo "$body" | jq -r '.archive_sha256 // empty')
+        if [ -n "$sha256" ]; then
+            echo "$sha256"
+            return 0
+        fi
+    fi
+    
+    return 1
 }
 
 # Main command dispatcher
@@ -508,6 +760,10 @@ main() {
         author)
             shift
             cmd_author "$@"
+            ;;
+        bump)
+            shift
+            cmd_bump "$@"
             ;;
         -h|--help|help|"")
             usage

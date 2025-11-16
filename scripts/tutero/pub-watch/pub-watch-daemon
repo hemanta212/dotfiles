@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # pub-watch-daemon - Background service for monitoring package updates
 
 set -euo pipefail
@@ -40,30 +40,49 @@ SKIP_METADATA_WAIT=false
 MOCK_PUB=false
 TEST_TRIGGER_COMMIT=""
 TEST_METADATA_COMMIT=""
+MANUAL_BUMP_MODE=false
+MANUAL_BUMP_REPO=""
+MANUAL_BUMP_PACKAGES_FILE=""
 
 # Parse all arguments
-for arg in "$@"; do
+while [[ $# -gt 0 ]]; do
+    arg="$1"
     case "$arg" in
         --once)
             ONCE_MODE=true
+            shift
             ;;
         --dry-run)
             DRY_RUN=true
+            shift
             ;;
         --skip-build)
             SKIP_BUILD=true
+            shift
             ;;
         --skip-metadata-wait)
             SKIP_METADATA_WAIT=true
+            shift
             ;;
         --mock-pub)
             MOCK_PUB=true
+            shift
             ;;
         --test-trigger=*)
             TEST_TRIGGER_COMMIT="${arg#*=}"
+            shift
             ;;
         --test-metadata=*)
             TEST_METADATA_COMMIT="${arg#*=}"
+            shift
+            ;;
+        --manual-bump)
+            MANUAL_BUMP_MODE=true
+            shift
+            MANUAL_BUMP_REPO="${1:-}"
+            shift
+            MANUAL_BUMP_PACKAGES_FILE="${1:-}"
+            shift
             ;;
         --help)
             echo "pub-watch-daemon - Background service for monitoring package updates"
@@ -78,6 +97,7 @@ for arg in "$@"; do
             echo "  --mock-pub               Mock pub.tutero.dev queries (return fake SHA256)"
             echo "  --test-trigger=SHA       Use specific trigger commit instead of polling"
             echo "  --test-metadata=SHA      Use specific metadata commit instead of waiting"
+            echo "  --manual-bump <repo> <packages-file>  Manual bump mode (used by CLI)"
             echo "  --help                   Show this help message"
             echo ""
             echo "Testing Examples:"
@@ -90,6 +110,9 @@ for arg in "$@"; do
             echo "    --skip-metadata-wait --test-metadata=43bd63df0c"
             echo ""
             exit 0
+            ;;
+        *)
+            shift
             ;;
     esac
 done
@@ -193,6 +216,445 @@ mark_commit_processed() {
     mv "$tmp" "$STATE_FILE"
 }
 
+# Extract changed files from a commit (mimics workflow's changed-files action)
+extract_changed_files() {
+    local repo="$1"
+    local commit_sha="$2"
+    
+    info "Extracting changed files from commit $commit_sha..."
+    
+    # Get all changed files
+    local all_files=$(gh api "/repos/${repo}/commits/${commit_sha}" --jq '.files[].filename' 2>/dev/null)
+    
+    if [ -z "$all_files" ]; then
+        error "Failed to get changed files from commit"
+        return 1
+    fi
+    
+    # Filter files like the workflow does:
+    # Include: **.dart, pubspec.yaml, pubspec.lock
+    # Exclude: **/example/**, .github/**
+    local filtered_files=""
+    
+    while IFS= read -r file; do
+        # Skip empty lines
+        [ -z "$file" ] && continue
+        
+        # Exclude patterns
+        if [[ "$file" == *"/example/"* ]] || [[ "$file" == ".github/"* ]]; then
+            continue
+        fi
+        
+        # Include patterns
+        if [[ "$file" == *.dart ]] || [[ "$file" == *"pubspec.yaml" ]] || [[ "$file" == *"pubspec.lock" ]]; then
+            filtered_files+="${file}"$'\n'
+        fi
+    done <<< "$all_files"
+    
+    # Return filtered files (remove trailing newline)
+    echo "$filtered_files" | sed '/^$/d'
+    return 0
+}
+
+# Find affected packages from changed files (mimics workflow's directory walk logic)
+find_affected_packages() {
+    local changed_files="$1"
+    
+    info "Finding affected packages from changed files..."
+    
+    declare -A unique_packages  # Use associative array to deduplicate
+    
+    while IFS= read -r file; do
+        [ -z "$file" ] && continue
+        
+        # Walk up directory tree to find pubspec.yaml
+        local dir=$(dirname "$file")
+        local original_dir="$dir"
+        
+        # Keep going up until we find pubspec.yaml or reach root (.)
+        while [ "$dir" != "." ]; do
+            # Check if pubspec.yaml exists at this level (via GitHub API)
+            # For performance, check common patterns first
+            if [[ "$dir" =~ ^features/([^/]+)$ ]]; then
+                # features/lesson_plan → package is lesson_plan
+                local pkg_name="${BASH_REMATCH[1]}"
+                unique_packages["$pkg_name"]="$dir"
+                break
+            elif [ "$dir" = "." ]; then
+                # Root level → package name from repo
+                unique_packages["learning_library"]="."
+                break
+            fi
+            
+            # Move up one directory
+            dir=$(dirname "$dir")
+        done
+    done <<< "$changed_files"
+    
+    # Output package directories as JSON array
+    local packages_json="["
+    local first=true
+    for pkg_name in "${!unique_packages[@]}"; do
+        local pkg_dir="${unique_packages[$pkg_name]}"
+        if [ "$first" = true ]; then
+            first=false
+        else
+            packages_json+=","
+        fi
+        packages_json+="{\"name\":\"$pkg_name\",\"directory\":\"$pkg_dir\"}"
+    done
+    packages_json+="]"
+    
+    echo "$packages_json"
+    return 0
+}
+
+# Determine version bump type from commit message (mimics workflow logic)
+determine_bump_type() {
+    local commit_message="$1"
+    
+    # Get first line of commit message
+    local first_line=$(echo "$commit_message" | head -n 1)
+    
+    # Check patterns (same order as workflow)
+    if [[ "$first_line" =~ ^(fix|feat)!: ]]; then
+        echo "major"
+    elif [[ "$first_line" =~ ^feat: ]]; then
+        echo "minor"
+    elif [[ "$first_line" =~ ^fix: ]]; then
+        echo "patch"
+    elif [[ "$first_line" =~ ^chore: ]]; then
+        echo "skip"
+    else
+        # Default to patch for other commit types
+        echo "patch"
+    fi
+}
+
+# Get current version from pubspec.yaml at specific commit
+get_current_version() {
+    local repo="$1"
+    local pkg_dir="$2"
+    local commit_sha="$3"
+    
+    local pubspec_path="${pkg_dir}/pubspec.yaml"
+    if [ "$pkg_dir" = "." ]; then
+        pubspec_path="pubspec.yaml"
+    fi
+    
+    # Get pubspec.yaml content at specific commit
+    local version=$(gh api "/repos/${repo}/contents/${pubspec_path}?ref=${commit_sha}" \
+        --jq '.content' 2>/dev/null | base64 -d | grep '^version:' | sed 's/version: *//' | tr -d '"' | tr -d "'" | xargs)
+    
+    if [ -z "$version" ]; then
+        error "Could not extract version from $pubspec_path at $commit_sha"
+        return 1
+    fi
+    
+    echo "$version"
+    return 0
+}
+
+# Calculate expected new version based on bump type
+calculate_expected_version() {
+    local current_version="$1"
+    local bump_type="$2"
+    
+    if [ "$bump_type" = "skip" ]; then
+        echo "$current_version"
+        return 0
+    fi
+    
+    # Parse version components
+    local major=$(echo "$current_version" | cut -d. -f1)
+    local minor=$(echo "$current_version" | cut -d. -f2)
+    local patch=$(echo "$current_version" | cut -d. -f3)
+    
+    # Apply bump
+    case "$bump_type" in
+        major)
+            major=$((major + 1))
+            minor=0
+            patch=0
+            ;;
+        minor)
+            minor=$((minor + 1))
+            patch=0
+            ;;
+        patch)
+            patch=$((patch + 1))
+            ;;
+    esac
+    
+    echo "${major}.${minor}.${patch}"
+    return 0
+}
+
+# Build complete package expectations from trigger commit (Phase 1 integrator)
+build_package_expectations() {
+    local repo="$1"
+    local trigger_sha="$2"
+    
+    info "═══════════════════════════════════════════════"
+    info "Phase 1: Analyzing trigger commit $trigger_sha"
+    info "═══════════════════════════════════════════════"
+    
+    # Step 1: Get commit details
+    local commit_data=$(gh api "/repos/${repo}/commits/${trigger_sha}" 2>/dev/null)
+    if [ -z "$commit_data" ]; then
+        error "Failed to fetch commit data for $trigger_sha"
+        return 1
+    fi
+    
+    local commit_message=$(echo "$commit_data" | jq -r '.commit.message')
+    local trigger_date=$(echo "$commit_data" | jq -r '.commit.author.date')
+    
+    info "Commit message: $(echo "$commit_message" | head -n 1)"
+    info "Commit date: $trigger_date"
+    
+    # Step 2: Determine bump type
+    local bump_type=$(determine_bump_type "$commit_message")
+    info "Bump type: $bump_type"
+    
+    if [ "$bump_type" = "skip" ]; then
+        warn "Chore commit detected - no version bump expected"
+        echo "{\"skip\":true,\"reason\":\"chore commit\"}"
+        return 0
+    fi
+    
+    # Step 3: Extract changed files
+    local changed_files=$(extract_changed_files "$repo" "$trigger_sha")
+    if [ -z "$changed_files" ]; then
+        warn "No relevant files changed (after filtering)"
+        echo "{\"skip\":true,\"reason\":\"no relevant files\"}"
+        return 0
+    fi
+    
+    local file_count=$(echo "$changed_files" | wc -l | xargs)
+    info "Found $file_count changed file(s) (after filtering)"
+    
+    # Step 4: Find affected packages
+    local packages_json=$(find_affected_packages "$changed_files")
+    local pkg_count=$(echo "$packages_json" | jq '. | length')
+    
+    info "Found $pkg_count affected package(s)"
+    
+    # Step 5: For each package, get current version and calculate expected version
+    local expectations="[]"
+    
+    while IFS= read -r pkg; do
+        local pkg_name=$(echo "$pkg" | jq -r '.name')
+        local pkg_dir=$(echo "$pkg" | jq -r '.directory')
+        
+        info "  Package: $pkg_name (${pkg_dir})"
+        
+        # Get current version from trigger commit
+        local current_version=$(get_current_version "$repo" "$pkg_dir" "$trigger_sha" 2>&1)
+        local get_version_status=$?
+        
+        if [ $get_version_status -ne 0 ] || [ -z "$current_version" ]; then
+            error "  Failed to get current version for $pkg_name (status: $get_version_status)"
+            error "  Output: $current_version"
+            continue
+        fi
+        
+        info "    Current version: $current_version"
+        
+        # Calculate expected version
+        local expected_version=$(calculate_expected_version "$current_version" "$bump_type")
+        info "    Expected version: $expected_version (${bump_type} bump)"
+        
+        # Add to expectations
+        expectations=$(echo "$expectations" | jq \
+            --arg name "$pkg_name" \
+            --arg dir "$pkg_dir" \
+            --arg current "$current_version" \
+            --arg expected "$expected_version" \
+            --arg bump "$bump_type" \
+            '. += [{
+                name: $name,
+                directory: $dir,
+                current_version: $current,
+                expected_version: $expected,
+                bump_type: $bump
+            }]')
+    done < <(echo "$packages_json" | jq -c '.[]')
+    
+    # Build final result
+    local result=$(jq -n \
+        --arg trigger_sha "$trigger_sha" \
+        --arg trigger_date "$trigger_date" \
+        --arg bump_type "$bump_type" \
+        --argjson packages "$expectations" \
+        '{
+            skip: false,
+            trigger_sha: $trigger_sha,
+            trigger_date: $trigger_date,
+            bump_type: $bump_type,
+            packages: $packages
+        }')
+    
+    log "✓ Phase 1 complete: Expecting $(echo "$expectations" | jq '. | length') package(s)"
+    echo "$result"
+    return 0
+}
+
+# Collect all metadata commits after trigger date (Phase 2 Step 1)
+collect_metadata_commits_after() {
+    local repo="$1"
+    local trigger_date="$2"
+    
+    # Get commits after trigger date
+    local commits=$(gh api "/repos/${repo}/commits?per_page=50" 2>/dev/null)
+    
+    if [ -z "$commits" ]; then
+        error "Failed to fetch commits"
+        return 1
+    fi
+    
+    # Filter for metadata commits after trigger date
+    local metadata_commits=$(echo "$commits" | jq -r \
+        --arg trigger_date "$trigger_date" \
+        '.[] | select(.commit.message | startswith("chore: Update release metadata")) |
+         select(.commit.author.date > $trigger_date) | .sha')
+    
+    # Return as JSON array
+    echo "$metadata_commits" | jq -R . | jq -s .
+    return 0
+}
+
+# Scan a metadata commit for a specific package version (Phase 2 Step 2)
+scan_metadata_for_package() {
+    local repo="$1"
+    local metadata_sha="$2"
+    local pkg_name="$3"
+    local expected_version="$4"
+    
+    # Extract packages from this metadata commit (reuse existing function)
+    local packages_json=$(extract_package_updates "$repo" "$metadata_sha")
+    
+    if [ -z "$packages_json" ] || [ "$packages_json" = "[]" ]; then
+        return 1  # No packages found
+    fi
+    
+    # Look for our specific package with expected version
+    local found=$(echo "$packages_json" | jq -r \
+        --arg name "$pkg_name" \
+        --arg version "$expected_version" \
+        '.[] | select(. == ($name + ":" + $version))')
+    
+    if [ -n "$found" ]; then
+        return 0  # Found!
+    else
+        return 1  # Not found
+    fi
+}
+
+# Wait for all expected packages to appear in metadata commits (Phase 2 Step 3)
+wait_for_all_packages() {
+    local repo="$1"
+    local expectations_json="$2"
+    local timeout="$3"
+    
+    info "═══════════════════════════════════════════════"
+    info "Phase 2: Waiting for metadata commits"
+    info "═══════════════════════════════════════════════"
+    
+    local trigger_date=$(echo "$expectations_json" | jq -r '.trigger_date')
+    local expected_packages=$(echo "$expectations_json" | jq -c '.packages[]')
+    local expected_count=$(echo "$expectations_json" | jq '.packages | length')
+    
+    info "Expecting $expected_count package(s):"
+    echo "$expected_packages" | jq -r '"  - " + .name + "@" + .expected_version' >&2
+    
+    # Track found packages
+    declare -A packages_found
+    local packages_with_hashes="[]"
+    local found_count=0  # Track count separately to avoid bash strict mode issues
+    
+    local start_time=$(date +%s)
+    
+    while true; do
+        local elapsed=$(($(date +%s) - start_time))
+        if [ $elapsed -gt $timeout ]; then
+            error "Timeout after ${timeout}s"
+            error "Status:"
+            
+            while IFS= read -r pkg; do
+                local pkg_name=$(echo "$pkg" | jq -r '.name')
+                local expected_version=$(echo "$pkg" | jq -r '.expected_version')
+                
+                if [ -n "${packages_found[$pkg_name]:-}" ]; then
+                    log "  ✓ $pkg_name@$expected_version - FOUND"
+                else
+                    error "  ✗ $pkg_name@$expected_version - NOT FOUND"
+                fi
+            done <<< "$expected_packages"
+            
+            return 1
+        fi
+        
+        # Collect metadata commits after trigger
+        local metadata_commits=$(collect_metadata_commits_after "$repo" "$trigger_date")
+        local metadata_count=$(echo "$metadata_commits" | jq '. | length')
+        
+        if [ "$metadata_count" -eq 0 ]; then
+            sleep 10
+            continue
+        fi
+        
+        # Scan each metadata commit for our packages
+        while IFS= read -r metadata_sha; do
+            [ -z "$metadata_sha" ] || [ "$metadata_sha" = "null" ] && continue
+            
+            # Check each expected package
+            while IFS= read -r pkg; do
+                local pkg_name=$(echo "$pkg" | jq -r '.name')
+                local expected_version=$(echo "$pkg" | jq -r '.expected_version')
+                
+                # Skip if already found
+                [ -n "${packages_found[$pkg_name]:-}" ] && continue
+                
+                # Scan this metadata commit
+                if scan_metadata_for_package "$repo" "$metadata_sha" "$pkg_name" "$expected_version"; then
+                    log "  ✓ Found $pkg_name@$expected_version in metadata ${metadata_sha:0:8}"
+                    
+                    # Query pub server for SHA256
+                    local sha256=$(query_pub_hash "$pkg_name" "$expected_version" "$PUB_AVAILABILITY_TIMEOUT")
+                    
+                    if [ -n "$sha256" ]; then
+                        packages_found[$pkg_name]="$metadata_sha"
+                        found_count=$((found_count + 1))  # Increment count
+                        
+                        # Add to results
+                        packages_with_hashes=$(echo "$packages_with_hashes" | jq \
+                            --arg name "$pkg_name" \
+                            --arg version "$expected_version" \
+                            --arg sha256 "$sha256" \
+                            --arg metadata "$metadata_sha" \
+                            '. += [{
+                                name: $name,
+                                version: $version,
+                                sha256: $sha256,
+                                metadata_sha: $metadata
+                            }]')
+                    fi
+                fi
+            done <<< "$expected_packages"
+        done < <(echo "$metadata_commits" | jq -r '.[]')
+        
+        # Check if we have all packages
+        if [ $found_count -eq $expected_count ]; then
+            log "✓ All $expected_count package(s) found!"
+            echo "$packages_with_hashes"
+            return 0
+        fi
+        
+        info "Progress: $found_count/$expected_count packages found (${elapsed}s elapsed)"
+        sleep 10
+    done
+}
+
 # Wait for release metadata commit
 wait_for_release_metadata() {
     local repo="$1"
@@ -208,23 +670,44 @@ wait_for_release_metadata() {
     
     # Skip waiting mode: expect metadata to already exist
     if [ "$SKIP_METADATA_WAIT" = true ]; then
-        warn "SKIP_METADATA_WAIT: Looking for existing metadata commit..."
-        local commits=$(gh api "/repos/${repo}/commits?per_page=20" 2>/dev/null || echo "[]")
+        warn "SKIP_METADATA_WAIT: Looking for existing metadata commit after $after_sha..."
+        
+        # Get the trigger commit's timestamp
+        local trigger_date=$(gh api "/repos/${repo}/commits/${after_sha}" --jq '.commit.author.date' 2>/dev/null)
+        if [ -z "$trigger_date" ]; then
+            error "Failed to get trigger commit date"
+            return 1
+        fi
+        
+        local commits=$(gh api "/repos/${repo}/commits?per_page=50" 2>/dev/null || echo "[]")
+        
+        # Find metadata commit AFTER trigger commit (same logic as wait mode)
         local metadata_commit=$(echo "$commits" | jq -r \
-            '.[] | select(.commit.message | startswith("chore: Update release metadata")) | .sha' \
-            | head -n 1)
+            --arg trigger_date "$trigger_date" \
+            '.[] | select(.commit.message | startswith("chore: Update release metadata")) | 
+             select(.commit.author.date > $trigger_date) | .sha' \
+            | tail -n 1)
         
         if [ -n "$metadata_commit" ] && [ "$metadata_commit" != "null" ]; then
-            log "Found existing release metadata commit: $metadata_commit"
+            log "Found existing release metadata commit: $metadata_commit (after $after_sha)"
             echo "$metadata_commit"
             return 0
         else
-            error "No metadata commit found (use --test-metadata=SHA to specify)"
+            error "No metadata commit found after $after_sha (use --test-metadata=SHA to specify)"
             return 1
         fi
     fi
     
-    info "Waiting for release metadata commit (timeout: ${timeout}s)..."
+    info "Waiting for release metadata commit after $after_sha (timeout: ${timeout}s)..."
+    
+    # Get the trigger commit's timestamp
+    local trigger_date=$(gh api "/repos/${repo}/commits/${after_sha}" --jq '.commit.author.date' 2>/dev/null)
+    if [ -z "$trigger_date" ]; then
+        error "Failed to get trigger commit date"
+        return 1
+    fi
+    
+    info "Trigger commit date: $trigger_date"
     
     local start_time=$(date +%s)
     while true; do
@@ -235,16 +718,21 @@ wait_for_release_metadata() {
             return 1
         fi
         
-        # Get recent commits
-        local commits=$(gh api "/repos/${repo}/commits?per_page=20" 2>/dev/null || echo "[]")
+        # Get recent commits (increased to 50 to catch the right one)
+        local commits=$(gh api "/repos/${repo}/commits?per_page=50" 2>/dev/null || echo "[]")
         
-        # Look for release metadata commit
+        # Look for release metadata commit AFTER the trigger commit
+        # Filter by: 1) message starts with "chore: Update release metadata"
+        #            2) commit date is AFTER trigger date
+        # Then take the FIRST (oldest) one that matches
         local metadata_commit=$(echo "$commits" | jq -r \
-            '.[] | select(.commit.message | startswith("chore: Update release metadata")) | .sha' \
-            | head -n 1)
+            --arg trigger_date "$trigger_date" \
+            '.[] | select(.commit.message | startswith("chore: Update release metadata")) | 
+             select(.commit.author.date > $trigger_date) | .sha' \
+            | tail -n 1)  # tail -n 1 gets the OLDEST (first after trigger)
         
         if [ -n "$metadata_commit" ] && [ "$metadata_commit" != "null" ]; then
-            log "Found release metadata commit: $metadata_commit"
+            log "Found release metadata commit: $metadata_commit (after $after_sha)"
             echo "$metadata_commit"
             return 0
         fi
@@ -499,7 +987,9 @@ validate_build() {
     local build_output=$(fvm flutter build web --release --no-tree-shake-icons --source-maps 2>&1)
     local build_status=$?
     
-    if [ $build_status -ne 0 ]; then
+    # CRITICAL: fvm returns exit code 0 even when flutter build fails!
+    # Must check output for error patterns
+    if [ $build_status -ne 0 ] || echo "$build_output" | grep -q "Error: Failed to compile\|Error: Compilation failed\|Target dart2js failed"; then
         error "flutter build web failed"
         error "Build output (last 20 lines):"
         echo "$build_output" | tail -20 | while read -r line; do
@@ -517,8 +1007,8 @@ validate_build() {
     
     log "✓ flutter build web successful!"
     
-    # Output the build result (last 30 lines) for inclusion in PR
-    echo "$build_output" | tail -30
+    # Output the build result (last 5 lines) for inclusion in PR
+    echo "$build_output" | tail -5
     return 0
 }
 
@@ -625,6 +1115,7 @@ create_pull_request() {
     local pr_title="$3"
     local packages_updated="$4"
     local source_pr_url="${5:-}"
+    local build_output="${6:-}"
     
     cd "$worktree_dir" || {
         error "Failed to cd to worktree"
@@ -766,6 +1257,16 @@ Libraries updated:
 ${packages_updated}"
     fi
     
+    # Add build output if available
+    if [ -n "$build_output" ]; then
+        pr_body="${pr_body}
+
+## Build ✅
+\`\`\`
+${build_output}
+\`\`\`"
+    fi
+    
     info "Creating PR on GitHub..."
     local pr_output=$(gh pr create \
         --title "$pr_title" \
@@ -837,7 +1338,116 @@ get_pr_info_from_commit() {
     echo "$title|$branch|"
 }
 
-# Full commit processing workflow
+# Robust commit processing workflow (NEW - uses Phase 1 + Phase 2)
+process_commit_workflow_robust() {
+    local watch_repo="$1"
+    local apply_repo="$2"
+    local trigger_sha="$3"
+    local trigger_msg="$4"
+    
+    info "Starting ROBUST workflow for commit $trigger_sha"
+    
+    # Phase 1: Analyze trigger commit to understand what to expect
+    local expectations=$(build_package_expectations "$watch_repo" "$trigger_sha")
+    
+    # Check if we should skip (chore commit or no relevant changes)
+    local should_skip=$(echo "$expectations" | jq -r '.skip // false')
+    if [ "$should_skip" = "true" ]; then
+        local skip_reason=$(echo "$expectations" | jq -r '.reason')
+        warn "Skipping commit: $skip_reason"
+        mark_commit_processed "$watch_repo" "$trigger_sha" "skipped" "null" "null"
+        return 0
+    fi
+    
+    # Phase 2: Wait for all expected packages to appear in metadata commits
+    local packages_with_hashes=$(wait_for_all_packages "$watch_repo" "$expectations" "$RELEASE_METADATA_TIMEOUT")
+    
+    if [ -z "$packages_with_hashes" ] || [ "$packages_with_hashes" = "[]" ]; then
+        error "Failed to find all expected packages"
+        mark_commit_processed "$watch_repo" "$trigger_sha" "metadata_timeout" "null" "null"
+        return 1
+    fi
+    
+    # Get PR info from trigger commit
+    local pr_info=$(get_pr_info_from_commit "$watch_repo" "$trigger_sha")
+    local pr_title=$(echo "$pr_info" | cut -d'|' -f1)
+    local pr_branch=$(echo "$pr_info" | cut -d'|' -f2)
+    local source_pr_url=$(echo "$pr_info" | cut -d'|' -f3)
+    
+    log "PR info - Title: $pr_title, Branch: $pr_branch"
+    if [ -n "$source_pr_url" ]; then
+        log "Source PR: $source_pr_url"
+    fi
+    
+    # Setup target repo and update pubspec.lock
+    local worktree_dir="${WORKTREE_BASE}/${apply_repo//\//_}_${pr_branch}"
+    
+    if ! setup_target_repo "$apply_repo" "$pr_branch" "$worktree_dir"; then
+        error "Failed to setup target repo"
+        mark_commit_processed "$watch_repo" "$trigger_sha" "setup_failed" "null" "null"
+        return 1
+    fi
+    
+    # Update pubspec.lock for all packages
+    local packages_updated=""
+    while IFS= read -r pkg; do
+        local pkg_name=$(echo "$pkg" | jq -r '.name')
+        local pkg_version=$(echo "$pkg" | jq -r '.version')
+        local pkg_sha256=$(echo "$pkg" | jq -r '.sha256')
+        
+        if ! update_pubspec_lock "$worktree_dir" "$pkg_name" "$pkg_version" "$pkg_sha256"; then
+            error "Failed to update pubspec.lock for $pkg_name"
+            mark_commit_processed "$watch_repo" "$trigger_sha" "lock_update_failed" "null" "null"
+            return 1
+        fi
+        
+        packages_updated+="- ${pkg_name} → ${pkg_version}\n"
+    done < <(echo "$packages_with_hashes" | jq -c '.[]')
+    
+    # Validate build and capture output
+    local build_output_file=$(mktemp)
+    if ! validate_build "$worktree_dir" > "$build_output_file"; then
+        local build_output=$(cat "$build_output_file")
+        rm -f "$build_output_file"
+        error "Build validation failed"
+        
+        # Get metadata SHAs for marking as processed
+        local metadata_shas=$(echo "$packages_with_hashes" | jq -r '.[].metadata_sha' | sort -u | head -n 1)
+        mark_commit_processed "$watch_repo" "$trigger_sha" "build_failed" "$metadata_shas" "null"
+        send_notification "pub-watch Build Failed" "Build failed for $pr_title"
+        return 1
+    fi
+    local build_output=$(cat "$build_output_file")
+    rm -f "$build_output_file"
+    
+    # Create PR with build output
+    local pr_url=$(create_pull_request "$worktree_dir" "$pr_branch" "$pr_title" "$(echo -e "$packages_updated")" "$source_pr_url" "$build_output")
+    
+    if [ -n "$pr_url" ]; then
+        log "✓ ROBUST workflow complete! PR: $pr_url"
+        
+        # Get metadata SHAs for state tracking
+        local metadata_shas=$(echo "$packages_with_hashes" | jq -r '.[].metadata_sha' | sort -u | head -n 1)
+        mark_commit_processed "$watch_repo" "$trigger_sha" "completed" "$metadata_shas" "$pr_url"
+        
+        # Copy to clipboard
+        local clipboard_msg="schools bump: ${pr_url}"
+        if command -v pbcopy &> /dev/null; then
+            echo -n "$clipboard_msg" | pbcopy
+            log "✓ Copied to clipboard: $clipboard_msg"
+        fi
+        
+        send_notification "pub-watch Success" "Created PR: $pr_title" "$pr_url"
+        return 0
+    else
+        error "Failed to create PR"
+        local metadata_shas=$(echo "$packages_with_hashes" | jq -r '.[].metadata_sha' | sort -u | head -n 1)
+        mark_commit_processed "$watch_repo" "$trigger_sha" "pr_failed" "$metadata_shas" "null"
+        return 1
+    fi
+}
+
+# Full commit processing workflow (OLD - deprecated, keeping for fallback)
 process_commit_workflow() {
     local watch_repo="$1"
     local apply_repo="$2"
@@ -924,17 +1534,22 @@ process_commit_workflow() {
         fi
     done
     
-    # Step 7: Validate build
-    if ! validate_build "$worktree_dir"; then
+    # Step 7: Validate build and capture output
+    local build_output_file=$(mktemp)
+    if ! validate_build "$worktree_dir" > "$build_output_file"; then
+        local build_output=$(cat "$build_output_file")
+        rm -f "$build_output_file"
         error "Build validation failed"
         mark_commit_processed "$watch_repo" "$trigger_sha" "build_failed" "$metadata_sha" "null"
         send_notification "pub-watch Build Failed" "Build failed for $pr_title"
         return 1
     fi
+    local build_output=$(cat "$build_output_file")
+    rm -f "$build_output_file"
     
-    # Step 8: Create PR
+    # Step 8: Create PR with build output
     local packages_list=$(printf '%s\n' "${packages_with_hashes[@]}" | cut -d: -f1-2 | sed 's/:/ → /')
-    local pr_url=$(create_pull_request "$worktree_dir" "$pr_branch" "$pr_title" "$packages_list" "$source_pr_url")
+    local pr_url=$(create_pull_request "$worktree_dir" "$pr_branch" "$pr_title" "$packages_list" "$source_pr_url" "$build_output")
     
     if [ -n "$pr_url" ]; then
         log "✓ Workflow complete! PR: $pr_url"
@@ -996,37 +1611,33 @@ setup_target_repo() {
         rm -rf "$worktree_dir"
     fi
     
+    # CRITICAL FIX: Force delete existing branch (local AND remote) to prevent contamination
+    # This ensures we always start fresh from origin/main, avoiding branch reuse bugs
+    
+    # Check if branch exists on remote
+    if git ls-remote --heads origin "$branch" 2>/dev/null | grep -q "$branch"; then
+        warn "Branch '$branch' exists on remote - DELETING to prevent contamination"
+        if git push origin --delete "$branch" &>/dev/null; then
+            info "✓ Deleted remote branch: $branch"
+        else
+            warn "Failed to delete remote branch (may not have permissions, continuing anyway)"
+        fi
+    fi
+    
     # Remove branch if it exists locally (we'll recreate it)
     if git branch --list "$branch" | grep -q "$branch"; then
         info "Removing existing local branch: $branch"
         git branch -D "$branch" &>/dev/null || true
     fi
     
-    # Create worktree from origin/main
+    # Create fresh worktree from origin/main
     if git worktree add "$worktree_dir" -b "$branch" origin/main &>/dev/null; then
-        log "Worktree created at: $worktree_dir"
+        log "✓ Worktree created fresh from origin/main: $worktree_dir"
         return 0
+    else
+        error "Failed to create worktree"
+        return 1
     fi
-    
-    # If branch exists on remote, fetch it and use it
-    if git ls-remote --heads origin "$branch" | grep -q "$branch"; then
-        info "Branch exists on remote, fetching..."
-        git fetch origin "$branch" &>/dev/null || {
-            error "Failed to fetch remote branch"
-            return 1
-        }
-        
-        # Create branch tracking remote
-        git branch "$branch" "origin/$branch" &>/dev/null || true
-        
-        if git worktree add "$worktree_dir" "$branch" &>/dev/null; then
-            log "Worktree created from existing branch: $worktree_dir"
-            return 0
-        fi
-    fi
-    
-    error "Failed to create worktree"
-    return 1
 }
 
 # Process a single watch repository
@@ -1057,8 +1668,8 @@ process_watch_repo() {
         
         log "TEST MODE: Commit: $commit_sha - $commit_msg"
         
-        # Process the test commit (ignore if already processed in test mode)
-        process_commit_workflow "$watch_repo" "$apply_repo" "$commit_sha" "$commit_msg"
+        # Process the test commit with ROBUST workflow
+        process_commit_workflow_robust "$watch_repo" "$apply_repo" "$commit_sha" "$commit_msg"
         return
     fi
     
@@ -1091,8 +1702,8 @@ process_watch_repo() {
         
         log "Found new commit: $commit_sha - $commit_msg"
         
-        # Full workflow
-        process_commit_workflow "$watch_repo" "$apply_repo" "$commit_sha" "$commit_msg"
+        # ROBUST workflow (Phase 1 + Phase 2)
+        process_commit_workflow_robust "$watch_repo" "$apply_repo" "$commit_sha" "$commit_msg"
         
     done <<< "$(echo "$commits" | jq -c '.')"
 }
@@ -1125,8 +1736,101 @@ shutdown_handler() {
 trap reload_handler HUP
 trap shutdown_handler INT TERM
 
+# Manual bump workflow
+manual_bump_workflow() {
+    local apply_repo="$MANUAL_BUMP_REPO"
+    local packages_file="$MANUAL_BUMP_PACKAGES_FILE"
+    
+    log "═══════════════════════════════════════════════"
+    log "Manual Bump Mode"
+    log "═══════════════════════════════════════════════"
+    log "Apply repo: $apply_repo"
+    log "Packages file: $packages_file"
+    
+    # Validate inputs
+    if [ -z "$apply_repo" ] || [ -z "$packages_file" ]; then
+        error "Manual bump requires both repo and packages file"
+        return 1
+    fi
+    
+    if [ ! -f "$packages_file" ]; then
+        error "Packages file not found: $packages_file"
+        return 1
+    fi
+    
+    # Load packages JSON
+    local packages_json=$(cat "$packages_file")
+    local package_count=$(echo "$packages_json" | jq '. | length')
+    
+    log "Found $package_count package(s) to update"
+    
+    # Setup worktree
+    local branch_name="manual-bump-$(date +%Y%m%d-%H%M%S)"
+    local worktree_dir="${WORKTREE_BASE}/${apply_repo//\//_}_${branch_name}"
+    
+    if ! setup_target_repo "$apply_repo" "$branch_name" "$worktree_dir"; then
+        error "Failed to setup target repo"
+        return 1
+    fi
+    
+    # Update pubspec.lock for each package
+    local packages_updated=""
+    while IFS= read -r pkg; do
+        local pkg_name=$(echo "$pkg" | jq -r '.name')
+        local pkg_version=$(echo "$pkg" | jq -r '.version')
+        local pkg_sha256=$(echo "$pkg" | jq -r '.sha256')
+        
+        if ! update_pubspec_lock "$worktree_dir" "$pkg_name" "$pkg_version" "$pkg_sha256"; then
+            error "Failed to update pubspec.lock for $pkg_name"
+            return 1
+        fi
+        
+        packages_updated+="- ${pkg_name} → ${pkg_version}\n"
+    done < <(echo "$packages_json" | jq -c '.[]')
+    
+    # Validate build and capture output
+    local build_output_file=$(mktemp)
+    if ! validate_build "$worktree_dir" > "$build_output_file"; then
+        local build_output=$(cat "$build_output_file")
+        rm -f "$build_output_file"
+        error "Build validation failed"
+        send_notification "pub-watch Build Failed" "Manual bump build failed"
+        return 1
+    fi
+    local build_output=$(cat "$build_output_file")
+    rm -f "$build_output_file"
+    
+    # Create PR
+    local pr_title="chore: Manual package updates"
+    local pr_url=$(create_pull_request "$worktree_dir" "$branch_name" "$pr_title" "$(echo -e "$packages_updated")" "" "$build_output")
+    
+    if [ -n "$pr_url" ]; then
+        log "✓ Manual bump complete! PR: $pr_url"
+        
+        # Copy to clipboard
+        local clipboard_msg="manual bump: ${pr_url}"
+        if command -v pbcopy &> /dev/null; then
+            echo -n "$clipboard_msg" | pbcopy
+            log "✓ Copied to clipboard: $clipboard_msg"
+        fi
+        
+        send_notification "pub-watch Success" "Manual bump PR created" "$pr_url"
+        return 0
+    else
+        error "Failed to create PR"
+        return 1
+    fi
+}
+
 # Main daemon loop
 main() {
+    # Manual bump mode
+    if [ "$MANUAL_BUMP_MODE" = true ]; then
+        load_config
+        manual_bump_workflow
+        exit $?
+    fi
+    
     if [ "$ONCE_MODE" = true ]; then
         load_config
         load_repos
