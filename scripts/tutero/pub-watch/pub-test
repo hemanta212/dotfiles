@@ -1,0 +1,391 @@
+#!/bin/bash
+# pub-test - End-to-end test script for pub-watch
+# Simulates a real development workflow by creating commits and release metadata
+
+set -euo pipefail
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+
+# Test repository configuration
+WATCH_REPO="hemanta212/learning-library"  # Fork of MathGaps/learning-library
+APPLY_REPO="hemanta212/schools-app"       # Where PRs will be created
+TRIGGER_AUTHOR="sharmahemanta.212@gmail.com"
+TRIGGER_NAME="Hemanta Sharma"
+
+# Test workspace
+TEST_DIR="${HOME}/.cache/scripts/pub-watch/test"
+REPO_DIR="${TEST_DIR}/repo"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+log() {
+    echo -e "${GREEN}[$(date +'%H:%M:%S')]${NC} $*"
+}
+
+error() {
+    echo -e "${RED}[$(date +'%H:%M:%S')] ERROR:${NC} $*" >&2
+}
+
+warn() {
+    echo -e "${YELLOW}[$(date +'%H:%M:%S')] WARN:${NC} $*"
+}
+
+info() {
+    echo -e "${BLUE}[$(date +'%H:%M:%S')] INFO:${NC} $*"
+}
+
+step() {
+    echo -e "\n${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}▶ $*${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+}
+
+# ============================================================================
+# REPOSITORY SETUP
+# ============================================================================
+
+setup_test_repo() {
+    step "STEP 1: Setting up test repository"
+    
+    # Clean up old test directory
+    if [ -d "$TEST_DIR" ]; then
+        warn "Removing old test directory..."
+        rm -rf "$TEST_DIR"
+    fi
+    
+    mkdir -p "$TEST_DIR"
+    cd "$TEST_DIR"
+    
+    # Clone the watch repo
+    log "Cloning ${WATCH_REPO}..."
+    git clone "git@github.com:${WATCH_REPO}.git" repo
+    cd "$REPO_DIR"
+    
+    # Configure git
+    git config user.email "$TRIGGER_AUTHOR"
+    git config user.name "$TRIGGER_NAME"
+    
+    log "✓ Repository cloned and configured"
+}
+
+# ============================================================================
+# FIND PACKAGE (from pool of common packages)
+# ============================================================================
+
+find_package_to_update() {
+    step "STEP 2: Selecting package to update"
+    
+    cd "$REPO_DIR"
+    
+    # Pool of packages that exist in BOTH learning-library AND schools-app
+    local PACKAGE_POOL=("lesson_plan" "skill_info" "worksheets")
+    
+    # Pick random from pool
+    local selected_name="${PACKAGE_POOL[$RANDOM % ${#PACKAGE_POOL[@]}]}"
+    
+    info "Package pool (exist in both repos): ${PACKAGE_POOL[*]}"
+    log "Selected: $selected_name"
+    
+    # Find the package directory
+    SELECTED_PACKAGE=""
+    if [ -d "./features/$selected_name" ]; then
+        SELECTED_PACKAGE="./features/$selected_name"
+    elif [ -f "./pubspec.yaml" ] && grep -q "^name: $selected_name" "./pubspec.yaml"; then
+        SELECTED_PACKAGE="."
+    fi
+    
+    if [ -z "$SELECTED_PACKAGE" ]; then
+        error "Package $selected_name not found in repo!"
+        return 1
+    fi
+    
+    PACKAGE_NAME="$selected_name"
+    
+    log "✓ Selected package: $PACKAGE_NAME ($SELECTED_PACKAGE)"
+}
+
+# ============================================================================
+# MODIFY DART FILE
+# ============================================================================
+
+modify_dart_file() {
+    step "STEP 3: Modifying a Dart file in the package"
+    
+    cd "$REPO_DIR"
+    
+    # Find all Dart files in the selected package
+    local dart_files=()
+    while IFS= read -r dart_file; do
+        dart_files+=("$dart_file")
+    done < <(find "$SELECTED_PACKAGE" -name "*.dart" -not -path "*/.*" | head -20)
+    
+    if [ ${#dart_files[@]} -eq 0 ]; then
+        warn "No Dart files found, creating a test file..."
+        mkdir -p "$SELECTED_PACKAGE/lib"
+        MODIFIED_FILE="$SELECTED_PACKAGE/lib/test_modification.dart"
+        cat > "$MODIFIED_FILE" <<EOF
+// Test modification by pub-test script
+// Generated at $(date)
+
+void testFunction() {
+  print('Test modification');
+}
+EOF
+    else
+        # Pick a random Dart file
+        MODIFIED_FILE="${dart_files[$RANDOM % ${#dart_files[@]}]}"
+        
+        # Add a comment at the end
+        echo "" >> "$MODIFIED_FILE"
+        echo "// Test modification by pub-test at $(date +%s)" >> "$MODIFIED_FILE"
+    fi
+    
+    log "✓ Modified file: $MODIFIED_FILE"
+}
+
+# ============================================================================
+# CREATE FIX COMMIT
+# ============================================================================
+
+create_fix_commit() {
+    step "STEP 4: Creating fix commit on feature branch"
+    
+    cd "$REPO_DIR"
+    
+    # Generate random issue/task ID
+    local id_type=$( [ $((RANDOM % 2)) -eq 0 ] && echo "ISSUE" || echo "TASK" )
+    local id_number=$((10000 + RANDOM % 90000))
+    BRANCH_NAME="${id_type}-${id_number}"
+    
+    # Create and checkout branch
+    git checkout -b "$BRANCH_NAME" main
+    
+    # Stage and commit the change
+    git add "$MODIFIED_FILE"
+    
+    COMMIT_MESSAGE="fix: Improve ${PACKAGE_NAME} functionality
+
+This is a test commit created by pub-test script.
+
+Resolves ${id_type}-${id_number}"
+    
+    git commit -m "$COMMIT_MESSAGE"
+    
+    local feature_commit=$(git rev-parse HEAD)
+    
+    log "✓ Created commit: ${feature_commit:0:8}"
+    log "✓ Branch: $BRANCH_NAME"
+    log "✓ Message: $(echo "$COMMIT_MESSAGE" | head -n 1)"
+}
+
+# ============================================================================
+# CREATE PR AND MERGE
+# ============================================================================
+
+create_and_merge_pr() {
+    step "STEP 5: Creating PR and merging to main"
+    
+    cd "$REPO_DIR"
+    
+    # Push feature branch
+    info "Pushing feature branch: $BRANCH_NAME..."
+    git push origin "$BRANCH_NAME" 2>&1 | head -5
+    
+    # Create PR
+    info "Creating PR on GitHub..."
+    local pr_body="Test PR created by pub-test script
+
+This will trigger pub-watch daemon to create an auto-update PR."
+    
+    PR_URL=$(gh pr create \
+        --title "fix: Improve ${PACKAGE_NAME} functionality" \
+        --body "$pr_body" \
+        --base main \
+        --head "$BRANCH_NAME" 2>&1 | grep -o 'https://github.com/[^ ]*' | head -n 1)
+    
+    if [ -n "$PR_URL" ]; then
+        log "✓ PR created: $PR_URL"
+        PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+    else
+        error "Failed to create PR"
+        return 1
+    fi
+    
+    # Merge PR
+    info "Merging PR #$PR_NUMBER..."
+    if gh pr merge "$PR_NUMBER" --squash --delete-branch 2>&1 | head -10; then
+        log "✓ PR merged and branch deleted"
+        sleep 2  # Wait for GitHub to process
+    else
+        warn "Auto-merge failed, trying manual merge..."
+        # Fallback: merge locally
+        git checkout main
+        git pull origin main
+        git merge "$BRANCH_NAME" --no-edit
+        git push origin main
+        gh pr close "$PR_NUMBER" 2>/dev/null || true
+        git branch -d "$BRANCH_NAME" 2>/dev/null || true
+        log "✓ Merged locally"
+    fi
+    
+    # Get the trigger commit SHA (the merge commit on main)
+    git checkout main
+    git pull origin main
+    TRIGGER_COMMIT=$(git rev-parse HEAD)
+    log "✓ Trigger commit: ${TRIGGER_COMMIT:0:8}"
+}
+
+# ============================================================================
+# CREATE RELEASE METADATA COMMIT
+# ============================================================================
+
+create_release_metadata() {
+    step "STEP 6: Creating release metadata commit"
+    
+    cd "$REPO_DIR"
+    
+    # Get current package version
+    local current_version=$(cat "$SELECTED_PACKAGE/pubspec.yaml" | grep "^version:" | awk '{print $2}')
+    
+    if [ -z "$current_version" ]; then
+        current_version="1.0.0"
+    fi
+    
+    # Increment patch version
+    local major=$(echo "$current_version" | cut -d. -f1)
+    local minor=$(echo "$current_version" | cut -d. -f2)
+    local patch=$(echo "$current_version" | cut -d. -f3)
+    local new_patch=$((patch + 1))
+    NEW_VERSION="${major}.${minor}.${new_patch}"
+    
+    info "Version: $current_version → $NEW_VERSION"
+    
+    # Update pubspec.yaml version
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/^version: .*/version: $NEW_VERSION/" "$SELECTED_PACKAGE/pubspec.yaml"
+    else
+        sed -i "s/^version: .*/version: $NEW_VERSION/" "$SELECTED_PACKAGE/pubspec.yaml"
+    fi
+    
+    # Commit as github-actions[bot]
+    git config user.email "github-actions[bot]@users.noreply.github.com"
+    git config user.name "github-actions[bot]"
+    
+    git add "$SELECTED_PACKAGE/pubspec.yaml"
+    git commit -m "chore: Update release metadata [skip ci]"
+    
+    METADATA_COMMIT=$(git rev-parse HEAD)
+    
+    # Reset git config
+    git config user.email "$TRIGGER_AUTHOR"
+    git config user.name "$TRIGGER_NAME"
+    
+    log "✓ Created metadata commit: ${METADATA_COMMIT:0:8}"
+    log "✓ Updated $PACKAGE_NAME to version $NEW_VERSION"
+    
+    # Push metadata commit
+    info "Pushing release metadata..."
+    if git push origin main 2>&1; then
+        log "✓ Pushed release metadata to main"
+    else
+        warn "Trying force push for metadata..."
+        if git push origin main --force-with-lease 2>&1; then
+            log "✓ Force pushed metadata commit"
+        else
+            error "Failed to push metadata commit"
+            return 1
+        fi
+    fi
+}
+
+# ============================================================================
+# SUMMARY
+# ============================================================================
+
+show_summary() {
+    step "TEST SUMMARY"
+    
+    echo ""
+    log "Repository: $WATCH_REPO"
+    log "Package: $PACKAGE_NAME ($SELECTED_PACKAGE)"
+    log "Modified File: $MODIFIED_FILE"
+    log "Branch: $BRANCH_NAME"
+    log "Trigger PR: $PR_URL"
+    log "Trigger Commit: ${TRIGGER_COMMIT:0:12}"
+    log "Metadata Commit: ${METADATA_COMMIT:0:12}"
+    log "New Version: $NEW_VERSION"
+    echo ""
+    
+    info "The pub-watch daemon should now:"
+    info "  1. Detect trigger commit ${TRIGGER_COMMIT:0:8}"
+    info "  2. Wait for/find metadata commit ${METADATA_COMMIT:0:8}"
+    info "  3. Extract package: $PACKAGE_NAME @ $NEW_VERSION"
+    info "  4. Query pub.tutero.dev for SHA256"
+    info "  5. Create/update PR on $APPLY_REPO"
+    echo ""
+    
+    warn "Make sure pub-watch daemon is running:"
+    warn "  ./pub-watch start"
+    warn "  ./pub-watch logs -f"
+    echo ""
+}
+
+# ============================================================================
+# MAIN
+# ============================================================================
+
+main() {
+    echo ""
+    log "═════════════════════════════════════════════════════"
+    log "  pub-test - End-to-End Test Script"
+    log "═════════════════════════════════════════════════════"
+    echo ""
+    
+    warn "This script will:"
+    warn "  1. Clone $WATCH_REPO"
+    warn "  2. Modify a random package"
+    warn "  3. Create a fix commit"
+    warn "  4. Merge to main and push"
+    warn "  5. Create release metadata commit"
+    warn "  6. Push everything"
+    echo ""
+    
+    read -p "Continue? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        warn "Aborted by user"
+        exit 0
+    fi
+    
+    setup_test_repo
+    find_package_to_update
+    modify_dart_file
+    create_fix_commit
+    create_and_merge_pr
+    create_release_metadata
+    show_summary
+    
+    log "✓ Test setup complete!"
+    log "Now start the daemon: ./pub-watch start"
+}
+
+# Check if we're in dry-run mode
+if [ "${1:-}" = "--dry-run" ]; then
+    warn "DRY RUN MODE - Will not push to GitHub"
+    DRY_RUN=true
+    export DRY_RUN
+fi
+
+main "$@"
