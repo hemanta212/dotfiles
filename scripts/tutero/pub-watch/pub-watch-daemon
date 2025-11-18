@@ -146,7 +146,24 @@ load_config() {
 
 # Load repositories
 load_repos() {
-    WATCH_REPOS=($(jq -r '.repos[] | select(.enabled) | @base64' "$REPOS_FILE"))
+    # Support both old format (watch_repo) and new format (watch_repos array)
+    # Expand each entry with multiple watch_repos into separate entries for processing
+    WATCH_REPOS=($(jq -r '
+        .repos[] | select(.enabled) | 
+        if .watch_repos then
+            # New format: expand array into multiple entries
+            .watch_repos[] as $watch_repo |
+            {
+                watch_repo: $watch_repo,
+                apply_repo: .apply_repo,
+                watch_author: .watch_author,
+                enabled: .enabled
+            } | @base64
+        else
+            # Old format: single watch_repo
+            . | @base64
+        end
+    ' "$REPOS_FILE"))
 }
 
 # Send desktop notification (clickable on macOS)
@@ -159,13 +176,33 @@ send_notification() {
         return
     fi
     
-    if command -v osascript &> /dev/null; then
+    # Try terminal-notifier first (best UX - clickable notifications)
+    if command -v terminal-notifier &> /dev/null; then
         if [ -n "$url" ]; then
-            # Clickable notification that opens URL
-            osascript -e "display notification \"$message\" with title \"$title\" sound name \"Glass\"" \
-                      -e "delay 0.1" &> /dev/null || true
-            # Store URL for potential click handler (simplified approach)
-            echo "$url" > "${DATA_DIR}/last_notification_url.txt"
+            terminal-notifier \
+                -title "$title" \
+                -message "$message" \
+                -sound Glass \
+                -open "$url" \
+                -group "pub-watch" &> /dev/null || true
+        else
+            terminal-notifier \
+                -title "$title" \
+                -message "$message" \
+                -sound Glass \
+                -group "pub-watch" &> /dev/null || true
+        fi
+    elif command -v osascript &> /dev/null; then
+        # Fallback to osascript (notification only - no auto-open)
+        if [ -n "$url" ]; then
+            if [[ "$url" == https://github.com/* ]]; then
+                # For PR URLs, just show notification with URL hint
+                osascript -e "display notification \"$message\n\n🔗 $url\" with title \"$title\" sound name \"Glass\"" &> /dev/null || true
+            elif [[ "$url" == file://* ]]; then
+                # For log files, show clickable alert dialog
+                osascript -e "display dialog \"$message\n\nClick OK to view logs.\" buttons {\"OK\", \"Cancel\"} default button \"OK\" with title \"$title\"" \
+                          -e "if button returned of result is \"OK\" then open POSIX file \"${url#file://}\"" &> /dev/null &
+            fi
         else
             osascript -e "display notification \"$message\" with title \"$title\"" &> /dev/null || true
         fi
@@ -565,6 +602,14 @@ wait_for_all_packages() {
     local expected_count=$(echo "$expectations_json" | jq '.packages | length')
     
     info "Expecting $expected_count package(s):"
+    
+    # Handle 0 expected packages (no package files changed - skip processing)
+    if [ "$expected_count" -eq 0 ]; then
+        warn "No packages expected - skipping metadata wait"
+        echo "[]"
+        return 0
+    fi
+    
     echo "$expected_packages" | jq -r '"  - " + .name + "@" + .expected_version' >&2
     
     # Track found packages
@@ -577,9 +622,10 @@ wait_for_all_packages() {
     while true; do
         local elapsed=$(($(date +%s) - start_time))
         if [ $elapsed -gt $timeout ]; then
-            error "Timeout after ${timeout}s"
+            error "Timeout after ${timeout}s waiting for metadata commits"
             error "Status:"
             
+            local missing_packages=""
             while IFS= read -r pkg; do
                 local pkg_name=$(echo "$pkg" | jq -r '.name')
                 local expected_version=$(echo "$pkg" | jq -r '.expected_version')
@@ -588,9 +634,12 @@ wait_for_all_packages() {
                     log "  ✓ $pkg_name@$expected_version - FOUND"
                 else
                     error "  ✗ $pkg_name@$expected_version - NOT FOUND"
+                    missing_packages="${missing_packages}${pkg_name}@${expected_version}, "
                 fi
             done <<< "$expected_packages"
             
+            # Send notification
+            send_notification "pub-watch Timeout" "Metadata timeout: ${missing_packages%, }"
             return 1
         fi
         
@@ -638,6 +687,10 @@ wait_for_all_packages() {
                                 sha256: $sha256,
                                 metadata_sha: $metadata
                             }]')
+                    else
+                        # Pub server timeout - break immediately
+                        error "Pub server timeout for $pkg_name@$expected_version - aborting"
+                        return 1
                     fi
                 fi
             done <<< "$expected_packages"
@@ -1204,14 +1257,6 @@ Triggered by: ${pr_title}"
     
     log "✓ Branch pushed"
     
-    # Safety check: Don't create PRs on MathGaps org repos
-    if [[ "$worktree_dir" == *"MathGaps"* ]]; then
-        error "SAFETY CHECK: Refusing to create PR on MathGaps org repo!"
-        error "Worktree: $worktree_dir"
-        send_notification "pub-watch Safety Check" "Blocked PR to MathGaps org repo"
-        return 1
-    fi
-    
     # Dry run mode - don't actually create PR
     if [ "$DRY_RUN" = true ]; then
         warn "DRY RUN: Would create PR with title: $pr_title"
@@ -1224,9 +1269,46 @@ Triggered by: ${pr_title}"
         return 0
     fi
     
-    # If PR already exists, just update it
+    # If PR already exists, append to it
     if [ "$pr_exists" = true ]; then
         log "✓ Updated existing PR #$pr_number"
+        
+        # Fetch current PR body
+        local current_body=$(gh pr view "$pr_number" --json body --jq '.body' 2>/dev/null || echo "")
+        
+        # Extract existing "Bumps for" section
+        local existing_bumps=""
+        if echo "$current_body" | grep -q "## Bumps for"; then
+            existing_bumps=$(echo "$current_body" | sed -n '/## Bumps for/,/## Build\|$/p' | sed '/## Build/d' | tail -n +2)
+        fi
+        
+        # Build updated PR body - append new bump entry
+        local updated_body="## Bumps for"
+        if [ -n "$existing_bumps" ]; then
+            updated_body="${updated_body}
+${existing_bumps}"
+        fi
+        
+        # Add new bump entry if not already present
+        if [ -n "$source_pr_url" ]; then
+            if ! echo "$existing_bumps" | grep -q "$source_pr_url"; then
+                updated_body="${updated_body}
+- ${source_pr_url}"
+            fi
+        fi
+        
+        # Add build output (always replace, not append)
+        if [ -n "$build_output" ]; then
+            updated_body="${updated_body}
+
+## Build ✅
+\`\`\`
+${build_output}
+\`\`\`"
+        fi
+        
+        # Update PR body
+        gh pr edit "$pr_number" --body "$updated_body" 2>/dev/null || warn "Could not update PR body"
         
         # Convert from draft to ready if needed
         if [ "$is_draft" = "true" ]; then
@@ -1238,7 +1320,7 @@ Triggered by: ${pr_title}"
             fi
         fi
         
-        send_notification "pub-watch Updated" "Updated PR #$pr_number"
+        send_notification "pub-watch Updated" "Updated PR #$pr_number" "$pr_url"
         echo "$pr_url"
         return 0
     fi
@@ -1292,7 +1374,7 @@ ${build_output}
             warn "Could not mark PR as ready"
         fi
         
-        send_notification "pub-watch Success" "Created PR: $pr_title"
+        send_notification "pub-watch Success" "Created PR: $pr_title" "$pr_url"
         echo "$pr_url"
         return 0
     else
@@ -1365,6 +1447,7 @@ process_commit_workflow_robust() {
     if [ -z "$packages_with_hashes" ] || [ "$packages_with_hashes" = "[]" ]; then
         error "Failed to find all expected packages"
         mark_commit_processed "$watch_repo" "$trigger_sha" "metadata_timeout" "null" "null"
+        send_notification "pub-watch Failed" "Metadata timeout for commit ${trigger_sha:0:8}"
         return 1
     fi
     
@@ -1379,10 +1462,21 @@ process_commit_workflow_robust() {
         log "Source PR: $source_pr_url"
     fi
     
+    # Check if PR already exists for this branch BEFORE setting up worktree
+    local existing_pr_check=$(gh pr list --repo "$apply_repo" --head "$pr_branch" --json number,url,isDraft --jq '.[0]' 2>/dev/null || echo "null")
+    local pr_exists=false
+    local existing_pr_number=""
+    
+    if [ "$existing_pr_check" != "null" ] && [ -n "$existing_pr_check" ]; then
+        pr_exists=true
+        existing_pr_number=$(echo "$existing_pr_check" | jq -r '.number')
+        info "PR #$existing_pr_number already exists for branch $pr_branch - will update it"
+    fi
+    
     # Setup target repo and update pubspec.lock
     local worktree_dir="${WORKTREE_BASE}/${apply_repo//\//_}_${pr_branch}"
     
-    if ! setup_target_repo "$apply_repo" "$pr_branch" "$worktree_dir"; then
+    if ! setup_target_repo "$apply_repo" "$pr_branch" "$worktree_dir" "$pr_exists"; then
         error "Failed to setup target repo"
         mark_commit_processed "$watch_repo" "$trigger_sha" "setup_failed" "null" "null"
         return 1
@@ -1509,7 +1603,7 @@ process_commit_workflow() {
     # Step 5: Setup target repo and update pubspec.lock
     local worktree_dir="${WORKTREE_BASE}/${apply_repo//\//_}_${pr_branch}"
     
-    if ! setup_target_repo "$apply_repo" "$pr_branch" "$worktree_dir"; then
+    if ! setup_target_repo "$apply_repo" "$pr_branch" "$worktree_dir" "false"; then
         error "Failed to setup target repo"
         mark_commit_processed "$watch_repo" "$trigger_sha" "setup_failed" "$metadata_sha" "null"
         return 1
@@ -1576,6 +1670,7 @@ setup_target_repo() {
     local repo="$1"
     local branch="$2"
     local worktree_dir="$3"
+    local pr_exists="${4:-false}"  # New parameter: whether PR already exists
     
     info "Setting up target repo: $repo"
     
@@ -1611,16 +1706,48 @@ setup_target_repo() {
         rm -rf "$worktree_dir"
     fi
     
-    # CRITICAL FIX: Force delete existing branch (local AND remote) to prevent contamination
-    # This ensures we always start fresh from origin/main, avoiding branch reuse bugs
-    
-    # Check if branch exists on remote
-    if git ls-remote --heads origin "$branch" 2>/dev/null | grep -q "$branch"; then
-        warn "Branch '$branch' exists on remote - DELETING to prevent contamination"
-        if git push origin --delete "$branch" &>/dev/null; then
-            info "✓ Deleted remote branch: $branch"
+    if [ "$pr_exists" = "true" ]; then
+        # PR exists - reuse the branch, don't delete it
+        info "PR exists - reusing existing branch $branch"
+        
+        # Fetch the branch from remote
+        if git fetch origin "$branch" &>/dev/null; then
+            # Remove local branch if exists
+            if git branch --list "$branch" | grep -q "$branch"; then
+                git branch -D "$branch" &>/dev/null || true
+            fi
+            
+            # Create branch tracking remote
+            git branch "$branch" "origin/$branch" &>/dev/null || true
+            
+            if git worktree add "$worktree_dir" "$branch" &>/dev/null; then
+                log "✓ Worktree created from existing PR branch: $worktree_dir"
+                return 0
+            else
+                warn "Failed to create worktree from existing branch"
+            fi
         else
-            warn "Failed to delete remote branch (may not have permissions, continuing anyway)"
+            warn "Could not fetch branch $branch from remote"
+        fi
+        
+        # If we get here, fetching or worktree creation failed
+        # Fall through to create fresh branch (but don't delete remote branch since PR exists)
+        warn "Will create fresh worktree from origin/main and force push"
+    fi
+    
+    # PR doesn't exist OR fetching failed - create fresh branch
+    # CRITICAL FIX: Force delete existing branch (local AND remote) to prevent contamination
+    # But ONLY if PR doesn't exist (to avoid breaking existing PRs)
+    
+    if [ "$pr_exists" != "true" ]; then
+        # Check if branch exists on remote
+        if git ls-remote --heads origin "$branch" 2>/dev/null | grep -q "$branch"; then
+            warn "Branch '$branch' exists on remote - DELETING to prevent contamination"
+            if git push origin --delete "$branch" &>/dev/null; then
+                info "✓ Deleted remote branch: $branch"
+            else
+                warn "Failed to delete remote branch (may not have permissions, continuing anyway)"
+            fi
         fi
     fi
     
@@ -1768,7 +1895,7 @@ manual_bump_workflow() {
     local branch_name="manual-bump-$(date +%Y%m%d-%H%M%S)"
     local worktree_dir="${WORKTREE_BASE}/${apply_repo//\//_}_${branch_name}"
     
-    if ! setup_target_repo "$apply_repo" "$branch_name" "$worktree_dir"; then
+    if ! setup_target_repo "$apply_repo" "$branch_name" "$worktree_dir" "false"; then
         error "Failed to setup target repo"
         return 1
     fi

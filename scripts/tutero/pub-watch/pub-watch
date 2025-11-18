@@ -65,47 +65,52 @@ usage() {
     echo "    pub-watch <command> [options]"
     echo ""
     echo -e "${GREEN}COMMANDS:${NC}"
-    echo -e "    ${BLUE}add${NC} <watch-repo> <apply-repo>    Add repository pair to watch"
-    echo "                                        watch-repo: owner/name to monitor"
-    echo "                                        apply-repo: owner/name to update"
+    echo -e "    ${BLUE}add${NC} <apply-repo> <watch-repo>...  Add/append watch repos to apply repo config"
+    echo "                                        apply-repo: owner/name to update (anchor)"
+    echo "                                        watch-repos: owner/name(s) to monitor"
+    echo "                                        Repeating apply-repo appends (no duplicates)"
     echo ""
-    echo -e "    ${BLUE}remove${NC} <watch-repo>              Remove repository watch"
+    echo -e "    ${BLUE}remove${NC} <apply-repo> [<watch-repo>]  Remove config or specific watch repo"
+    echo "                                        No watch-repo: removes entire config"
+    echo "                                        With watch-repo: removes only that watch repo"
     echo ""
     echo -e "    ${BLUE}list${NC}                             List all watched repositories"
     echo ""
+    echo -e "    ${BLUE}author${NC} <apply-repo> <email/username>  Set author to watch for (all watch repos)"
+    echo ""
+    echo -e "    ${BLUE}bump${NC} <apply-repo> <source-repo>...  Manual package update from multiple repos"
+    echo ""
     echo -e "    ${BLUE}start${NC}                            Start the monitoring daemon"
-    echo ""
     echo -e "    ${BLUE}stop${NC}                             Stop the monitoring daemon"
-    echo ""
     echo -e "    ${BLUE}restart${NC}                          Restart the monitoring daemon"
-    echo ""
     echo -e "    ${BLUE}status${NC}                           Show daemon status"
-    echo ""
     echo -e "    ${BLUE}logs${NC} [-f]                        Show daemon logs (-f to follow)"
     echo ""
     echo -e "    ${BLUE}config${NC}                           Show current configuration"
-    echo ""
     echo -e "    ${BLUE}config set${NC} <key> <value>         Set configuration value"
-    echo ""
-    echo -e "    ${BLUE}author${NC} <watch-repo> <email/username>  Set author to watch for commits"
-    echo ""
-    echo -e "    ${BLUE}bump${NC} <apply-repo> <source-repo>...  Manual package update from multiple repos"
-    echo "                                        apply-repo: owner/name to update"
-    echo "                                        source-repos: owner/name to pull from"
     echo ""
     echo -e "${GREEN}EXAMPLES:${NC}"
     echo "    # Set default owner for shorter commands"
     echo "    pub-watch config set default_owner hemanta212"
     echo ""
-    echo "    # Add repos (with default owner)"
-    echo "    pub-watch add learning-library schools-app"
-    echo "    pub-watch add hemanta212/learning-library hemanta212/schools-app  # explicit"
+    echo "    # Add watch repos to apply repo (apply repo is the anchor)"
+    echo "    pub-watch add schools-app learning-library"
+    echo "    pub-watch add schools-app core-flutter              # Appends to existing"
+    echo "    pub-watch add schools-app learning-library          # No-op (already exists)"
     echo ""
-    echo "    pub-watch author learning-library sharmahemanta.212@gmail.com"
+    echo "    # Set author and manage config"
+    echo "    pub-watch author schools-app sharmahemanta.212@gmail.com"
     echo "    pub-watch list"
+    echo ""
+    echo "    # Remove specific watch repo or entire config"
+    echo "    pub-watch remove schools-app core-flutter           # Remove one watch repo"
+    echo "    pub-watch remove schools-app                        # Remove entire config"
+    echo ""
+    echo "    # Start daemon and monitor"
     echo "    pub-watch start"
     echo "    pub-watch logs -f"
-    echo "    pub-watch config set check_interval 180"
+    echo ""
+    echo "    # Manual bump from multiple source repos"
     echo "    pub-watch bump schools-app MathGaps/learning-library core-flutter"
     echo ""
     echo -e "${GREEN}FILES:${NC}"
@@ -141,39 +146,50 @@ expand_repo_name() {
 
 # Add repository pair
 cmd_add() {
-    local watch_repo="${1:-}"
-    local apply_repo="${2:-}"
-    
-    if [ -z "$watch_repo" ] || [ -z "$apply_repo" ]; then
-        echo -e "${RED}Error:${NC} Both watch and apply repositories required"
-        echo "Usage: pub-watch add <watch-owner/repo> <apply-owner/repo>"
+    if [ $# -lt 2 ]; then
+        echo -e "${RED}Error:${NC} At least one watch repo and one apply repo required"
+        echo "Usage: pub-watch add <apply-owner/repo> <watch-owner/repo> [<watch-owner/repo2> ...]"
+        echo ""
+        echo "The apply repo is the anchor - watch repos are added/appended to it."
+        echo "Repeating the same apply repo will append watch repos (no duplicates)."
+        echo ""
+        echo "Examples:"
+        echo "  pub-watch add schools-app learning-library"
+        echo "  pub-watch add schools-app core-flutter           # Appends to existing config"
+        echo "  pub-watch add schools-app learning-library       # No-op (already exists)"
+        echo ""
+        echo "Result: schools-app will watch both learning-library and core-flutter"
         exit 1
     fi
     
-    # Expand repo names with default owner
-    watch_repo=$(expand_repo_name "$watch_repo")
+    # First arg is apply repo, rest are watch repos
+    local apply_repo="${1}"
+    shift
+    local watch_repos=("$@")
+    
+    # Expand apply repo name with default owner
     apply_repo=$(expand_repo_name "$apply_repo")
     
-    # Validate repo format
-    if [[ ! "$watch_repo" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+$ ]]; then
-        echo -e "${RED}Error:${NC} Invalid watch repository format. Use: owner/repo"
-        exit 1
-    fi
-    
+    # Validate apply repo format
     if [[ ! "$apply_repo" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+$ ]]; then
         echo -e "${RED}Error:${NC} Invalid apply repository format. Use: owner/repo"
         exit 1
     fi
     
-    # Check if repos exist on GitHub
-    echo -n "Checking watch repository... "
-    if ! gh repo view "$watch_repo" &>/dev/null; then
-        echo -e "${RED}Failed${NC}"
-        echo -e "${RED}Error:${NC} Repository '$watch_repo' not found or not accessible"
-        exit 1
-    fi
-    echo -e "${GREEN}OK${NC}"
+    # Expand and validate all watch repos
+    local expanded_watch_repos=()
+    for watch_repo in "${watch_repos[@]}"; do
+        watch_repo=$(expand_repo_name "$watch_repo")
+        
+        if [[ ! "$watch_repo" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+$ ]]; then
+            echo -e "${RED}Error:${NC} Invalid watch repository format: $watch_repo. Use: owner/repo"
+            exit 1
+        fi
+        
+        expanded_watch_repos+=("$watch_repo")
+    done
     
+    # Check if apply repo exists on GitHub
     echo -n "Checking apply repository... "
     if ! gh repo view "$apply_repo" &>/dev/null; then
         echo -e "${RED}Failed${NC}"
@@ -182,18 +198,49 @@ cmd_add() {
     fi
     echo -e "${GREEN}OK${NC}"
     
-    # Check if already added
-    if jq -e --arg repo "$watch_repo" '.repos[] | select(.watch_repo == $repo)' "$REPOS_FILE" &>/dev/null; then
-        echo -e "${YELLOW}Warning:${NC} Repository '$watch_repo' is already being watched"
-        exit 0
-    fi
+    # Check all watch repos exist on GitHub
+    echo "Checking watch repositories..."
+    for watch_repo in "${expanded_watch_repos[@]}"; do
+        echo -n "  $watch_repo... "
+        if ! gh repo view "$watch_repo" &>/dev/null; then
+            echo -e "${RED}Failed${NC}"
+            echo -e "${RED}Error:${NC} Repository '$watch_repo' not found or not accessible"
+            exit 1
+        fi
+        echo -e "${GREEN}OK${NC}"
+    done
     
-    # Add to repos file
-    local new_repo=$(jq -n \
-        --arg watch "$watch_repo" \
-        --arg apply "$apply_repo" \
-        '{
-            watch_repo: $watch,
+    # Check if apply repo already exists in config
+    local existing_entry=$(jq -e --arg apply "$apply_repo" '.repos[] | select(.apply_repo == $apply)' "$REPOS_FILE" 2>/dev/null || echo "null")
+    
+    if [ "$existing_entry" != "null" ] && [ -n "$existing_entry" ]; then
+        # Append new watch repos to existing entry
+        echo "Apply repo '$apply_repo' already configured. Adding watch repos..."
+        
+        local updated_repos=$(jq --arg apply "$apply_repo" \
+            --argjson new_watch_repos "$(printf '%s\n' "${expanded_watch_repos[@]}" | jq -R . | jq -s .)" \
+            '
+            .repos = (.repos | map(
+                if .apply_repo == $apply then
+                    .watch_repos = (.watch_repos + $new_watch_repos | unique)
+                else
+                    .
+                end
+            ))
+            ' "$REPOS_FILE")
+        
+        echo "$updated_repos" > "$REPOS_FILE"
+    else
+        # Create new entry with all watch repos
+        echo "Adding new configuration for $apply_repo..."
+        
+        local watch_repos_json=$(printf '%s\n' "${expanded_watch_repos[@]}" | jq -R . | jq -s .)
+        
+        local new_repo=$(jq -n \
+            --argjson watch_repos "$watch_repos_json" \
+            --arg apply "$apply_repo" \
+            '{
+            watch_repos: $watch_repos,
             apply_repo: $apply,
             watch_author: "sharmahemanta.212@gmail.com",
             enabled: true,
@@ -201,11 +248,12 @@ cmd_add() {
             last_checked: null,
             last_processed_commit: null
         }')
+        
+        jq --argjson new "$new_repo" '.repos += [$new]' "$REPOS_FILE" > "${REPOS_FILE}.tmp"
+        mv "${REPOS_FILE}.tmp" "$REPOS_FILE"
+    fi
     
-    jq --argjson new "$new_repo" '.repos += [$new]' "$REPOS_FILE" > "${REPOS_FILE}.tmp"
-    mv "${REPOS_FILE}.tmp" "$REPOS_FILE"
-    
-    echo -e "${GREEN}✓${NC} Added watch: ${CYAN}$watch_repo${NC} → ${CYAN}$apply_repo${NC}"
+    echo -e "${GREEN}✓${NC} Added watch repos: ${CYAN}${expanded_watch_repos[*]}${NC} → ${CYAN}$apply_repo${NC}"
     
     # Reload daemon if running
     if cmd_is_running; then
@@ -214,30 +262,76 @@ cmd_add() {
     fi
 }
 
-# Remove repository
+# Remove repository config or specific watch repo
 cmd_remove() {
-    local watch_repo="${1:-}"
+    local apply_repo="${1:-}"
+    local watch_repo="${2:-}"
+    
+    if [ -z "$apply_repo" ]; then
+        echo -e "${RED}Error:${NC} Apply repository required"
+        echo "Usage: pub-watch remove <apply-owner/repo> [<watch-owner/repo>]"
+        echo ""
+        echo "Examples:"
+        echo "  pub-watch remove schools-app                    # Remove entire config"
+        echo "  pub-watch remove schools-app learning-library   # Remove specific watch repo only"
+        exit 1
+    fi
+    
+    # Expand repo names with default owner
+    apply_repo=$(expand_repo_name "$apply_repo")
+    
+    # Check if apply repo exists
+    if ! jq -e --arg repo "$apply_repo" '.repos[] | select(.apply_repo == $repo)' "$REPOS_FILE" &>/dev/null; then
+        echo -e "${RED}Error:${NC} Apply repository '$apply_repo' is not configured"
+        exit 1
+    fi
     
     if [ -z "$watch_repo" ]; then
-        echo -e "${RED}Error:${NC} Watch repository required"
-        echo "Usage: pub-watch remove <watch-owner/repo>"
-        exit 1
+        # Remove entire apply repo config
+        jq --arg repo "$apply_repo" '.repos = [.repos[] | select(.apply_repo != $repo)]' "$REPOS_FILE" > "${REPOS_FILE}.tmp"
+        mv "${REPOS_FILE}.tmp" "$REPOS_FILE"
+        echo -e "${GREEN}✓${NC} Removed apply repo config: ${CYAN}$apply_repo${NC}"
+    else
+        # Remove specific watch repo from the config
+        watch_repo=$(expand_repo_name "$watch_repo")
+        
+        # Check if watch repo exists in this config
+        local has_watch=$(jq -e --arg apply "$apply_repo" --arg watch "$watch_repo" '
+            .repos[] | 
+            select(.apply_repo == $apply) |
+            select(
+                (.watch_repo == $watch) or 
+                (.watch_repos and (.watch_repos | index($watch)))
+            )
+        ' "$REPOS_FILE" &>/dev/null && echo "true" || echo "false")
+        
+        if [ "$has_watch" = "false" ]; then
+            echo -e "${RED}Error:${NC} Watch repo '$watch_repo' not found in config for '$apply_repo'"
+            exit 1
+        fi
+        
+        # Remove watch repo from array, delete entire entry if array becomes empty
+        jq --arg apply "$apply_repo" --arg watch "$watch_repo" '
+            .repos = [
+                .repos[] | 
+                if .apply_repo == $apply then
+                    if .watch_repos then
+                        .watch_repos = (.watch_repos - [$watch]) |
+                        if (.watch_repos | length) > 0 then . else empty end
+                    elif .watch_repo == $watch then
+                        empty
+                    else
+                        .
+                    end
+                else
+                    .
+                end
+            ]
+        ' "$REPOS_FILE" > "${REPOS_FILE}.tmp"
+        mv "${REPOS_FILE}.tmp" "$REPOS_FILE"
+        
+        echo -e "${GREEN}✓${NC} Removed watch repo ${CYAN}$watch_repo${NC} from ${CYAN}$apply_repo${NC}"
     fi
-    
-    # Expand repo name with default owner
-    watch_repo=$(expand_repo_name "$watch_repo")
-    
-    # Check if exists
-    if ! jq -e --arg repo "$watch_repo" '.repos[] | select(.watch_repo == $repo)' "$REPOS_FILE" &>/dev/null; then
-        echo -e "${RED}Error:${NC} Repository '$watch_repo' is not being watched"
-        exit 1
-    fi
-    
-    # Remove from repos file
-    jq --arg repo "$watch_repo" '.repos = [.repos[] | select(.watch_repo != $repo)]' "$REPOS_FILE" > "${REPOS_FILE}.tmp"
-    mv "${REPOS_FILE}.tmp" "$REPOS_FILE"
-    
-    echo -e "${GREEN}✓${NC} Removed watch: ${CYAN}$watch_repo${NC}"
     
     # Reload daemon if running
     if cmd_is_running; then
@@ -260,8 +354,10 @@ cmd_list() {
     echo -e "${CYAN}Watched Repository Pairs:${NC}"
     echo ""
     
+    # Support both old format (watch_repo) and new format (watch_repos array)
     jq -r '.repos[] | 
-        "  \(if .enabled then "✓" else "○" end) \(.watch_repo) → \(.apply_repo)\n" +
+        (if .watch_repos then .watch_repos | join(", ") else .watch_repo // "none" end) as $watch |
+        "  \(if .enabled then "✓" else "○" end) \($watch) → \(.apply_repo)\n" +
         "    Author: \(.watch_author)\n" +
         (if .last_checked then "    Last Check: \(.last_checked)\n" else "" end) +
         (if .last_processed_commit then "    Last Commit: \(.last_processed_commit)\n" else "" end)' "$REPOS_FILE"
@@ -468,32 +564,35 @@ cmd_config_set() {
 
 # Set author for a watch repo
 cmd_author() {
-    local watch_repo="${1:-}"
+    local apply_repo="${1:-}"
     local author="${2:-}"
     
-    if [ -z "$watch_repo" ] || [ -z "$author" ]; then
-        echo -e "${RED}Error:${NC} Both watch repository and author required"
-        echo "Usage: pub-watch author <watch-owner/repo> <email/username>"
+    if [ -z "$apply_repo" ] || [ -z "$author" ]; then
+        echo -e "${RED}Error:${NC} Both apply repository and author required"
+        echo "Usage: pub-watch author <apply-owner/repo> <email/username>"
+        echo ""
+        echo "Example:"
+        echo "  pub-watch author schools-app sharmahemanta.212@gmail.com"
         exit 1
     fi
     
     # Expand repo name with default owner
-    watch_repo=$(expand_repo_name "$watch_repo")
+    apply_repo=$(expand_repo_name "$apply_repo")
     
-    # Check if watch exists
-    if ! jq -e --arg repo "$watch_repo" '.repos[] | select(.watch_repo == $repo)' "$REPOS_FILE" &>/dev/null; then
-        echo -e "${RED}Error:${NC} Repository '$watch_repo' is not being watched"
-        echo "Add it first with: pub-watch add $watch_repo <apply-repo>"
+    # Check if apply repo exists
+    if ! jq -e --arg repo "$apply_repo" '.repos[] | select(.apply_repo == $repo)' "$REPOS_FILE" &>/dev/null; then
+        echo -e "${RED}Error:${NC} Apply repository '$apply_repo' is not configured"
+        echo "Add it first with: pub-watch add $apply_repo <watch-repo>"
         exit 1
     fi
     
-    # Update author
-    jq --arg repo "$watch_repo" --arg author "$author" \
-        '(.repos[] | select(.watch_repo == $repo) | .watch_author) = $author' \
+    # Update author for all watch repos under this apply repo
+    jq --arg repo "$apply_repo" --arg author "$author" \
+        '(.repos[] | select(.apply_repo == $repo) | .watch_author) = $author' \
         "$REPOS_FILE" > "${REPOS_FILE}.tmp"
     mv "${REPOS_FILE}.tmp" "$REPOS_FILE"
     
-    echo -e "${GREEN}✓${NC} Set author for ${CYAN}$watch_repo${NC} to ${BLUE}$author${NC}"
+    echo -e "${GREEN}✓${NC} Set author for ${CYAN}$apply_repo${NC} to ${BLUE}$author${NC}"
     
     # Reload daemon if running
     if cmd_is_running; then
