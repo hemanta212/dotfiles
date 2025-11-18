@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 DESKTOP_DIR="$HOME/Desktop"
 
 latest_mov=$(find "$DESKTOP_DIR" -maxdepth 1 -name "*.mov" -type f -print0 | xargs -0 ls -t | head -n 1)
@@ -23,4 +21,11 @@ echo "Output: $output_file"
 
 ffmpeg -i "$latest_mov" -c:v libx264 -preset ultrafast -crf 23 -c:a aac "$output_file"
 
-echo "Done: $output_file"
+if [ $? -eq 0 ]; then
+    echo "Conversion successful! Removing original file: $latest_mov"
+    rm "$latest_mov"
+    echo "Done: $output_file"
+else
+    echo "Conversion failed! Keeping original file: $latest_mov"
+    exit 1
+fi
