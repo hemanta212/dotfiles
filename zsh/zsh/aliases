@@ -50,7 +50,7 @@ alias localdb='cd ~/dev/tutero/flutter/learning/ && docker compose -f docker-com
 alias locallearning='cd ~/dev/tutero/flutter/learning/ && docker compose -f docker-compose.yml up learning-graphql --build'
 alias diag='cd ~/dev/tutero/flutter/diagnostics/ && docker compose -f docker-compose.yml up diagnostics-db --build -d; sleep 15; docker compose -f docker-compose.yml up diagnostics-grpc --build'
 alias diagdb='cd ~/dev/tutero/flutter/diagnostics/ && docker compose -f docker-compose.yml up diagnostics-db --build -d'
-alias gtg="graphql-tooling generate; find ./transport/graph/resolvers -name '*.resolvers.go' | xargs gofumpt -w"
+alias gtg="graphql-tooling generate && gofumpt -l -w transport/graph/resolvers/"
 alias ctg='cagen; find ./internal -name "*.go" | xargs gofumpt -w'
 alias coc="COCKROACH_SKIP_ENABLING_DIAGNOSTIC_REPORTING=true cockroach"
 
@@ -126,15 +126,14 @@ alias zea='nvim ~/.config/zsh/aliases'
 alias zef='nvim ~/.config/zsh/functionsrc'
 alias ze='nvim ~/.zshrc'
 alias zez='nvim ~/.config/zsh/zshrc'
-alias claude='ANTHROPIC_API_KEY="" ~/.claude/local/claude'
-alias gemini="GEMINI_API_KEY='' gemini"
-alias gem='GEMINI_API_KEY='' gemini --yolo --checkpointing'
-alias oc='EDITOR=/opt/homebrew/bin/nvim ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' opencode --continue'
-alias am='EDITOR=/opt/homebrew/bin/nvim AMP_URL=http://localhost:8317 amp --dangerously-allow-all --no-ide'
-alias amx='EDITOR=/opt/homebrew/bin/nvim AMP_URL=http://localhost:8317 amp  --dangerously-allow-all -x'
-alias ocn='EDITOR=/opt/homebrew/bin/nvim ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' bun x opencode-ai@opentui -- --continue'
-alias ac='OPENAI_API_KEY='' codex --search --dangerously-bypass-approvals-and-sandbox'
-alias co='OPENAI_API_KEY='' ANTHROPIC_API_KEY='' GEMINI_API_KEY='' copilot  --disable-builtin-mcps --allow-all-paths  --allow-all-tools --resume'
+alias claude='PATH=/opt/homebrew/bin:$PATH ANTHROPIC_API_KEY="" /opt/homebrew/bin/claude'
+alias gemini="PATH=/opt/homebrew/bin:$PATH GEMINI_API_KEY='' gemini"
+alias gem='PATH=/opt/homebrew/bin:$PATH GEMINI_API_KEY='' gemini --yolo --checkpointing'
+alias oc='agentmd | PATH=/opt/homebrew/bin:$PATH  EDITOR=/opt/homebrew/bin/nvim ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' opencode --continue'
+alias am='agentmd | AMP_URL=http://localhost:8317 amp --dangerously-allow-all --no-ide --use-sonnet'
+alias amx='agentmd | AMP_URL=http://localhost:8317 amp  --dangerously-allow-all -x --use-sonnet'
+alias ac='PATH=/opt/homebrew/bin:$PATH OPENAI_API_KEY='' codex --search --dangerously-bypass-approvals-and-sandbox'
+alias co='PATH=/opt/homebrew/bin:$PATH OPENAI_API_KEY='' ANTHROPIC_API_KEY='' GEMINI_API_KEY='' copilot  --disable-builtin-mcps --allow-all-paths  --allow-all-tools --resume'
 alias em='emacs -nw'
 alias gmt='go mod tidy'
 alias ccg='bunx ccusage'
@@ -208,3 +207,17 @@ tails() {
   tail -f "$(latest_file "$dir")"
 }
 
+export METAREPO="$HOME/Coding/metarepo"
+
+ampm() {
+  local message="${1:-your default message here}"
+
+  # Launch amp
+  tmux send-keys "amp" Enter
+
+  # Wait for amp to fully load
+  sleep 5
+
+  # Populate the input box (no Enter, so it stays editable)
+  tmux send-keys "$message"
+}

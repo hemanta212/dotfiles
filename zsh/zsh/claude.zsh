@@ -9,8 +9,8 @@
 #                end
 function cl() {
     # Try with --continue first, fallback to without if it fails
-    claude='/Users/mac/.claude/local/claude'
-    EDITOR=/opt/homebrew/bin/nvim ANTHROPIC_API_KEY='' $claude --ide --continue "$@" --dangerously-skip-permissions || EDITOR=/opt/homebrew/bin/nvim ANTHROPIC_API_KEY='' $claude --ide "$@" --dangerously-skip-permissions
+    claude='/opt/homebrew/bin/claude'
+    PATH=$PATH:/opt/homebrew/bin EDITOR=/opt/homebrew/bin/nvim ANTHROPIC_API_KEY='' $claude --ide --continue "$@" --dangerously-skip-permissions || EDITOR=/opt/homebrew/bin/nvim ANTHROPIC_API_KEY='' $claude --ide "$@" --dangerously-skip-permissions
 }
 
 # Completion for claude command
