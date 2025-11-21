@@ -1,0 +1,130 @@
+#!/bin/bash
+# Upload any file to tuterocdn.hemanta.dev CDN
+# Usage: 
+#   cdn <file>                    - Upload specific file
+#   cdn --latest <dir>            - Upload latest file from directory
+#   echo "content" | cdn          - Create pastebin from stdin
+
+set -e
+
+VPS_HOST="vps"
+VPS_DIR="/var/www/tuterocdn"
+CDN_URL="https://tuterocdn.hemanta.dev"
+
+# Function to copy to clipboard (macOS)
+copy_to_clipboard() {
+    echo -n "$1" | pbcopy
+}
+
+# Function to URL encode filename
+url_encode() {
+    python3 -c "import sys; from urllib.parse import quote; print(quote(sys.argv[1]))" "$1"
+}
+
+# Function to check file size and warn if >100MB
+check_size_and_confirm() {
+    local file="$1"
+    local size_mb=$(du -m "$file" | cut -f1)
+    
+    if [ "$size_mb" -gt 100 ]; then
+        echo "Warning: File size is ${size_mb}MB (>100MB)"
+        read -p "Continue upload? (y/n): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Upload cancelled"
+            exit 1
+        fi
+    fi
+}
+
+# Function to upload file
+upload_file() {
+    local file="$1"
+    local basename=$(basename "$file")
+    
+    echo "Uploading: $basename"
+    
+    # Check size and confirm
+    check_size_and_confirm "$file"
+    
+    # Upload via rsync (faster with compression and resume support)
+    rsync -avz --progress "$file" "$VPS_HOST:$VPS_DIR/"
+    
+    if [ $? -eq 0 ]; then
+        echo "Upload successful!"
+        
+        # Run cleanup script on VPS
+        ssh "$VPS_HOST" "/home/pykancha/cleanup-tuterocdn.sh"
+        
+        # Generate URL-encoded URL
+        VIDEO_URL_ENCODED="$CDN_URL/$(url_encode "$basename")"
+        
+        # Copy encoded URL to clipboard
+        copy_to_clipboard "$VIDEO_URL_ENCODED"
+        
+        echo ""
+        echo "✓ URL: $VIDEO_URL_ENCODED"
+        echo "✓ Copied to clipboard"
+    else
+        echo "Upload failed!"
+        exit 1
+    fi
+}
+
+# Check for piped input first (before parsing args)
+if [ ! -t 0 ] && [ $# -eq 0 ]; then
+    TEMP_FILE="/tmp/paste-$(date +%s).html"
+    cat > "$TEMP_FILE"
+    
+    # Only upload if file has content
+    if [ -s "$TEMP_FILE" ]; then
+        upload_file "$TEMP_FILE"
+        rm -f "$TEMP_FILE"
+        exit 0
+    else
+        rm -f "$TEMP_FILE"
+    fi
+fi
+
+# Parse arguments
+if [ $# -eq 0 ]; then
+    echo "Usage:"
+    echo "  cdn <file>              - Upload specific file"
+    echo "  cdn --latest <dir>      - Upload latest file from directory"
+    echo "  echo 'content' | cdn    - Create pastebin from stdin (saved as .html)"
+    exit 1
+fi
+
+if [ "$1" = "--latest" ]; then
+    if [ -z "$2" ]; then
+        echo "Error: --latest requires a directory argument"
+        exit 1
+    fi
+    
+    TARGET_DIR="$2"
+    if [ ! -d "$TARGET_DIR" ]; then
+        echo "Error: Directory $TARGET_DIR not found"
+        exit 1
+    fi
+    
+    # Find latest file (any type)
+    FILE_TO_UPLOAD=$(find "$TARGET_DIR" -maxdepth 1 -type f -print0 | xargs -0 ls -t | head -1)
+    
+    if [ -z "$FILE_TO_UPLOAD" ]; then
+        echo "Error: No files found in $TARGET_DIR"
+        exit 1
+    fi
+    
+    echo "Found latest file: $(basename "$FILE_TO_UPLOAD")"
+    upload_file "$FILE_TO_UPLOAD"
+else
+    # Direct file path
+    FILE_TO_UPLOAD="$1"
+    
+    if [ ! -f "$FILE_TO_UPLOAD" ]; then
+        echo "Error: File $FILE_TO_UPLOAD not found"
+        exit 1
+    fi
+    
+    upload_file "$FILE_TO_UPLOAD"
+fi
