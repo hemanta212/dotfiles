@@ -1,0 +1,35 @@
+#!/bin/bash
+# popup-editor - A proxy EDITOR that reads from /tmp/amp-prompt
+# Usage: EDITOR=popup-editor <tool that needs editor>
+#
+# Workflow:
+# 1. Press ctrl+b e to open nvim popup with /tmp/amp-prompt
+# 2. Write your content, save and quit
+# 3. Run your tool with EDITOR=popup-editor
+# 4. Content is instantly injected from /tmp/amp-prompt
+
+PROMPT_FILE="/tmp/amp-prompt"
+
+# Must have a file argument
+if [ $# -eq 0 ]; then
+    echo "Usage: popup-editor <file>"
+    echo "First prepare content with ctrl+b e, then run tool with EDITOR=popup-editor"
+    exit 1
+fi
+
+# Get the target file (last argument, as some tools pass flags)
+TARGET="${@: -1}"
+
+# Check if prompt file exists
+if [ ! -f "$PROMPT_FILE" ]; then
+    echo "Error: $PROMPT_FILE not found. Press ctrl+b e first to prepare content."
+    exit 1
+fi
+
+# Copy content to target file
+cat "$PROMPT_FILE" > "$TARGET"
+
+# Optionally clear the prompt file after use (uncomment if desired)
+# rm "$PROMPT_FILE"
+
+exit 0

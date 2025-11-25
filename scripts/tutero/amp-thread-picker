@@ -1,0 +1,92 @@
+#!/bin/bash
+# amp-thread-picker - fzf picker for amp threads with preview
+# Copies URL to clipboard and pastes on selection
+
+THREADS_DIR="$HOME/.local/share/amp/threads"
+
+# Build list: "ID\tTitle\tDate"
+# Sorted by file modification time (most recent first) for instant display
+list_threads() {
+    ls -t "$THREADS_DIR"/*.json 2>/dev/null | while read -r f; do
+        jq -r '
+            def fmt_date: . / 1000 | strftime("%Y-%m-%d %H:%M");
+            "\(.id)\t\(.title // "Untitled")\t\(.created | fmt_date)"
+        ' "$f" 2>/dev/null
+    done
+}
+
+# Preview script - renders thread nicely
+preview_thread() {
+    local id="$1"
+    local file="$THREADS_DIR/$id.json"
+    
+    if [ ! -f "$file" ]; then
+        echo "Thread not found: $id"
+        return 1
+    fi
+    
+    jq -r '
+        def fmt_date: . / 1000 | strftime("%Y-%m-%d %H:%M");
+        def extract_text:
+            if type == "array" then
+                map(
+                    if .type == "text" then .text
+                    else ""
+                    end
+                ) | map(select(. != "" and . != null)) | join("\n")
+            elif type == "string" then .
+            else ""
+            end;
+        
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        "THREAD: \(.title // "Untitled")",
+        "ID: \(.id)",
+        "Created: \(.created | fmt_date)",
+        "URL: https://ampcode.com/threads/\(.id)",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        "",
+        ([.messages[] | select(.role == "user" or .role == "assistant") | select((.content | extract_text) != "")] | .[:15] | map(
+            if .role == "user" then
+                "┌─ USER ─────────────────────────────────────────────────────",
+                (.content | extract_text | split("\n")[:15] | map("│ " + .) | join("\n")),
+                "└────────────────────────────────────────────────────────────",
+                ""
+            else
+                "┌─ ASSISTANT ────────────────────────────────────────────────",
+                (.content | extract_text | split("\n")[:20] | map("│ " + .) | join("\n")),
+                "└────────────────────────────────────────────────────────────",
+                ""
+            end
+        ) | flatten | join("\n")),
+        "",
+        if (.messages | length) > 15 then "... (\(.messages | length) messages total)" else "" end
+    ' "$file" 2>/dev/null
+}
+
+# If called with --preview, render preview
+if [ "$1" = "--preview" ]; then
+    preview_thread "$2"
+    exit 0
+fi
+
+# Main fzf picker
+selected=$(list_threads | fzf \
+    --delimiter=$'\t' \
+    --with-nth=2,3 \
+    --preview="$0 --preview {1}" \
+    --preview-window=right:60%:wrap \
+    --header="Search amp threads by title" \
+    --bind="ctrl-y:execute-silent(echo 'https://ampcode.com/threads/{1}' | pbcopy)+abort" \
+    --height=100% \
+    --layout=reverse \
+    --border \
+    --prompt="amp> " \
+)
+
+if [ -n "$selected" ]; then
+    id=$(echo "$selected" | cut -f1)
+    url="https://ampcode.com/threads/$id"
+    echo -n "$url" | pbcopy
+    # Paste from clipboard using osascript
+    osascript -e 'tell application "System Events" to keystroke "v" using command down'
+fi

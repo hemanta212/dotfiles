@@ -10,6 +10,7 @@ MODEL_PATH="$PIPER_DIR/${MODEL_NAME}.onnx"
 CONFIG_PATH="$PIPER_DIR/${MODEL_NAME}.onnx.json"
 MUTE_FILE="$PIPER_DIR/.muted"
 VOLUME_FILE="$PIPER_DIR/.volume"
+NOTIF_FILE="$PIPER_DIR/.notifs_enabled"
 LOG_FILE="$PIPER_DIR/piper-say.log"
 PID_FILE="$PIPER_DIR/.piper-server.pid"
 SERVER_HOST="127.0.0.1"
@@ -25,6 +26,11 @@ log_invocation() {
   mkdir -p "$PIPER_DIR"
   echo "$log_entry" >>"$LOG_FILE"
   tail -10 "$LOG_FILE" >"$LOG_FILE.tmp" && mv "$LOG_FILE.tmp" "$LOG_FILE"
+}
+
+send_notification() {
+  local message="$1"
+  osascript -e "display notification \"$message\" with title \"Piper Say\""
 }
 
 check_server_health() {
@@ -117,8 +123,9 @@ USAGE:
   piper-say [COMMAND] [OPTIONS]
 
 COMMANDS:
-  m, --mute         Mute all future piper-say calls
-  u, --unmute       Unmute piper-say
+  m, --mute         Mute all future piper-say calls (fallback to notifs if enabled)
+  u, --unmute       Unmute piper-say (disables notification fallback)
+  q, --notif        Toggle notification fallback on/off when muted
   l, --log          Show last 10 invocations
   v, --volume NUM   Set persistent volume (0-100)
   stop              Stop the background HTTP server
@@ -131,7 +138,10 @@ EXAMPLES:
 
   Mute/unmute:
     piper-say m                    # Mute all future calls
-    piper-say u                    # Unmute
+    piper-say u                    # Unmute (also disables notif fallback)
+
+  Notification fallback (when muted):
+    piper-say q                    # Toggle notif fallback on/off
 
   Volume control:
     piper-say v 50                 # Set volume to 50%
@@ -152,6 +162,7 @@ FEATURES:
   - Background audio playback (non-blocking)
   - Persistent volume control
   - Mute/unmute toggle
+  - Notification fallback when muted
   - Invocation logging
   - Automatic cleanup of temporary files
 
@@ -165,6 +176,7 @@ FILES:
   Models:     /Users/mac/.config/piper/en_US-libritts_r-medium.onnx
   Config:     /Users/mac/.config/piper/en_US-libritts_r-medium.onnx.json
   Mute state: /Users/mac/.config/piper/.muted
+  Notif state:/Users/mac/.config/piper/.notifs_enabled
   Volume:     /Users/mac/.config/piper/.volume
   Logs:       /Users/mac/.config/piper/piper-say.log
 
@@ -196,12 +208,25 @@ if [ $# -eq 1 ] && [[ "$1" =~ ^(--mute|m)$ ]]; then
   log_invocation "$@"
   mkdir -p "$PIPER_DIR"
   touch "$MUTE_FILE"
-  echo "Piper-say muted. Use 'piper-say u' to enable."
+  touch "$NOTIF_FILE"
+  echo "Piper-say muted. Notification fallback enabled. Use 'piper-say u' to unmute or 'piper-say q' to toggle notifs."
   exit 0
 elif [ $# -eq 1 ] && [[ "$1" =~ ^(--unmute|u)$ ]]; then
   log_invocation "$@"
   rm -f "$MUTE_FILE"
-  echo "Piper-say unmuted."
+  rm -f "$NOTIF_FILE"
+  echo "Piper-say unmuted. Notification fallback disabled."
+  exit 0
+elif [ $# -eq 1 ] && [[ "$1" =~ ^(--notif|q)$ ]]; then
+  log_invocation "$@"
+  mkdir -p "$PIPER_DIR"
+  if [ -f "$NOTIF_FILE" ]; then
+    rm -f "$NOTIF_FILE"
+    echo "Notification fallback disabled."
+  else
+    touch "$NOTIF_FILE"
+    echo "Notification fallback enabled."
+  fi
   exit 0
 fi
 
@@ -225,6 +250,9 @@ if [ $# -gt 0 ] && ! [[ "$1" =~ ^(--log|log|l)$ ]]; then
 fi
 
 if [ -f "$MUTE_FILE" ]; then
+  if [ -f "$NOTIF_FILE" ] && [ -n "${1:-}" ]; then
+    send_notification "$1"
+  fi
   exit 0
 fi
 

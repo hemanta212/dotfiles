@@ -130,14 +130,17 @@ alias claude='PATH=/opt/homebrew/bin:$PATH ANTHROPIC_API_KEY="" /opt/homebrew/bi
 alias gemini="PATH=/opt/homebrew/bin:$PATH GEMINI_API_KEY='' gemini"
 alias gem='PATH=/opt/homebrew/bin:$PATH GEMINI_API_KEY='' gemini --yolo --checkpointing'
 alias oc='agentmd | PATH=/opt/homebrew/bin:$PATH  EDITOR=/opt/homebrew/bin/nvim ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' opencode --continue'
-alias am='agentmd | AMP_URL=http://localhost:8317 amp --dangerously-allow-all --no-ide --use-sonnet'
-alias amx='agentmd | AMP_URL=http://localhost:8317 amp  --dangerously-allow-all -x --use-sonnet'
+alias am='EDITOR=popup-editor AMP_URL=http://localhost:8317 amp --dangerously-allow-all --no-ide --try-opus'
+alias amg='agentmd | AMP_URL=http://localhost:8317 amp --dangerously-allow-all --no-ide --try-opus'
+alias amx='AMP_URL=http://localhost:8317 amp  --dangerously-allow-all -x --try-opus'
 alias ac='PATH=/opt/homebrew/bin:$PATH OPENAI_API_KEY='' codex --search --dangerously-bypass-approvals-and-sandbox "$(agentmd)"'
 alias co='PATH=/opt/homebrew/bin:$PATH OPENAI_API_KEY='' ANTHROPIC_API_KEY='' GEMINI_API_KEY='' copilot  --disable-builtin-mcps --allow-all-paths  --allow-all-tools --resume'
 alias em='emacs -nw'
 alias gmt='go mod tidy'
 alias ccg='bunx ccusage'
 alias goplay='yaegi'
+
+alias agy='/Applications/Antigravity.app/Contents/MacOS/Electron'
 
 mash(){
   git status --porcelain | egrep '^(DD|AU|UD|UA|DU|AA|UU)' | awk '{print $2}' | xargs $1
