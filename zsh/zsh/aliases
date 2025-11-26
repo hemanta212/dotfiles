@@ -133,7 +133,7 @@ alias oc='agentmd | PATH=/opt/homebrew/bin:$PATH  EDITOR=/opt/homebrew/bin/nvim 
 alias am='EDITOR=popup-editor AMP_URL=http://localhost:8317 amp --dangerously-allow-all --no-ide --try-opus'
 alias amg='agentmd | AMP_URL=http://localhost:8317 amp --dangerously-allow-all --no-ide --try-opus'
 alias amx='AMP_URL=http://localhost:8317 amp  --dangerously-allow-all -x --try-opus'
-alias ac='PATH=/opt/homebrew/bin:$PATH OPENAI_API_KEY='' codex --search --dangerously-bypass-approvals-and-sandbox "$(agentmd)"'
+alias ac='PATH=/opt/homebrew/bin:$PATH OPENAI_API_KEY='' codex --search --dangerously-bypass-approvals-and-sandbox'
 alias co='PATH=/opt/homebrew/bin:$PATH OPENAI_API_KEY='' ANTHROPIC_API_KEY='' GEMINI_API_KEY='' copilot  --disable-builtin-mcps --allow-all-paths  --allow-all-tools --resume'
 alias em='emacs -nw'
 alias gmt='go mod tidy'
