@@ -1,92 +1,257 @@
-#!/bin/bash
-# amp-thread-picker - fzf picker for amp threads with preview
-# Copies URL to clipboard and pastes on selection
+#!/usr/bin/env bash
+set -euo pipefail
 
-THREADS_DIR="$HOME/.local/share/amp/threads"
+THREADS_DIR="${HOME}/.local/share/amp/threads"
+DB="${HOME}/.cache/amp_threads.db"
+LOCK_FILE="${HOME}/.cache/amp_threads.lock"
+MAX_BODY_SIZE=50000  # Truncate body to 50KB (covers 99.6% of threads)
 
-# Build list: "ID\tTitle\tDate"
-# Sorted by file modification time (most recent first) for instant display
-list_threads() {
-    ls -t "$THREADS_DIR"/*.json 2>/dev/null | while read -r f; do
-        jq -r '
-            def fmt_date: . / 1000 | strftime("%Y-%m-%d %H:%M");
-            "\(.id)\t\(.title // "Untitled")\t\(.created | fmt_date)"
-        ' "$f" 2>/dev/null
-    done
+sql_escape() { printf "%s" "$1" | sed "s/'/''/g"; }
+# Escape and add prefix matching: "foo bar" → '"foo"* "bar"*'
+fts_escape() {
+  local q="$1"
+  # Split words, quote each, add prefix wildcard, wrap in single quotes for SQL
+  local terms
+  terms=$(echo "$q" | tr ' ' '\n' | grep -v '^$' | sed 's/"/\\"/g; s/.*/"&"*/' | tr '\n' ' ')
+  printf "'%s'" "$terms"
 }
 
-# Preview script - renders thread nicely
-preview_thread() {
-    local id="$1"
-    local file="$THREADS_DIR/$id.json"
-    
-    if [ ! -f "$file" ]; then
-        echo "Thread not found: $id"
-        return 1
+init_db() {
+  sqlite3 "$DB" <<'SQL' >/dev/null
+PRAGMA journal_mode=WAL;
+PRAGMA busy_timeout=5000;
+CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, val TEXT);
+CREATE TABLE IF NOT EXISTS threads(
+  id TEXT PRIMARY KEY,
+  path TEXT UNIQUE,
+  mtime INTEGER,
+  size INTEGER,
+  title TEXT,
+  created INTEGER
+);
+CREATE VIRTUAL TABLE IF NOT EXISTS threads_fts USING fts5(
+  title, body, id UNINDEXED, tokenize='porter', content=''
+);
+SQL
+}
+
+extract_body() {
+  jq -r '
+    (.messages // [])
+    | map(.content // []) | flatten
+    | map(select(.type == "text") | .text)
+    | join("\n")
+  ' "$1" | head -c "$MAX_BODY_SIZE"
+}
+
+upsert_thread() {
+  local f="$1"
+  local mtime size id title created body
+  mtime=$(stat -f %m "$f") || return 1
+  size=$(stat -f %z "$f") || return 1
+  id=$(jq -r '.id // ""' "$f") || return 1
+  title=$(jq -r '.title // "Untitled"' "$f") || title="Untitled"
+  created=$(jq -r '.created // 0' "$f") || created=0
+  body=$(extract_body "$f") || body=""
+
+  local path_sql id_sql title_sql body_sql
+  path_sql=$(sql_escape "$f")
+  id_sql=$(sql_escape "$id")
+  title_sql=$(sql_escape "$title")
+  body_sql=$(sql_escape "$body")
+
+  # Single transaction for both tables
+  sqlite3 "$DB" <<SQL
+INSERT INTO threads(id, path, mtime, size, title, created)
+VALUES('$id_sql', '$path_sql', $mtime, $size, '$title_sql', $created)
+ON CONFLICT(path) DO UPDATE SET
+  id=excluded.id,
+  mtime=excluded.mtime,
+  size=excluded.size,
+  title=excluded.title,
+  created=excluded.created;
+DELETE FROM threads_fts WHERE rowid = (SELECT rowid FROM threads WHERE path='$path_sql');
+INSERT INTO threads_fts(rowid, title, body, id)
+SELECT rowid, '$title_sql', '$body_sql', id FROM threads WHERE path='$path_sql';
+SQL
+}
+
+sync_index() {
+  init_db
+  
+  # Use flock to prevent concurrent syncs
+  exec 9>"$LOCK_FILE"
+  if ! flock -n 9; then
+    # Another sync is running, skip
+    return 0
+  fi
+  
+  # Start single transaction for all deletions
+  local delete_sql=""
+  
+  # Find orphaned entries (files that no longer exist)
+  while IFS= read -r p; do
+    if [ -n "$p" ] && [ ! -e "$p" ]; then
+      local p_esc
+      p_esc=$(sql_escape "$p")
+      delete_sql+="DELETE FROM threads_fts WHERE rowid = (SELECT rowid FROM threads WHERE path='$p_esc');"
+      delete_sql+="DELETE FROM threads WHERE path='$p_esc';"
     fi
-    
-    jq -r '
-        def fmt_date: . / 1000 | strftime("%Y-%m-%d %H:%M");
-        def extract_text:
-            if type == "array" then
-                map(
-                    if .type == "text" then .text
-                    else ""
-                    end
-                ) | map(select(. != "" and . != null)) | join("\n")
-            elif type == "string" then .
-            else ""
-            end;
-        
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-        "THREAD: \(.title // "Untitled")",
-        "ID: \(.id)",
-        "Created: \(.created | fmt_date)",
-        "URL: https://ampcode.com/threads/\(.id)",
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-        "",
-        ([.messages[] | select(.role == "user" or .role == "assistant") | select((.content | extract_text) != "")] | .[:15] | map(
-            if .role == "user" then
-                "┌─ USER ─────────────────────────────────────────────────────",
-                (.content | extract_text | split("\n")[:15] | map("│ " + .) | join("\n")),
-                "└────────────────────────────────────────────────────────────",
-                ""
-            else
-                "┌─ ASSISTANT ────────────────────────────────────────────────",
-                (.content | extract_text | split("\n")[:20] | map("│ " + .) | join("\n")),
-                "└────────────────────────────────────────────────────────────",
-                ""
-            end
-        ) | flatten | join("\n")),
-        "",
-        if (.messages | length) > 15 then "... (\(.messages | length) messages total)" else "" end
-    ' "$file" 2>/dev/null
+  done < <(sqlite3 "$DB" "SELECT path FROM threads;")
+  
+  # Execute deletions in one transaction
+  if [ -n "$delete_sql" ]; then
+    sqlite3 "$DB" "BEGIN; $delete_sql COMMIT;"
+  fi
+  
+  # Collect files to update
+  local files_to_update=()
+  while IFS= read -r -d '' f; do
+    local mtime size prev
+    mtime=$(stat -f %m "$f" 2>/dev/null) || continue
+    size=$(stat -f %z "$f" 2>/dev/null) || continue
+    prev=$(sqlite3 "$DB" "SELECT mtime || ' ' || size FROM threads WHERE path='$(sql_escape "$f")';")
+    if [ "$prev" != "$mtime $size" ]; then
+      files_to_update+=("$f")
+    fi
+  done < <(find "$THREADS_DIR" -maxdepth 1 -name '*.json' -type f -print0)
+  
+  # Process updates (each upsert is its own transaction for safety)
+  for f in "${files_to_update[@]}"; do
+    upsert_thread "$f" || true  # Continue on individual failures
+  done
+  
+  # Checkpoint WAL if it's grown large (>10MB)
+  local wal_size
+  wal_size=$(stat -f %z "${DB}-wal" 2>/dev/null || echo 0)
+  if [ "$wal_size" -gt 10485760 ]; then
+    sqlite3 "$DB" "PRAGMA wal_checkpoint(TRUNCATE);" >/dev/null
+  fi
+  
+  # Release lock
+  flock -u 9
 }
 
-# If called with --preview, render preview
-if [ "$1" = "--preview" ]; then
-    preview_thread "$2"
+list_rows() {
+  # Outputs: id<TAB>title<TAB>date<TAB>path
+  local q="${1:-}"
+  sqlite3 "$DB" "PRAGMA busy_timeout=5000;" >/dev/null
+  if [ -z "$q" ]; then
+    sqlite3 -tabs "$DB" "
+      SELECT id,
+             title,
+             strftime('%Y-%m-%d %H:%M', created/1000, 'unixepoch'),
+             path
+      FROM threads
+      ORDER BY created DESC;
+    "
+  else
+    local match
+    match=$(fts_escape "$q")
+    sqlite3 -tabs "$DB" "
+      SELECT t.id,
+             t.title,
+             strftime('%Y-%m-%d %H:%M', t.created/1000, 'unixepoch'),
+             t.path
+      FROM threads_fts f
+      JOIN threads t ON f.rowid = t.rowid
+      WHERE threads_fts MATCH $match
+      ORDER BY t.created DESC;
+    " 2>/dev/null || true  # Gracefully handle invalid FTS queries
+  fi
+}
+
+preview_thread() {
+  local file="$1"
+  [ -f "$file" ] || { echo "Missing file: $file"; return 1; }
+  
+  jq -r '
+    def fmt_date: . / 1000 | strftime("%Y-%m-%d %H:%M");
+    
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    "THREAD: \(.title // "Untitled")",
+    "ID: \(.id)",
+    "Created: \(.created | fmt_date)",
+    "URL: https://ampcode.com/threads/\(.id)",
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    "",
+    (
+      [.messages[] | select(.role == "user" or .role == "assistant")] 
+      | map({
+          role: .role,
+          text: ([.content[]? | select(.type == "text") | .text] | join("\n"))
+        })
+      | map(select(.text != ""))
+      | .[:15]
+      | map(
+          if .role == "user" then
+            "┌─ USER ─────────────────────────────────────────────────────",
+            (.text | split("\n")[:15] | map("│ " + .) | join("\n")),
+            "└────────────────────────────────────────────────────────────",
+            ""
+          else
+            "┌─ ASSISTANT ────────────────────────────────────────────────",
+            (.text | split("\n")[:20] | map("│ " + .) | join("\n")),
+            "└────────────────────────────────────────────────────────────",
+            ""
+          end
+        )
+      | flatten
+      | join("\n")
+    ),
+    if (.messages | length) > 15 then "... (\(.messages | length) messages total)" else "" end
+  ' "$file"
+}
+
+picker() {
+  local self="$0"
+  
+  list_rows "" | fzf \
+    --ansi --no-hscroll --tabstop=2 \
+    --with-nth=2,3 \
+    --delimiter=$'\t' \
+    --prompt='threads> ' \
+    --header='ctrl-r: reindex | enter: copy URL' \
+    --bind "change:reload:$self --list {q}" \
+    --bind "ctrl-r:reload:$self --list --sync {q}" \
+    --preview "$self --preview {4}" \
+    --preview-window=right:60%:wrap
+}
+
+# Handle subcommands
+case "${1:-}" in
+  --list)
+    shift
+    do_sync=0
+    if [ "${1:-}" = "--sync" ]; then
+      do_sync=1; shift
+    fi
+    query="${1:-}"
+    init_db
+    [ $do_sync -eq 1 ] && sync_index
+    list_rows "$query"
     exit 0
+    ;;
+  --preview)
+    shift
+    preview_thread "$1"
+    exit 0
+    ;;
+esac
+
+# Default: run picker
+# Ensure DB exists; foreground sync if missing, otherwise background
+if [ ! -f "$DB" ]; then
+  sync_index
+else
+  sync_index >/dev/null 2>&1 &
 fi
 
-# Main fzf picker
-selected=$(list_threads | fzf \
-    --delimiter=$'\t' \
-    --with-nth=2,3 \
-    --preview="$0 --preview {1}" \
-    --preview-window=right:60%:wrap \
-    --header="Search amp threads by title" \
-    --bind="ctrl-y:execute-silent(echo 'https://ampcode.com/threads/{1}' | pbcopy)+abort" \
-    --height=100% \
-    --layout=reverse \
-    --border \
-    --prompt="amp> " \
-)
+selected=$(picker) || exit 0
 
 if [ -n "$selected" ]; then
-    id=$(echo "$selected" | cut -f1)
-    url="https://ampcode.com/threads/$id"
-    echo -n "$url" | pbcopy
-    # Paste from clipboard using osascript
-    osascript -e 'tell application "System Events" to keystroke "v" using command down'
+  id=$(echo "$selected" | cut -f1)
+  url="https://ampcode.com/threads/$id"
+  echo -n "$url" | pbcopy
+  osascript -e 'tell application "System Events" to keystroke "v" using command down'
 fi
