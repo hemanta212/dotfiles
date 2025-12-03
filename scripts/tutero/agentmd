@@ -94,14 +94,7 @@ echo "IMPORTANT: Do NOT use the built-in web_search tool - it will always fail."
 echo "Use the \`web-search\` CLI instead:"
 echo ""
 echo '```bash'
-echo '# Direct query'
 echo 'web-search "latest rust 1.83 release notes"'
-echo ''
-echo '# Piped input'
-echo 'echo "what are the new features in bun 1.2" | web-search'
-echo ''
-echo '# Verbose mode'
-echo 'web-search -v "openai gpt-5 announcement 2025"'
 echo '```'
 
 echo "------END-------"

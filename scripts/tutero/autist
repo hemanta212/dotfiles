@@ -13,7 +13,7 @@ INVOKE_DIR="$(pwd)"
 
 # Parse flags
 session_id=""
-reasoning="medium"
+reasoning="high"
 while [[ $# -gt 0 ]]; do
   case $1 in
   --help | -h)
