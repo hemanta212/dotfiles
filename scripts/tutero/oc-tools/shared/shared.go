@@ -19,8 +19,20 @@ import (
 const (
 	DefaultHostname = "localhost" // Use localhost, not 127.0.0.1 - avoids Cloudflare tunnel routing issues
 	DefaultPort     = 4096
+	IsolatedPort    = 4097        // Separate port for SDK tools with isolated data
 	DefaultTimeout  = 10 * time.Minute
 )
+
+// IsolateDataDir sets XDG_DATA_HOME and uses separate port to isolate SDK tool sessions
+// Sessions will be stored in ~/.cache/scripts/opencode-data/ instead of ~/.local/share/opencode/
+// This prevents SDK tool sessions from polluting the main session history
+func IsolateDataDir() {
+	isolatedDir := filepath.Join(os.Getenv("HOME"), ".cache", "scripts", "opencode-data")
+	os.MkdirAll(isolatedDir, 0755)
+	os.Setenv("XDG_DATA_HOME", isolatedDir)
+	// Use isolated port so we get our own server with this XDG_DATA_HOME
+	os.Setenv("OPENCODE_SDK_ISOLATED", "1")
+}
 
 // Client wraps opencode client with server lifecycle management
 type Client struct {
@@ -34,7 +46,12 @@ type Client struct {
 func NewClient(ctx context.Context) *Client {
 	baseURL := os.Getenv("OPENCODE_URL")
 	if baseURL == "" {
-		baseURL = fmt.Sprintf("http://%s:%d", DefaultHostname, DefaultPort)
+		// Use isolated port if IsolateDataDir() was called
+		port := DefaultPort
+		if os.Getenv("OPENCODE_SDK_ISOLATED") == "1" {
+			port = IsolatedPort
+		}
+		baseURL = fmt.Sprintf("http://%s:%d", DefaultHostname, port)
 	}
 
 	c := &Client{
@@ -74,15 +91,24 @@ func (c *Client) isServerRunning() bool {
 // startServer spawns `opencode serve` and waits for startup message
 // Mimics TS SDK's createOpencodeServer: parses "opencode server listening on http://..."
 func (c *Client) startServer() (string, error) {
+	// Use isolated port if set
+	port := DefaultPort
+	if os.Getenv("OPENCODE_SDK_ISOLATED") == "1" {
+		port = IsolatedPort
+	}
+
 	cmd := exec.Command("opencode", "serve",
 		fmt.Sprintf("--hostname=%s", DefaultHostname),
-		fmt.Sprintf("--port=%d", DefaultPort),
+		fmt.Sprintf("--port=%d", port),
 	)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return "", fmt.Errorf("failed to get stdout pipe: %w", err)
 	}
+
+	// Discard stderr to prevent blocking (opencode logs go to stderr with --print-logs)
+	cmd.Stderr = nil // goes to os.DevNull
 
 	if err := cmd.Start(); err != nil {
 		return "", fmt.Errorf("failed to start opencode serve: %w", err)
@@ -96,14 +122,21 @@ func (c *Client) startServer() (string, error) {
 
 	go func() {
 		scanner := bufio.NewScanner(stdout)
+		urlSent := false
 		for scanner.Scan() {
 			line := scanner.Text()
-			if matches := urlRe.FindStringSubmatch(line); len(matches) > 1 {
-				ready <- matches[1]
-				return
+			if !urlSent {
+				if matches := urlRe.FindStringSubmatch(line); len(matches) > 1 {
+					ready <- matches[1]
+					urlSent = true
+					// Continue draining stdout to prevent pipe buffer from filling
+				}
 			}
+			// Keep consuming stdout until EOF to prevent process blocking
 		}
-		close(ready)
+		if !urlSent {
+			close(ready)
+		}
 	}()
 
 	// Wait up to 30 seconds for server ready
@@ -138,10 +171,11 @@ type AgentResult struct {
 
 // AgentOptions contains optional settings for agent calls
 type AgentOptions struct {
-	Tools    map[string]bool // Enable/disable specific tools (e.g., "websearch": true)
-	Model    *ModelConfig    // Override model (provider + model ID)
-	System   string          // System prompt (use instead of agent if set)
-	NoAgent  bool            // If true, don't use agent field (use System instead)
+	Tools       map[string]bool // Enable/disable specific tools (e.g., "websearch": true)
+	Model       *ModelConfig    // Override model (provider + model ID)
+	System      string          // System prompt (use instead of agent if set)
+	NoAgent     bool            // If true, don't use agent field (use System instead)
+	AutoCleanup bool            // If true, delete session after completion (prevents history pollution)
 }
 
 // ModelConfig specifies provider and model
@@ -403,6 +437,12 @@ func SetupLogDir(name string) (string, error) {
 
 // WriteLog writes content to log file
 func WriteLog(logFile, content string) error {
+	return os.WriteFile(logFile, []byte(content), 0644)
+}
+
+// WriteLogWithSession writes output and session ID to log file for follow-up
+func WriteLogWithSession(logFile, output, sessionID string) error {
+	content := fmt.Sprintf("SESSION_ID=%s\n\n%s", sessionID, output)
 	return os.WriteFile(logFile, []byte(content), 0644)
 }
 
