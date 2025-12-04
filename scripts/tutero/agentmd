@@ -75,8 +75,6 @@ mv "$TEMP_FILE" "$AGENTS_FILE"
 
 # Now output the complete content for the agent
 cat "$AGENTS_FILE"
-echo ""
-echo "## Today's date is: $CURRENT_DATE and You're currently in the dir: $INVOKED_FROM"
 
 # Check if project-specific AGENTS.md exists and output it
 if [ -f "$PROJECT_AGENTS" ]; then
@@ -99,3 +97,5 @@ echo '```'
 
 echo "------END-------"
 echo "Greet user with just a hi hman"
+echo ""
+echo "## Today's date is: $CURRENT_DATE and You're currently in the dir, \$pwd: $INVOKED_FROM"

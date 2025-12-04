@@ -31,6 +31,9 @@ Examples:
 `
 
 func main() {
+	// Isolate sessions from main opencode CLI
+	shared.IsolateDataDir()
+
 	var db string
 	var sessionID string
 	var verbose bool
@@ -144,9 +147,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Log output
+	// Log output with session ID for follow-up
 	if logFile != "" {
-		shared.WriteLog(logFile, result.Output)
+		shared.WriteLogWithSession(logFile, result.Output, result.SessionID)
 		if verbose {
 			fmt.Fprintf(os.Stderr, "[debug] Logs saved to: %s\n", logFile)
 		}

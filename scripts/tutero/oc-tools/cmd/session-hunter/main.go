@@ -28,6 +28,9 @@ Examples:
 `
 
 func main() {
+	// Isolate sessions from main opencode CLI
+	shared.IsolateDataDir()
+
 	var sessionID string
 	var showHelp bool
 
@@ -86,9 +89,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Log output
+	// Log output with session ID for follow-up
 	if logFile != "" {
-		shared.WriteLog(logFile, result.Output)
+		shared.WriteLogWithSession(logFile, result.Output, result.SessionID)
 	}
 
 	// Print output

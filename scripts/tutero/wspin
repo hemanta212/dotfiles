@@ -189,8 +189,8 @@ generate_folder_name() {
   while [ $retry_count -lt $max_retries ]; do
     # Call Claude Haiku with the branch name prompt
     local ai_response
-    #ai_response=$(mkdir -p /tmp/empty && pushd /tmp/empty && /Users/mac/.claude/local/claude --model 'haiku' --output-format 'json' --append-system-prompt '/Users/mac/Coding/metarepo/scripts/branch-name.prompt' --dangerously-skip-permissions -p "$prompt_input" 2>/dev/null && popd)
-    ai_response=$(mkdir -p /tmp/empty && pushd /tmp/empty && opencode --agent 'branch-namer' run "$pr_title" 2>/dev/null && popd)
+    # Use branch-namer Go wrapper (auto-deletes sessions to avoid history pollution)
+    ai_response=$(branch-namer "$pr_title" 2>/dev/null)
 
     if [ $? -eq 0 ] && [ -n "$ai_response" ]; then
       # Extract JSON portion from response

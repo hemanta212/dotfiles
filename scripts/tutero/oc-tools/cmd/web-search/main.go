@@ -32,6 +32,9 @@ var fallbackModel = &shared.ModelConfig{
 }
 
 func main() {
+	// Isolate sessions from main opencode CLI
+	shared.IsolateDataDir()
+
 	// Prevent recursive invocation - opencode's web-search agent may call this script
 	if os.Getenv("_WEB_SEARCH_RUNNING") == "1" {
 		fmt.Fprintln(os.Stderr, "Error: web-search cannot be called recursively")
@@ -139,9 +142,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Log output
+	// Log output with session ID for follow-up
 	if logFile != "" {
-		shared.WriteLog(logFile, result.Output)
+		shared.WriteLogWithSession(logFile, result.Output, result.SessionID)
 	}
 
 	// Print output

@@ -129,7 +129,7 @@ alias zez='nvim ~/.config/zsh/zshrc'
 alias claude='PATH=/opt/homebrew/bin:$PATH ANTHROPIC_API_KEY="" /opt/homebrew/bin/claude'
 alias gemini="PATH=/opt/homebrew/bin:$PATH GEMINI_API_KEY='' gemini"
 alias gem='PATH=/opt/homebrew/bin:$PATH GEMINI_API_KEY='' gemini --yolo --checkpointing'
-alias oc='agentmd | PATH=/opt/homebrew/bin:$PATH  EDITOR=/opt/homebrew/bin/nvim ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' opencode --continue'
+alias oc='ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' opencode'
 alias am='EDITOR=popup-editor AMP_URL=http://localhost:8317 amp --dangerously-allow-all --no-ide'
 alias amg='agentmd | AMP_URL=http://localhost:8317 amp --dangerously-allow-all --no-ide'
 alias amx='AMP_URL=http://localhost:8317 amp  --dangerously-allow-all -x'

@@ -2,7 +2,7 @@
 
 BIN_DIR = bin
 INSTALL_DIR = $(HOME)/.local/bin
-CMDS = db-oracle big-brain session-hunter local-librarian web-search
+CMDS = db-oracle big-brain session-hunter local-librarian web-search branch-namer
 
 all: build
 
