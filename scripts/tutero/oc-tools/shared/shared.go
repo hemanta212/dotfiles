@@ -214,8 +214,9 @@ func (c *Client) FindBestFreeModel() (*FreeModel, error) {
 				continue
 			}
 
-			// Check if supports tool calls (needed for websearch)
-			if !model.ToolCall {
+			// Skip only if tool_call is explicitly false
+			// null or true means tool calls are supported
+			if model.ToolCall == false && model.JSON.ToolCall.IsNull() == false {
 				continue
 			}
 

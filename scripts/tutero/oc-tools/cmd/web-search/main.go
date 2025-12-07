@@ -70,8 +70,9 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Warning: could not setup logging: %v\n", err)
 	}
 
-	// Run from current directory
-	workDir := shared.GetWorkDir()
+	// Use /tmp to prevent loading any project AGENTS.md files
+	// Web-search only needs its own agent file at ~/.config/opencode/agent/web-search.md
+	workDir := "/tmp"
 
 	// Create context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
