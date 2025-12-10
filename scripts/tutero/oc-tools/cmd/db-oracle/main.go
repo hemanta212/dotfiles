@@ -72,8 +72,32 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Setup logging FIRST (before any other operations)
+	// Use session-specific log file if continuing, otherwise create new timestamped log
+	var logger *shared.Logger
+	var logErr error
+	if sessionID != "" {
+		logger, logErr = shared.NewLoggerForSession("db-oracle", sessionID)
+	} else {
+		logger, logErr = shared.NewLogger("db-oracle")
+	}
+	if logErr != nil {
+		fmt.Fprintf(os.Stderr, "Warning: could not setup logging: %v\n", logErr)
+	}
+	if logger != nil {
+		defer logger.Close()
+	}
+
+	if logger != nil {
+		logger.Log("Arguments: db=%s, session=%s, verbose=%v, dirs=%v", db, sessionID, verbose, dirs)
+	}
+
 	if db == "" {
 		repoName := getRepoName()
+		errMsg := fmt.Sprintf("Error: -db argument is required (repo: %s)", repoName)
+		if logger != nil {
+			logger.Log("ERROR: %s", errMsg)
+		}
 		fmt.Fprintf(os.Stderr, "Error: -db argument is required\n")
 		fmt.Fprintf(os.Stderr, "Usage: echo \"prompt\" | db-oracle -db <resources|learning|teaching> [-s SESSION_ID] [-v] [--dirs <dir1> <dir2> ...]\n")
 		fmt.Fprintf(os.Stderr, "Hint: You're currently in repo: '%s'\n", repoName)
@@ -82,6 +106,9 @@ func main() {
 
 	validDBs := map[string]bool{"resources": true, "learning": true, "teaching": true}
 	if !validDBs[db] {
+		if logger != nil {
+			logger.Log("ERROR: invalid db: %s", db)
+		}
 		fmt.Fprintf(os.Stderr, "Error: -db must be one of: resources, learning, teaching\n")
 		os.Exit(1)
 	}
@@ -89,6 +116,9 @@ func main() {
 	// Check stdin
 	stat, _ := os.Stdin.Stat()
 	if (stat.Mode() & os.ModeCharDevice) != 0 {
+		if logger != nil {
+			logger.Log("ERROR: no stdin provided")
+		}
 		fmt.Fprintf(os.Stderr, "Error: Prompt must be provided via stdin (pipe or redirect)\n")
 		fmt.Fprintf(os.Stderr, "Usage: echo \"prompt\" | db-oracle -db <resources|learning|teaching> [-s SESSION_ID] [-v] [--dirs <dir1> <dir2> ...]\n")
 		os.Exit(1)
@@ -97,8 +127,18 @@ func main() {
 	// Read prompt from stdin
 	prompt, err := shared.ReadStdinOrArgs(nil)
 	if err != nil {
+		if logger != nil {
+			logger.Log("ERROR reading prompt: %v", err)
+		}
 		fmt.Fprintf(os.Stderr, "Error reading prompt: %v\n", err)
 		os.Exit(1)
+	}
+
+	if logger != nil {
+		logger.LogSeparator("INPUT")
+		logger.Log("Database: %s", db)
+		logger.Log("Directories: %v", dirs)
+		logger.Log("Raw prompt:\n%s", prompt)
 	}
 
 	// Build final prompt with dirs context
@@ -112,47 +152,64 @@ func main() {
 	}
 	finalPrompt.WriteString(prompt)
 
-	// Setup logging
-	logFile, err := shared.SetupLogDir("db-oracle")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: could not setup logging: %v\n", err)
+	if logger != nil {
+		logger.Log("Final prompt:\n%s", finalPrompt.String())
 	}
 
 	// Run from metarepo
 	workDir := filepath.Join(os.Getenv("HOME"), "Coding", "metarepo")
 
+	if logger != nil {
+		logger.LogSeparator("SDK SETUP")
+		logger.Log("Work directory: %s", workDir)
+	}
+
 	// Create context with timeout (db-oracle can take very long due to opus model)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
-	client := shared.NewClient(ctx)
+	client := shared.NewClientWithLogger(ctx, logger)
 	defer client.Close()
 
 	var result *shared.AgentResult
 
+	if logger != nil {
+		logger.LogSeparator("AGENT CALL")
+	}
+
 	if sessionID != "" {
-		// Continue existing session
+		if logger != nil {
+			logger.Log("Continuing existing session: %s", sessionID)
+		}
 		result, err = client.ContinueSession(sessionID, "db-oracle", finalPrompt.String(), workDir)
 	} else {
-		// Start new session
+		if logger != nil {
+			logger.Log("Starting new session")
+		}
 		result, err = client.RunAgent("db-oracle", finalPrompt.String(), workDir)
 	}
 
 	if err != nil {
-		errMsg := fmt.Sprintf("Error: %v\n", err)
-		if logFile != "" {
-			shared.WriteLog(logFile, errMsg)
+		if logger != nil {
+			logger.Log("ERROR: agent call failed: %v", err)
 		}
-		fmt.Fprint(os.Stderr, errMsg)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Log output with session ID for follow-up
-	if logFile != "" {
-		shared.WriteLogWithSession(logFile, result.Output, result.SessionID)
-		if verbose {
-			fmt.Fprintf(os.Stderr, "[debug] Logs saved to: %s\n", logFile)
-		}
+	// Link session log for new sessions so future continuations find it
+	if logger != nil && sessionID == "" {
+		logger.LinkSession(result.SessionID)
+	}
+
+	if logger != nil {
+		logger.LogSeparator("RESULT")
+		logger.Log("Session ID: %s", result.SessionID)
+		logger.Log("Output length: %d chars", len(result.Output))
+	}
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "[debug] Logs saved to: %s\n", logger.Path())
 	}
 
 	// Print output

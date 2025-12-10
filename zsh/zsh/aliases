@@ -88,6 +88,7 @@ alias fsp="echo 'Going to schema' && cd $FEWORK/schema && git pull && echo 'Upda
 alias gRmain='git fetch origin main && git reset --hard origin/main'
 alias gMmain='git fetch origin main && git merge origin/main'
 alias gRbeta='git fetch origin beta && git reset --hard origin/beta'
+alias gRstable='git fetch origin stable && git reset --hard origin/stable'
 alias gups='git branch --set-upstream-to=origin/$(git branch --show-current) $(git branch --show-current)'
 alias gpom="git pull origin main"
 alias gpo="git pull origin"
@@ -126,16 +127,20 @@ alias zea='nvim ~/.config/zsh/aliases'
 alias zef='nvim ~/.config/zsh/functionsrc'
 alias ze='nvim ~/.zshrc'
 alias zez='nvim ~/.config/zsh/zshrc'
-alias claude='PATH=/opt/homebrew/bin:$PATH ANTHROPIC_API_KEY="" /opt/homebrew/bin/claude'
-alias gemini="PATH=/opt/homebrew/bin:$PATH GEMINI_API_KEY='' gemini"
-alias gem='PATH=/opt/homebrew/bin:$PATH GEMINI_API_KEY='' gemini --yolo --checkpointing'
-alias oc='ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' opencode'
 alias ccp='git log -1 --format=%H | pbcopy'
-alias am='EDITOR=popup-editor AMP_URL=http://localhost:8317 amp --dangerously-allow-all --no-ide'
-alias amg='agentmd | AMP_URL=http://localhost:8317 amp --dangerously-allow-all --no-ide'
-alias amx='AMP_URL=http://localhost:8317 amp  --dangerously-allow-all -x'
-alias ac='PATH=/opt/homebrew/bin:$PATH OPENAI_API_KEY='' codex --search --dangerously-bypass-approvals-and-sandbox'
-alias co='PATH=/opt/homebrew/bin:$PATH OPENAI_API_KEY='' ANTHROPIC_API_KEY='' GEMINI_API_KEY='' copilot  --disable-builtin-mcps --allow-all-paths  --allow-all-tools --resume'
+
+AGENT_TOOLS="$HOME/Coding/tools/agent-tools"
+AGENT_PATH="PATH=\$PATH"
+AGENT_PATH+=":$AGENT_TOOLS/brave-search/"
+AGENT_PATH+=":$AGENT_TOOLS/browser-tools/"
+
+alias am="$AGENT_PATH amp --no-ide"
+alias ac="$AGENT_PATH OPENAI_API_KEY='' codex --search --dangerously-bypass-approvals-and-sandbox"
+alias oc='$AGENT_PATH ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' opencode'
+alias claude='$AGENT_PATH ANTHROPIC_API_KEY="" /opt/homebrew/bin/claude'
+alias gemini="$AGENT_PATH GEMINI_API_KEY='' gemini"
+alias gem='$AGENT_PATH GEMINI_API_KEY='' gemini --yolo --checkpointing'
+
 alias em='emacs -nw'
 alias gmt='go mod tidy'
 alias ccg='bunx ccusage'
@@ -205,23 +210,38 @@ latest_file() {
   find "$dir" -type f -exec stat -f "%m %N" {} + 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-
 }
 
+
 tails() {
   local dir="$HOME/.cache/scripts/${1:-}"
   echo "tail -f $(latest_file "$dir")"
   tail -f "$(latest_file "$dir")"
 }
 
+pxylog() {
+  local dir="$HOME/dev/tutero/sample/ai-cli-proxy-api/logs"
+  echo "tail -f $(latest_file "$dir")"
+  tail -f "$(latest_file "$dir")"
+}
+
 export METAREPO="$HOME/Coding/metarepo"
 
-ampm() {
-  local message="${1:-your default message here}"
+hjk() {
+  local -A s; s[r]="resources 8087"; s[l]="learning 8080"
+  local v="${s[$1]}"
+  local x=(${=v})
+  local n=${x[1]} p="${x[2]}:8080" u="zpYSlblItaUssJnCzLevDTpL9pg1"
+  shift
+  if [[ $1 == "X-Uid:" || $1 == "X-UID:" ]]; then
+    u=$2; shift 2 2>/dev/null
+  elif [[ $1 != d && -n $1 ]]; then
+    u=$1; shift 2>/dev/null
+  fi
+  [[ $1 != d && -n $1 ]] && p=$1; shift 2>/dev/null
+  [[ $1 != d && -n $1 ]] && n=$1
+  telepresence intercept "$n-graphql" --port "$p" --http-header="X-UID=$u"
+}
 
-  # Launch amp
-  tmux send-keys "amp" Enter
-
-  # Wait for amp to fully load
-  sleep 5
-
-  # Populate the input box (no Enter, so it stays editable)
-  tmux send-keys "$message"
+hjkq() {
+  local -A s; s[r]=resources; s[l]=learning
+  telepresence leave "${s[$1]:-$1}-graphql"
 }

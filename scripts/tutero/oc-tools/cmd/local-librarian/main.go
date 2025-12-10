@@ -55,9 +55,32 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Setup logging FIRST (before any other operations)
+	// Use session-specific log file if continuing, otherwise create new timestamped log
+	var logger *shared.Logger
+	var logErr error
+	if sessionID != "" {
+		logger, logErr = shared.NewLoggerForSession("local-librarian", sessionID)
+	} else {
+		logger, logErr = shared.NewLogger("local-librarian")
+	}
+	if logErr != nil {
+		fmt.Fprintf(os.Stderr, "Warning: could not setup logging: %v\n", logErr)
+	}
+	if logger != nil {
+		defer logger.Close()
+	}
+
+	if logger != nil {
+		logger.Log("Arguments: session=%s, verbose=%v", sessionID, verbose)
+	}
+
 	// Check stdin - local-librarian requires piped input
 	stat, _ := os.Stdin.Stat()
 	if (stat.Mode() & os.ModeCharDevice) != 0 {
+		if logger != nil {
+			logger.Log("ERROR: no stdin provided")
+		}
 		fmt.Fprintf(os.Stderr, "Error: Prompt must be provided via stdin (pipe or redirect)\n")
 		fmt.Fprint(os.Stderr, usage)
 		os.Exit(1)
@@ -66,6 +89,9 @@ func main() {
 	// Read prompt from stdin
 	prompt, err := shared.ReadStdinOrArgs(nil)
 	if err != nil {
+		if logger != nil {
+			logger.Log("ERROR: %v", err)
+		}
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		fmt.Fprint(os.Stderr, usage)
 		os.Exit(1)
@@ -74,51 +100,74 @@ func main() {
 	// Capture invoke directory before changing to $HOME
 	invokeDir := shared.GetWorkDir()
 
+	if logger != nil {
+		logger.LogSeparator("INPUT")
+		logger.Log("Invoke directory: %s", invokeDir)
+		logger.Log("Raw prompt:\n%s", prompt)
+	}
+
 	// Prepend invocation directory context (fallback if no dir specified)
 	contextPrefix := fmt.Sprintf("Invoked Dir (CWD): %s\n(use as fallback if no dir specified to search)\n\n", invokeDir)
 	prompt = contextPrefix + prompt
 
-	// Setup logging
-	logFile, err := shared.SetupLogDir("local-librarian")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: could not setup logging: %v\n", err)
+	if logger != nil {
+		logger.Log("With context prefix, total length: %d chars", len(prompt))
 	}
 
 	// Run from $HOME for read-only access to all repos
 	workDir := os.Getenv("HOME")
 
+	if logger != nil {
+		logger.LogSeparator("SDK SETUP")
+		logger.Log("Work directory: %s", workDir)
+	}
+
 	// Create context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 
-	client := shared.NewClient(ctx)
+	client := shared.NewClientWithLogger(ctx, logger)
 	defer client.Close()
 
 	var result *shared.AgentResult
 
+	if logger != nil {
+		logger.LogSeparator("AGENT CALL")
+	}
+
 	if sessionID != "" {
-		// Continue existing session
+		if logger != nil {
+			logger.Log("Continuing existing session: %s", sessionID)
+		}
 		result, err = client.ContinueSession(sessionID, "local-librarian", prompt, workDir)
 	} else {
-		// Start new session
+		if logger != nil {
+			logger.Log("Starting new session")
+		}
 		result, err = client.RunAgent("local-librarian", prompt, workDir)
 	}
 
 	if err != nil {
-		errMsg := fmt.Sprintf("Error: %v\n", err)
-		if logFile != "" {
-			shared.WriteLog(logFile, errMsg)
+		if logger != nil {
+			logger.Log("ERROR: agent call failed: %v", err)
 		}
-		fmt.Fprint(os.Stderr, errMsg)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Log output with session ID for follow-up
-	if logFile != "" {
-		shared.WriteLogWithSession(logFile, result.Output, result.SessionID)
-		if verbose {
-			fmt.Fprintf(os.Stderr, "[debug] Logs saved to: %s\n", logFile)
-		}
+	// Link session log for new sessions so future continuations find it
+	if logger != nil && sessionID == "" {
+		logger.LinkSession(result.SessionID)
+	}
+
+	if logger != nil {
+		logger.LogSeparator("RESULT")
+		logger.Log("Session ID: %s", result.SessionID)
+		logger.Log("Output length: %d chars", len(result.Output))
+	}
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "[debug] Logs saved to: %s\n", logger.Path())
 	}
 
 	// Print output

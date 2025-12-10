@@ -88,3 +88,4 @@ export PATH="$HOME/Applications/CMake-3.29.app/Contents/bin:$PATH"
 export PATH="/Users/mac/.antigravity/antigravity/bin:$PATH"
 
 
+eval "$(try init ~/Coding/tries)"

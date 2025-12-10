@@ -3,13 +3,16 @@ package shared
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sst/opencode-sdk-go"
@@ -40,10 +43,16 @@ type Client struct {
 	ctx       context.Context
 	serverCmd *exec.Cmd
 	baseURL   string
+	logger    *Logger
 }
 
 // NewClient creates opencode client, auto-starting server if needed (like TS SDK createOpencode)
 func NewClient(ctx context.Context) *Client {
+	return NewClientWithLogger(ctx, nil)
+}
+
+// NewClientWithLogger creates opencode client with a logger for realtime activity logging
+func NewClientWithLogger(ctx context.Context, logger *Logger) *Client {
 	baseURL := os.Getenv("OPENCODE_URL")
 	if baseURL == "" {
 		// Use isolated port if IsolateDataDir() was called
@@ -57,24 +66,41 @@ func NewClient(ctx context.Context) *Client {
 	c := &Client{
 		ctx:     ctx,
 		baseURL: baseURL,
+		logger:  logger,
 	}
+
+	c.log("Creating client with baseURL: %s", baseURL)
+	c.log("Isolated mode: %v", os.Getenv("OPENCODE_SDK_ISOLATED") == "1")
 
 	// Check if server is already running
 	if !c.isServerRunning() {
+		c.log("Server not running, starting...")
 		// Start server subprocess (mimics TS SDK createOpencodeServer pattern)
 		if url, err := c.startServer(); err != nil {
+			c.log("ERROR: could not start server: %v", err)
 			fmt.Fprintf(os.Stderr, "[opencode] Warning: could not start server: %v\n", err)
 			fmt.Fprintf(os.Stderr, "[opencode] Ensure 'opencode' is installed and in PATH\n")
 		} else {
+			c.log("Server started at: %s", url)
 			c.baseURL = url
 		}
+	} else {
+		c.log("Server already running at: %s", baseURL)
 	}
 
 	c.Client = opencode.NewClient(
 		option.WithBaseURL(c.baseURL),
 	)
+	c.log("SDK client initialized")
 
 	return c
+}
+
+// log writes to the client's logger if available
+func (c *Client) log(format string, args ...interface{}) {
+	if c.logger != nil {
+		c.logger.Log("[SDK] "+format, args...)
+	}
 }
 
 // isServerRunning checks if opencode server is available
@@ -246,16 +272,37 @@ func (c *Client) RunAgent(agentName, prompt, workDir string) (*AgentResult, erro
 
 // RunAgentWithOptions creates a session with optional settings (tools, etc.)
 func (c *Client) RunAgentWithOptions(agentName, prompt, workDir string, opts *AgentOptions) (*AgentResult, error) {
+	c.log("RunAgent called: agent=%s, workDir=%s", agentName, workDir)
+	c.log("Prompt length: %d chars", len(prompt))
+	if len(prompt) < 2000 {
+		c.log("Prompt content:\n%s", prompt)
+	} else {
+		c.log("Prompt content (first 2000 chars):\n%s...", prompt[:2000])
+	}
+
+	if opts != nil {
+		c.log("Options: Tools=%v, NoAgent=%v, AutoCleanup=%v", opts.Tools, opts.NoAgent, opts.AutoCleanup)
+		if opts.Model != nil {
+			c.log("Model override: %s/%s", opts.Model.ProviderID, opts.Model.ModelID)
+		}
+		if opts.System != "" {
+			c.log("System prompt length: %d", len(opts.System))
+		}
+	}
+
 	// Create session
+	c.log("Creating new session...")
 	session, err := c.Session.New(c.ctx, opencode.SessionNewParams{
 		Directory: opencode.F(workDir),
 		Title:     opencode.F(fmt.Sprintf("%s-%d", agentName, time.Now().Unix())),
 	})
 	if err != nil {
+		c.log("ERROR: failed to create session: %v", err)
 		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 
 	sessionID := session.ID
+	c.log("Session created: %s", sessionID)
 
 	// Broadcast session ID early for timeout recovery
 	fmt.Fprintf(os.Stderr, "\n────────────────────────────────────────────────────────────────\n")
@@ -298,14 +345,29 @@ func (c *Client) RunAgentWithOptions(agentName, prompt, workDir string, opts *Ag
 	}
 
 	// Send prompt to agent with directory context
+	c.log("Sending prompt to session (this may take a while)...")
+	startTime := time.Now()
 	response, err := c.Session.Prompt(c.ctx, sessionID, params)
+	elapsed := time.Since(startTime)
 
 	if err != nil {
+		c.log("ERROR: prompt failed after %v: %v", elapsed, err)
 		return nil, fmt.Errorf("failed to send prompt: %w", err)
 	}
 
+	c.log("Prompt completed in %v", elapsed)
+	c.log("Response parts count: %d", len(response.Parts))
+
+	output := ExtractTextFromParts(response.Parts)
+	c.log("Extracted text length: %d chars", len(output))
+	if len(output) < 5000 {
+		c.log("Response output:\n%s", output)
+	} else {
+		c.log("Response output (first 5000 chars):\n%s...", output[:5000])
+	}
+
 	return &AgentResult{
-		Output:    ExtractTextFromParts(response.Parts),
+		Output:    output,
 		SessionID: sessionID,
 	}, nil
 }
@@ -317,11 +379,22 @@ func (c *Client) ContinueSession(sessionID, agentName, prompt, workDir string) (
 
 // ContinueSessionWithOptions sends a follow-up prompt with optional settings
 func (c *Client) ContinueSessionWithOptions(sessionID, agentName, prompt, workDir string, opts *AgentOptions) (*AgentResult, error) {
+	c.log("ContinueSession called: sessionID=%s, agent=%s, workDir=%s", sessionID, agentName, workDir)
+	c.log("Prompt length: %d chars", len(prompt))
+	if len(prompt) < 2000 {
+		c.log("Prompt content:\n%s", prompt)
+	} else {
+		c.log("Prompt content (first 2000 chars):\n%s...", prompt[:2000])
+	}
+
 	// Verify session exists
+	c.log("Verifying session exists...")
 	_, err := c.Session.Get(c.ctx, sessionID, opencode.SessionGetParams{})
 	if err != nil {
+		c.log("ERROR: session not found: %v", err)
 		return nil, fmt.Errorf("session not found: %w", err)
 	}
+	c.log("Session verified")
 
 	fmt.Fprintf(os.Stderr, "\n────────────────────────────────────────────────────────────────\n")
 	fmt.Fprintf(os.Stderr, "Continuing session: %s\n", sessionID)
@@ -362,14 +435,29 @@ func (c *Client) ContinueSessionWithOptions(sessionID, agentName, prompt, workDi
 	}
 
 	// Send prompt to existing session
+	c.log("Sending prompt to session (this may take a while)...")
+	startTime := time.Now()
 	response, err := c.Session.Prompt(c.ctx, sessionID, params)
+	elapsed := time.Since(startTime)
 
 	if err != nil {
+		c.log("ERROR: prompt failed after %v: %v", elapsed, err)
 		return nil, fmt.Errorf("failed to send prompt: %w", err)
 	}
 
+	c.log("Prompt completed in %v", elapsed)
+	c.log("Response parts count: %d", len(response.Parts))
+
+	output := ExtractTextFromParts(response.Parts)
+	c.log("Extracted text length: %d chars", len(output))
+	if len(output) < 5000 {
+		c.log("Response output:\n%s", output)
+	} else {
+		c.log("Response output (first 5000 chars):\n%s...", output[:5000])
+	}
+
 	return &AgentResult{
-		Output:    ExtractTextFromParts(response.Parts),
+		Output:    output,
 		SessionID: sessionID,
 	}, nil
 }
@@ -424,7 +512,165 @@ func ReadStdinOrArgs(args []string) (string, error) {
 	return strings.Join(args, " "), nil
 }
 
+// Logger provides realtime streaming logging to file
+type Logger struct {
+	file      *os.File
+	mu        sync.Mutex
+	filePath  string
+	toolName  string
+	sessionID string
+}
+
+// NewLogger creates a new streaming logger for the given tool (new session)
+func NewLogger(toolName string) (*Logger, error) {
+	logDir := filepath.Join(os.Getenv("HOME"), ".cache", "scripts", toolName)
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create log dir %s: %w", logDir, err)
+	}
+
+	timestamp := time.Now().Format("20060102T150405")
+	logPath := filepath.Join(logDir, fmt.Sprintf("%s-%d.log", timestamp, os.Getpid()))
+
+	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open log file %s: %w", logPath, err)
+	}
+
+	l := &Logger{
+		file:     file,
+		filePath: logPath,
+		toolName: toolName,
+	}
+
+	// Log initial header
+	l.Log("=== %s started at %s ===", toolName, time.Now().Format(time.RFC3339))
+	l.Log("PID: %d", os.Getpid())
+	l.Log("Log file: %s", logPath)
+
+	return l, nil
+}
+
+// NewLoggerForSession creates/appends to a session-specific log file
+// Use this when continuing a session with -s SESSION_ID so all logs for that session are in one file
+func NewLoggerForSession(toolName, sessionID string) (*Logger, error) {
+	logDir := filepath.Join(os.Getenv("HOME"), ".cache", "scripts", toolName)
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create log dir %s: %w", logDir, err)
+	}
+
+	// Use session ID in filename for easy lookup and appending
+	logPath := filepath.Join(logDir, fmt.Sprintf("session-%s.log", sessionID))
+
+	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open log file %s: %w", logPath, err)
+	}
+
+	l := &Logger{
+		file:      file,
+		filePath:  logPath,
+		toolName:  toolName,
+		sessionID: sessionID,
+	}
+
+	// Log continuation header
+	l.Log("")
+	l.Log("=== %s CONTINUED at %s ===", toolName, time.Now().Format(time.RFC3339))
+	l.Log("PID: %d", os.Getpid())
+	l.Log("Session: %s", sessionID)
+
+	return l, nil
+}
+
+// LinkSession creates a session-named symlink to this log file
+// Call this after a new session is created so future continuations can find it
+func (l *Logger) LinkSession(sessionID string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	l.sessionID = sessionID
+	logDir := filepath.Dir(l.filePath)
+	linkPath := filepath.Join(logDir, fmt.Sprintf("session-%s.log", sessionID))
+
+	// Remove existing link if present
+	os.Remove(linkPath)
+
+	// Create symlink to the actual log file
+	if err := os.Symlink(l.filePath, linkPath); err != nil {
+		// Fallback: just note in the log that the session file exists
+		l.file.WriteString(fmt.Sprintf("[%s] Note: session link failed: %v\n",
+			time.Now().Format("15:04:05.000"), err))
+	}
+}
+
+// Log writes a timestamped message to the log file (realtime flush)
+func (l *Logger) Log(format string, args ...interface{}) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.file == nil {
+		return
+	}
+
+	msg := fmt.Sprintf(format, args...)
+	ts := time.Now().Format("15:04:05.000")
+	line := fmt.Sprintf("[%s] %s\n", ts, msg)
+
+	l.file.WriteString(line)
+	l.file.Sync() // Force flush to disk immediately
+}
+
+// LogJSON writes a JSON object to the log (pretty-printed)
+func (l *Logger) LogJSON(label string, v interface{}) {
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		l.Log("%s: [JSON marshal error: %v]", label, err)
+		return
+	}
+	l.Log("%s:\n%s", label, string(data))
+}
+
+// LogSeparator writes a visual separator
+func (l *Logger) LogSeparator(label string) {
+	l.Log("─────────────── %s ───────────────", label)
+}
+
+// Path returns the log file path
+func (l *Logger) Path() string {
+	return l.filePath
+}
+
+// Close closes the log file
+func (l *Logger) Close() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.file != nil {
+		// Write final message directly (don't call l.Log which would deadlock)
+		ts := time.Now().Format("15:04:05.000")
+		l.file.WriteString(fmt.Sprintf("[%s] === %s ended at %s ===\n", ts, l.toolName, time.Now().Format(time.RFC3339)))
+		l.file.Sync()
+		l.file.Close()
+		l.file = nil
+	}
+}
+
+// Writer returns an io.Writer that writes to the log
+func (l *Logger) Writer() io.Writer {
+	return &logWriter{l: l}
+}
+
+type logWriter struct {
+	l *Logger
+}
+
+func (w *logWriter) Write(p []byte) (n int, err error) {
+	w.l.Log("%s", strings.TrimRight(string(p), "\n"))
+	return len(p), nil
+}
+
 // SetupLogDir creates log directory and returns log file path
+// DEPRECATED: Use NewLogger() instead for realtime streaming logs
 func SetupLogDir(name string) (string, error) {
 	logDir := filepath.Join(os.Getenv("HOME"), ".cache", "scripts", name)
 	if err := os.MkdirAll(logDir, 0755); err != nil {
@@ -437,11 +683,13 @@ func SetupLogDir(name string) (string, error) {
 }
 
 // WriteLog writes content to log file
+// DEPRECATED: Use Logger.Log() instead for realtime streaming logs
 func WriteLog(logFile, content string) error {
 	return os.WriteFile(logFile, []byte(content), 0644)
 }
 
 // WriteLogWithSession writes output and session ID to log file for follow-up
+// DEPRECATED: Use Logger.Log() instead for realtime streaming logs
 func WriteLogWithSession(logFile, output, sessionID string) error {
 	content := fmt.Sprintf("SESSION_ID=%s\n\n%s", sessionID, output)
 	return os.WriteFile(logFile, []byte(content), 0644)
