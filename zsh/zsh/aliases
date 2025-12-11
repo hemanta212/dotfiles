@@ -134,7 +134,10 @@ AGENT_PATH="PATH=\$PATH"
 AGENT_PATH+=":$AGENT_TOOLS/brave-search/"
 AGENT_PATH+=":$AGENT_TOOLS/browser-tools/"
 
+# am  = normal amp with permission helper (configured in ~/.config/amp/settings.json)
+# ams = sandboxed amp (kernel-level write protection outside PWD)
 alias am="$AGENT_PATH amp --no-ide"
+alias ams="$AGENT_PATH $HOME/Coding/metarepo/backend/agent-scripts/agent/sandbox/amp-sandboxed"
 alias ac="$AGENT_PATH OPENAI_API_KEY='' codex --search --dangerously-bypass-approvals-and-sandbox"
 alias oc='$AGENT_PATH ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' opencode'
 alias claude='$AGENT_PATH ANTHROPIC_API_KEY="" /opt/homebrew/bin/claude'

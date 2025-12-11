@@ -1,0 +1,70 @@
+#!/bin/bash
+# Setup multi-push remote: single pull source, multiple push targets
+
+set -e
+
+# Check if we're in a git repo
+if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    echo "Error: Not a git repository"
+    exit 1
+fi
+
+# Get existing remotes
+remotes=$(git remote)
+if [ -z "$remotes" ]; then
+    echo "Error: No remotes configured"
+    exit 1
+fi
+
+echo "Current remotes:"
+git remote -v
+echo ""
+
+# Select pull remote (single)
+echo "Select the SOURCE OF TRUTH remote (for pulling):"
+pull_remote=$(echo "$remotes" | fzf --height=10 --prompt="Pull from: ")
+if [ -z "$pull_remote" ]; then
+    echo "Cancelled"
+    exit 1
+fi
+
+pull_url=$(git remote get-url "$pull_remote")
+echo "Selected pull remote: $pull_remote ($pull_url)"
+echo ""
+
+# Select push remotes (multiple)
+echo "Select remotes to PUSH to (Tab to select multiple, Enter to confirm):"
+push_remotes=$(echo "$remotes" | fzf --multi --height=10 --prompt="Push to: ")
+if [ -z "$push_remotes" ]; then
+    echo "Cancelled"
+    exit 1
+fi
+
+echo "Selected push remotes:"
+echo "$push_remotes"
+echo ""
+
+# Remove existing 'all' remote if exists
+if git remote | grep -q "^all$"; then
+    echo "Removing existing 'all' remote..."
+    git remote remove all
+fi
+
+# Create 'all' remote with pull URL as fetch
+echo "Creating 'all' remote..."
+git remote add all "$pull_url"
+
+# Add all push URLs
+for remote in $push_remotes; do
+    url=$(git remote get-url "$remote")
+    git remote set-url --add --push all "$url"
+    echo "  Added push: $url"
+done
+
+echo ""
+echo "Done! New configuration:"
+git remote -v | grep "^all"
+echo ""
+echo "Usage:"
+echo "  git pull all <branch>  - pulls from $pull_remote"
+echo "  git push all <branch>  - pushes to all selected remotes"

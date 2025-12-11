@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# tmux-switcher: fuzzy switch to any tmux session:window
+# Usage: tmux-switcher [query...]
+# Examples: tmux-switcher fr 5 -> frontend:5
+#           tmux-switcher fr bun 3 -> frontend:bundler:3
+
+set -euo pipefail
+
+if ! tmux list-sessions &>/dev/null; then
+    echo "No tmux sessions running" >&2
+    exit 1
+fi
+
+# Build list: "session:window_index:window_name"
+list_windows() {
+    tmux list-windows -a -F '#{session_name}:#{window_index}:#{window_name}'
+}
+
+# Join args as fzf query
+query="${*:-}"
+
+# Select with fzf
+selected=$(list_windows | fzf --reverse --prompt="tmux> " \
+    --query="$query" \
+    --preview='tmux capture-pane -t {1}:{2} -p 2>/dev/null | head -40' \
+    --preview-window=down:70%:wrap \
+    --delimiter=':' \
+    --with-nth='1,2,3' \
+    --bind='enter:accept' \
+    --exit-0)
+
+if [[ -z "$selected" ]]; then
+    exit 0
+fi
+
+session=$(echo "$selected" | cut -d: -f1)
+window=$(echo "$selected" | cut -d: -f2)
+
+if [[ -n "$TMUX" ]]; then
+    tmux switch-client -t "$session:$window"
+else
+    tmux attach-session -t "$session:$window"
+fi

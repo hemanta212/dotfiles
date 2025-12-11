@@ -17,11 +17,24 @@ SERVER_HOST="127.0.0.1"
 SERVER_PORT=5656
 SPEAKER_ID=0
 
+get_tmux_context() {
+  if [[ -n "${TMUX:-}" ]]; then
+    # Use TMUX_PANE env var to get the invoking pane, not currently active one
+    if [[ -n "${TMUX_PANE:-}" ]]; then
+      # Get session:window(index) for the pane that invoked this script
+      tmux display-message -t "$TMUX_PANE" -p '#S:#W(#I)' 2>/dev/null || echo ""
+    else
+      tmux display-message -p '#S:#W(#I)' 2>/dev/null || echo ""
+    fi
+  fi
+}
+
 log_invocation() {
   local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
   local cwd=$(pwd)
   local args="$*"
-  local log_entry="[$timestamp] CWD: $cwd | ARGS: $args"
+  local tmux_ctx=$(get_tmux_context)
+  local log_entry="[$timestamp] ${tmux_ctx:+[$tmux_ctx] }CWD: $cwd | ARGS: $args"
 
   mkdir -p "$PIPER_DIR"
   echo "$log_entry" >>"$LOG_FILE"
@@ -30,7 +43,9 @@ log_invocation() {
 
 send_notification() {
   local message="$1"
-  osascript -e "display notification \"$message\" with title \"Piper Say\""
+  local tmux_ctx=$(get_tmux_context)
+  local title="${tmux_ctx:-Piper Say}"
+  osascript -e "display notification \"$message\" with title \"$title\""
 }
 
 check_server_health() {

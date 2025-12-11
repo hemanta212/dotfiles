@@ -243,3 +243,4 @@ fi
 #unset OPENAI_API_KEY
 #unset ANTHROPIC_API_KEY
 eval "$(direnv hook zsh)"
+LBIN=$HOME/.local/bin
