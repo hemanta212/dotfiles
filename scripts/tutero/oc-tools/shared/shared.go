@@ -103,6 +103,102 @@ func (c *Client) log(format string, args ...interface{}) {
 	}
 }
 
+// streamEvents streams SSE events for a session and logs them in real-time
+func (c *Client) streamEvents(ctx context.Context, sessionID, workDir string) {
+	if c.logger == nil {
+		return
+	}
+
+	c.logger.Log("[STREAM] Starting event stream for session %s", sessionID)
+
+	stream := c.Event.ListStreaming(ctx, opencode.EventListParams{})
+	defer stream.Close()
+
+	eventCount := 0
+	for stream.Next() {
+		eventCount++
+		event := stream.Current()
+		union := event.AsUnion()
+
+		switch ev := union.(type) {
+		case opencode.EventListResponseEventMessagePartUpdated:
+			part := ev.Properties.Part
+			// Filter to our session
+			if part.SessionID != sessionID {
+				continue
+			}
+
+			// Log based on part type
+			switch part.Type {
+			case opencode.PartTypeText:
+				// Log delta (incremental text) if available, skip if just delta update
+				if ev.Properties.Delta != "" {
+					continue // Skip incremental deltas - too noisy
+				}
+				text := part.Text
+				if len(text) > 500 {
+					text = text[:500] + "..."
+				}
+				if text != "" {
+					c.logger.Log("[TEXT] %s", text)
+				}
+
+			case opencode.PartTypeTool:
+				// State is interface{}, need to extract status
+				if state, ok := part.State.(opencode.ToolPartState); ok {
+					c.logger.Log("[TOOL] %s (status: %s)", part.Tool, state.Status)
+					if state.Input != nil {
+						input := fmt.Sprintf("%v", state.Input)
+						if len(input) > 500 {
+							input = input[:500] + "..."
+						}
+						c.logger.Log("[TOOL INPUT] %s", input)
+					}
+					if state.Output != "" {
+						output := state.Output
+						if len(output) > 1000 {
+							output = output[:1000] + "..."
+						}
+						c.logger.Log("[TOOL OUTPUT] %s", output)
+					}
+				} else {
+					c.logger.Log("[TOOL] %s", part.Tool)
+				}
+
+			case opencode.PartTypeReasoning:
+				text := part.Text
+				if len(text) > 500 {
+					text = text[:500] + "..."
+				}
+				if text != "" {
+					c.logger.Log("[THINKING] %s", text)
+				}
+			}
+
+		case opencode.EventListResponseEventMessageUpdated:
+			msg := ev.Properties.Info
+			c.logger.Log("[MESSAGE] Complete (role: %s)", msg.Role)
+
+		case opencode.EventListResponseEventSessionError:
+			c.logger.Log("[ERROR] %v", ev.Properties.Error)
+
+		case opencode.EventListResponseEventSessionUpdated:
+			info := ev.Properties.Info
+			if info.ID == sessionID {
+				c.logger.Log("[SESSION] Updated: %s", info.Title)
+			}
+
+		case opencode.EventListResponseEventSessionIdle:
+			c.logger.Log("[SESSION] Idle")
+		}
+	}
+
+	if err := stream.Err(); err != nil && ctx.Err() == nil {
+		c.logger.Log("[STREAM] Error: %v", err)
+	}
+	c.logger.Log("[STREAM] Event stream ended (processed %d events)", eventCount)
+}
+
 // isServerRunning checks if opencode server is available
 func (c *Client) isServerRunning() bool {
 	client := &http.Client{Timeout: 2 * time.Second}
@@ -344,11 +440,27 @@ func (c *Client) RunAgentWithOptions(agentName, prompt, workDir string, opts *Ag
 		params.System = opencode.F(opts.System)
 	}
 
-	// Send prompt to agent with directory context
-	c.log("Sending prompt to session (this may take a while)...")
+	// Start streaming events in background for real-time logging
+	c.log("Sending prompt to session...")
 	startTime := time.Now()
+
+	// Create cancellable context for event streaming
+	streamCtx, cancelStream := context.WithCancel(c.ctx)
+	streamDone := make(chan struct{})
+
+	// Stream events in background
+	go func() {
+		defer close(streamDone)
+		c.streamEvents(streamCtx, sessionID, workDir)
+	}()
+
+	// Send prompt (blocking)
 	response, err := c.Session.Prompt(c.ctx, sessionID, params)
 	elapsed := time.Since(startTime)
+
+	// Stop event streaming
+	cancelStream()
+	<-streamDone
 
 	if err != nil {
 		c.log("ERROR: prompt failed after %v: %v", elapsed, err)
@@ -434,11 +546,27 @@ func (c *Client) ContinueSessionWithOptions(sessionID, agentName, prompt, workDi
 		params.System = opencode.F(opts.System)
 	}
 
-	// Send prompt to existing session
-	c.log("Sending prompt to session (this may take a while)...")
+	// Start streaming events in background for real-time logging
+	c.log("Sending prompt to session...")
 	startTime := time.Now()
+
+	// Create cancellable context for event streaming
+	streamCtx, cancelStream := context.WithCancel(c.ctx)
+	streamDone := make(chan struct{})
+
+	// Stream events in background
+	go func() {
+		defer close(streamDone)
+		c.streamEvents(streamCtx, sessionID, workDir)
+	}()
+
+	// Send prompt (blocking)
 	response, err := c.Session.Prompt(c.ctx, sessionID, params)
 	elapsed := time.Since(startTime)
+
+	// Stop event streaming
+	cancelStream()
+	<-streamDone
 
 	if err != nil {
 		c.log("ERROR: prompt failed after %v: %v", elapsed, err)
