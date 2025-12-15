@@ -56,25 +56,17 @@ SECOND_LAST_INDEX=$((${#CODE_BLOCK_ARRAY[@]} - 2))
 LAST_CLOSE=${CODE_BLOCK_ARRAY[$LAST_INDEX]}
 LAST_OPEN=${CODE_BLOCK_ARRAY[$SECOND_LAST_INDEX]}
 
-# Update the AGENTS.md file with new skills (only the code block content)
-TEMP_FILE=$(mktemp)
-
-# Copy everything before the last code block opening
-head -n $((LAST_OPEN)) "$AGENTS_FILE" >"$TEMP_FILE"
+# Output AGENTS.md with updated skills section (without modifying file)
+# Everything before the code block content
+head -n $((LAST_OPEN)) "$AGENTS_FILE"
 
 # Add the new skills output
-echo "" >>"$TEMP_FILE"
-echo "$SKILLS_OUTPUT" >>"$TEMP_FILE"
+echo ""
+echo "$SKILLS_OUTPUT"
 
 # Add the closing ``` and everything after the old closing ```
-echo '```' >>"$TEMP_FILE"
-tail -n +$((LAST_CLOSE + 1)) "$AGENTS_FILE" >>"$TEMP_FILE"
-
-# Replace the original file (only skills section updated)
-mv "$TEMP_FILE" "$AGENTS_FILE"
-
-# Now output the complete content for the agent
-cat "$AGENTS_FILE"
+echo '```'
+tail -n +$((LAST_CLOSE + 1)) "$AGENTS_FILE"
 
 # Check if project-specific AGENTS.md exists and output it
 if [ -f "$PROJECT_AGENTS" ]; then
