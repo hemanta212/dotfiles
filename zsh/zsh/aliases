@@ -14,7 +14,6 @@ alias Ss='sudo apt search'
 alias Su='sudo apt update'
 alias Syu='sudo apt update && sudo apt upgrade -y'
 alias syu='sudo apt update && sudo apt upgrade'
-alias gcloud='~/google-cloud-sdk/bin/gcloud'
 alias tele='telepresence'
 code() {
     /Applications/Visual\ Studio\ Code.app/Contents/MacOS/Electron "$@" > /dev/null 2>&1 &
@@ -33,10 +32,6 @@ alias Syu='sudo apt-get update && sudo apt-get upgrade -y'
 alias syu='sudo apt-get update && sudo apt-get upgrade'
 alias su='sudo apt-get update'
 alias si='sudo apt-get install'
-
-alias prp='poetry run python'
-alias prpp='poetry run python -m pip'
-alias pr='poetry run'
 
 alias ldc='cd $HOME/dev/tutero/flutter/learning/ && docker compose -f docker-compose-telepresence.yml up --build learning-graphql'
 alias ldcl='cd $HOME/dev/tutero/flutter/learning/ && docker compose -f docker-compose.yml up --build learning-db'
@@ -136,13 +131,14 @@ AGENT_PATH+=":$AGENT_TOOLS/browser-tools/"
 
 # am  = normal amp with permission helper (configured in ~/.config/amp/settings.json)
 # ams = sandboxed amp (kernel-level write protection outside PWD)
-alias am="$AGENT_PATH amp --no-ide"
-alias ams="$AGENT_PATH $HOME/Coding/metarepo/backend/agent-scripts/agent/sandbox/amp-sandboxed"
+alias am="EDITOR=amp-editor $AGENT_PATH amp --no-ide"
+alias ams="EDITOR=amp-editor $AGENT_PATH amps --no-ide"
+alias sam="EDITOR=amp-editor $AGENT_PATH samp --no-ide"
 alias ac="$AGENT_PATH OPENAI_API_KEY='' codex --search --dangerously-bypass-approvals-and-sandbox"
-alias oc='$AGENT_PATH ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' opencode'
-alias claude='$AGENT_PATH ANTHROPIC_API_KEY="" /opt/homebrew/bin/claude'
+alias oc="$AGENT_PATH ANTHROPIC_API_KEY='' GEMINI_API_KEY='' OPENAI_API_KEY='' opencode"
+alias claude="$AGENT_PATH ANTHROPIC_API_KEY='' /opt/homebrew/bin/claude"
 alias gemini="$AGENT_PATH GEMINI_API_KEY='' gemini"
-alias gem='$AGENT_PATH GEMINI_API_KEY='' gemini --yolo --checkpointing'
+alias gem="$AGENT_PATH GEMINI_API_KEY='' gemini --yolo --checkpointing"
 
 alias em='emacs -nw'
 alias gmt='go mod tidy'
@@ -248,3 +244,5 @@ hjkq() {
   local -A s; s[r]=resources; s[l]=learning
   telepresence leave "${s[$1]:-$1}-graphql"
 }
+DOTS="$HOME/dev/dotfiles/scripts/"
+AGS="$HOME/Coding/metarepo/backend/agent-scripts/"

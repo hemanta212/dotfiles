@@ -1,0 +1,65 @@
+#!/bin/bash
+# Get CPU/GPU temperature on Apple Silicon using macmon
+# Usage: cpu-temp [--watch|-w] [--json|-j] [--tmux|-t] [--daemon|-d] [--install] [--uninstall] [--status]
+
+ALERT_THRESHOLD=${CPU_TEMP_ALERT:-90}
+ALERT_COOLDOWN=300  # seconds between alerts
+PLIST_SRC="$HOME/dev/dotfiles/scripts/com.user.cpu-temp-monitor.plist"
+PLIST_DST="$HOME/Library/LaunchAgents/com.user.cpu-temp-monitor.plist"
+SERVICE="gui/$(id -u)/com.user.cpu-temp-monitor"
+
+case "$1" in
+    --install)
+        cp "$PLIST_SRC" "$PLIST_DST"
+        xattr -c "$PLIST_DST" 2>/dev/null
+        launchctl bootstrap gui/$(id -u) "$PLIST_DST" 2>/dev/null || launchctl load "$PLIST_DST"
+        echo "Service installed. May need logout/login to activate."
+        exit 0
+        ;;
+    --uninstall)
+        launchctl bootout $SERVICE 2>/dev/null || launchctl unload "$PLIST_DST" 2>/dev/null
+        rm -f "$PLIST_DST"
+        echo "Service uninstalled."
+        exit 0
+        ;;
+    --status)
+        launchctl print $SERVICE 2>&1 | head -10
+        exit 0
+        ;;
+    --watch|-w)
+        macmon pipe 2>/dev/null | while read -r line; do
+            cpu=$(echo "$line" | jq -r '.temp.cpu_temp_avg | floor')
+            gpu=$(echo "$line" | jq -r '.temp.gpu_temp_avg | floor')
+            pwr=$(echo "$line" | jq -r '.sys_power | . * 10 | floor / 10')
+            echo "CPU: ${cpu}°C  GPU: ${gpu}°C  Power: ${pwr}W"
+        done
+        ;;
+    --json|-j)
+        macmon pipe 2>/dev/null | head -1 | jq '{cpu_temp: .temp.cpu_temp_avg, gpu_temp: .temp.gpu_temp_avg, power: .sys_power}'
+        ;;
+    --tmux|-t)
+        data=$(macmon pipe 2>/dev/null | head -1)
+        cpu=$(echo "$data" | jq -r '.temp.cpu_temp_avg | floor')
+        echo "${cpu}°"
+        ;;
+    --daemon|-d)
+        last_alert=0
+        while true; do
+            data=$(macmon pipe 2>/dev/null | head -1)
+            cpu=$(echo "$data" | jq -r '.temp.cpu_temp_avg | floor')
+            now=$(date +%s)
+            
+            if [[ "$cpu" -ge "$ALERT_THRESHOLD" ]] && [[ $((now - last_alert)) -ge $ALERT_COOLDOWN ]]; then
+                osascript -e "display notification \"CPU temperature: ${cpu}°C\" with title \"High Temperature Alert\" sound name \"Sosumi\""
+                last_alert=$now
+            fi
+            sleep 10
+        done
+        ;;
+    *)
+        data=$(macmon pipe 2>/dev/null | head -1)
+        cpu=$(echo "$data" | jq -r '.temp.cpu_temp_avg | floor')
+        gpu=$(echo "$data" | jq -r '.temp.gpu_temp_avg | floor')
+        echo "CPU: ${cpu}°C  GPU: ${gpu}°C"
+        ;;
+esac

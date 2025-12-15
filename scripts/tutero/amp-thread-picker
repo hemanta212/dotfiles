@@ -134,6 +134,7 @@ sync_index() {
 
 list_rows() {
   # Outputs: id<TAB>title<TAB>date<TAB>path
+  # Filters out Untitled threads
   local q="${1:-}"
   sqlite3 "$DB" "PRAGMA busy_timeout=5000;" >/dev/null
   if [ -z "$q" ]; then
@@ -143,11 +144,13 @@ list_rows() {
              strftime('%Y-%m-%d %H:%M', created/1000, 'unixepoch'),
              path
       FROM threads
+      WHERE title != 'Untitled' AND title IS NOT NULL AND title != ''
       ORDER BY created DESC;
     "
   else
     local match
     match=$(fts_escape "$q")
+    # FTS5 searches both title and body columns
     sqlite3 -tabs "$DB" "
       SELECT t.id,
              t.title,
@@ -156,7 +159,8 @@ list_rows() {
       FROM threads_fts f
       JOIN threads t ON f.rowid = t.rowid
       WHERE threads_fts MATCH $match
-      ORDER BY t.created DESC;
+        AND t.title != 'Untitled' AND t.title IS NOT NULL AND t.title != ''
+      ORDER BY rank, t.created DESC;
     " 2>/dev/null || true  # Gracefully handle invalid FTS queries
   fi
 }
@@ -167,39 +171,42 @@ preview_thread() {
   
   jq -r '
     def fmt_date: . / 1000 | strftime("%Y-%m-%d %H:%M");
+    def truncate($n): if length > $n then .[:$n] + "..." else . end;
+    def clean: gsub("\\s+"; " ") | gsub("^\\s+|\\s+$"; "");
     
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-    "THREAD: \(.title // "Untitled")",
-    "ID: \(.id)",
-    "Created: \(.created | fmt_date)",
-    "URL: https://ampcode.com/threads/\(.id)",
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    # Header box
+    "╭──────────────────────────────────────────────────────────────╮",
+    "│  \u001b[1;36mTHREAD\u001b[0m",
+    "│  \(.title // "Untitled" | truncate(55))",
+    "├──────────────────────────────────────────────────────────────┤",
+    "│  \u001b[2mID:\u001b[0m       \u001b[35m\(.id)\u001b[0m",
+    "│  \u001b[2mCreated:\u001b[0m  \(.created | fmt_date)",
+    "│  \u001b[2mMessages:\u001b[0m \(.messages | length)",
+    "╰──────────────────────────────────────────────────────────────╯",
     "",
     (
       [.messages[] | select(.role == "user" or .role == "assistant")] 
       | map({
           role: .role,
-          text: ([.content[]? | select(.type == "text") | .text] | join("\n"))
+          text: ([.content[]? | select(.type == "text") | .text] | join(" ") | clean)
         })
       | map(select(.text != ""))
-      | .[:15]
+      | .[-8:]
+      | to_entries
       | map(
-          if .role == "user" then
-            "┌─ USER ─────────────────────────────────────────────────────",
-            (.text | split("\n")[:15] | map("│ " + .) | join("\n")),
-            "└────────────────────────────────────────────────────────────",
+          if .value.role == "user" then
+            "\u001b[33m▶ USER\u001b[0m",
+            "  \(.value.text | truncate(120))",
             ""
           else
-            "┌─ ASSISTANT ────────────────────────────────────────────────",
-            (.text | split("\n")[:20] | map("│ " + .) | join("\n")),
-            "└────────────────────────────────────────────────────────────",
+            "\u001b[36m◀ AMP\u001b[0m",
+            "  \(.value.text | truncate(200))",
             ""
           end
         )
       | flatten
       | join("\n")
-    ),
-    if (.messages | length) > 15 then "... (\(.messages | length) messages total)" else "" end
+    )
   ' "$file"
 }
 
